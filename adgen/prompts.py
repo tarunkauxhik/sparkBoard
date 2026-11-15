@@ -32,7 +32,7 @@ def keyframe_prompt(shot: Shot, look: Look, brief: Brief) -> str:
     parts.append(f"Lighting: {shot.lighting}.")
     parts.append(f"Style: {REALISM.get(brief.format, REALISM['default'])}.")
     parts.append(f"Avoid: {AVOID_IMAGE}.")
-    return " ".join(parts)
+    return " ".join(parts).replace("..", ".")  # fields may already end with a full stop
 
 
 def motion_prompt(shot: Shot) -> str:
@@ -44,4 +44,4 @@ def motion_prompt(shot: Shot) -> str:
         parts.append("No one speaks, mouths stay closed.")
     parts.append(f"Audio: {shot.audio_notes}.")
     parts.append(f"Avoid: {AVOID_VIDEO}.")
-    return " ".join(parts)
+    return " ".join(parts).replace("..", ".")  # fields may already end with a full stop
