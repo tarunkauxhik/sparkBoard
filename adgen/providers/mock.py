@@ -115,7 +115,9 @@ class MockProvider:
         look = {field: {"value": value, "reason": f"from the {category} playbook (mock)"}
                 for field, value in ctx["playbook"].items()}
         look["cast"] = [{"name": "maya", "age": 28, "look": "woman with shoulder-length dark hair",
-                         "outfit": "a plain grey t-shirt", "voice": "warm, mid-pitch (mock)"}]
+                         "outfit": "a plain grey t-shirt", "voice": "warm, mid-pitch (mock)",
+                         "accent": "neutral urban accent", "pace": "unhurried", "energy": "low-key",
+                         "speech_habits": ["trails off at the end", "dry understatement"]}]
         return look
 
     def _storyboard(self, ctx: dict) -> dict:
@@ -123,40 +125,50 @@ class MockProvider:
         place = {"lighting": "soft window light from the left", "location": "main_location"}
         talk = {**place, "shot_type": "medium close-up", "angle": "eye level, front phone camera",
                 "framing": "head and shoulders, slightly off-center", "character": "maya",
-                "speaker": "maya", "camera_move": "handheld, slight sway", "route": "veo_talk",
+                "speaker": "maya", "camera_move": "light handheld", "route": "veo_talk",
                 "dialogue_lang": brief["language"]}
         broll = {**place, "purpose": "product", "duration_s": 4, "shot_type": "close-up",
                  "angle": "top down", "framing": "product resting on a surface, off-center",
                  "first_frame": "the product stands on the surface",
-                 "action": "a hand sets a towel down next to it",
+                 "beats": [{"start_s": 0, "end_s": 4, "action": "a hand sets a towel down next to it"}],
                  "product_visible": True, "camera_move": "static", "route": "veo_broll"}
 
         def line(text: str) -> dict:
             return {"dialogue_tts": text, "dialogue_caption": text}
 
+        def beat(action: str, end_s: int) -> dict:
+            return {"beats": [{"start_s": 0, "end_s": end_s, "action": action, "eye_line": "looks into the lens"}]}
+
         shots = [
-            {**talk, "id": "s01", "purpose": "hook", "duration_s": 4, "expression": "a little embarrassed",
-             "first_frame": "she holds the product up near her face", "action": "she tilts it toward the lens",
-             "product_visible": True, **line("Okay, I almost returned this.")},
-            {**talk, "id": "s02", "purpose": "problem", "duration_s": 6, "expression": "tired, half-smile",
-             "first_frame": "she looks just past the lens", "action": "she touches her cheek, then looks into the lens",
+            {**talk, "id": "s01", "purpose": "hook", "duration_s": 4,
+             "first_frame": "she holds the product up near her face", **beat("she tilts it toward the lens", 4),
+             "product_visible": True, **line("I almost returned this.")},
+            {**talk, "id": "s02", "purpose": "problem", "duration_s": 6,
+             "first_frame": "she rests her hand on her cheek", **beat("she lowers her hand", 6),
              **line("I have tried so many things, and nothing really changed.")},
             {**broll, "id": "s03"},
-            {**talk, "id": "s04", "purpose": "payoff", "duration_s": 4, "expression": "relaxed smile",
-             "first_frame": "she smiles at the lens", "action": "she shrugs",
-             **line("Two weeks in, I get it.")},
+            {**talk, "id": "s04", "purpose": "cta", "duration_s": 4,
+             "first_frame": "she holds the product at her shoulder", **beat("she shrugs", 4),
+             **line("It is linked below.")},
         ]
         # Fit other target lengths: drop shots from the end, or pad with b-roll.
         while sum(s["duration_s"] for s in shots) > brief["target_length_s"] + 2:
             shots.pop()
         while sum(s["duration_s"] for s in shots) < brief["target_length_s"] - 2:
             shots.append({**broll, "id": f"s{len(shots) + 1:02d}"})
+        [s for s in shots if s["route"] == "veo_talk"][-1]["purpose"] = "cta"  # the last line is the CTA
+        if brief["format"] == "product_hero":  # product ads also need a static ad
+            shots.append({**place, "id": f"s{len(shots) + 1:02d}", "purpose": "static", "duration_s": 0,
+                          "shot_type": "close-up", "angle": "eye level", "framing": "product centred",
+                          "first_frame": "the product stands on the surface", "product_visible": True,
+                          "headline": brief["product_facts"][0].capitalize(), "route": "static"})
         plan = " + ".join(str(s["duration_s"]) for s in shots) + f" = {sum(s['duration_s'] for s in shots)} s"
-        return {"title": ctx["concept"]["title"], "plan": plan, "shots": shots}
+        return {"title": ctx["concept"]["title"], "hook_type": "first_use_reaction",
+                "hook_reason": "mock: the first concept is a first-use story", "plan": plan, "shots": shots}
 
     def _storyboard_critic(self, ctx: dict) -> dict:
         spoken = [shot["id"] for shot in ctx["storyboard"]["shots"] if shot["dialogue_tts"]]
-        return {"notes": [], "line_checks": [{"shot_id": shot_id} for shot_id in spoken],
+        return {"notes": [], "line_checks": [{"shot_id": shot_id, "claims": []} for shot_id in spoken],
                 "storyboard": ctx["storyboard"]}
 
     def _edit_list(self, ctx: dict) -> dict:

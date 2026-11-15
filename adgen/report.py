@@ -1,9 +1,9 @@
 """Readable copies of a run's JSON: storyboard.md and decision_log.md."""
 import json
 
-from adgen.prompts import keyframe_prompt, motion_prompt
+from adgen.prompts import keyframe_request, motion_prompt
 from adgen.run import Run
-from adgen.schemas import Brief, Concepts, Look, Storyboard, StoryboardReview
+from adgen.schemas import Brief, Concepts, Look, Refs, Storyboard, StoryboardReview
 
 
 def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
@@ -27,26 +27,34 @@ def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
     out += ["", "## Look"]
     out += [f"- **{name}**: {choice.value} ({choice.reason})" for name, choice in look if name != "cast"]
     out += ["", "## Cast"]
-    out += [f"- **{m.name}**, {m.age}: {m.look}. Outfit: {m.outfit}. Voice: {m.voice}." for m in look.cast]
+    out += [f"- **{m.name}**, {m.age}: {m.look}. Outfit: {m.outfit}. Voice: {m.voice}; accent: {m.accent}; "
+            f"pace: {m.pace}; energy: {m.energy}. Speech habits: {'; '.join(m.speech_habits)}." for m in look.cast]
+    out += ["", "## Hook", f"Type: **{board.hook_type}**. {board.hook_reason}"]
     out += ["", "## Critic notes"]
     out += [f"- {n.shot_id} ({n.kind}): {n.issue} Change: {n.change}" for n in review.notes] or ["- none"]
     out += ["", "## Claims check"]
-    out += [f"- {c.shot_id}: \"{c.claim}\" is backed by the fact \"{brief.product_facts[c.fact]}\""
-            if c.claim else f"- {c.shot_id}: no product claim" for c in review.line_checks]
+    for check in review.line_checks:
+        out += [f"- {check.shot_id}: \"{c.claim}\" is backed by the fact \"{brief.product_facts[c.fact]}\""
+                for c in check.claims] or [f"- {check.shot_id}: no product claim"]
+    # Placeholder reference names, so the prompts below read the way the image model will get them.
+    refs = Refs(characters={m.name: f"refs/{m.name}_sheet.png" for m in look.cast},
+                product=["refs/product.png"], location="refs/location.png")
     for shot in board.shots:
         out += ["", f"## {shot.id}: {shot.purpose}, {shot.duration_s} s, {shot.route}",
                 f"- Shot: {shot.shot_type}, {shot.angle}, {shot.framing}",
                 f"- On screen: {shot.character or 'no one'}; product visible: {'yes' if shot.product_visible else 'no'}",
                 f"- First frame: {shot.first_frame}",
-                f"- Action: {shot.action}",
-                f"- Expression: {shot.expression or 'n/a'}; lighting: {shot.lighting}; camera: {shot.camera_move or 'static'}"]
+                *[f"- Beat {b.start_s:g}-{b.end_s:g} s: {b.action}" + (f" ({b.eye_line})" if b.eye_line else "")
+                  for b in shot.beats],
+                f"- Lighting: {shot.lighting}; camera: {shot.camera_move or 'static'}; sound: {shot.audio_notes}"]
         if shot.dialogue_tts:
             out += [f"- **{shot.speaker}** ({shot.dialogue_lang}): \"{shot.dialogue_tts}\"",
                     f"- Caption: \"{shot.dialogue_caption}\" ({len(shot.dialogue_caption.split())} words)"]
         if shot.headline:
             out.append(f"- Headline: {shot.headline}")
-        out += [f"- Keyframe prompt: {keyframe_prompt(shot, look, brief)}",
-                f"- Motion prompt: {motion_prompt(shot)}"]
+        out.append(f"- Keyframe prompt (Nano Banana): {keyframe_request(shot, look, brief, refs)[0]}")
+        if shot.route != "static":
+            out.append(f"- Motion prompt (Veo): {motion_prompt(shot, look, brief)}")
     text = "\n".join(out).replace("..", ".")  # fields may already end with a full stop
     run.path("storyboard.md").write_text(text + "\n", "utf-8")
 

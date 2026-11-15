@@ -12,9 +12,11 @@ from pydantic import ValidationError
 from adgen.brain import TASKS
 from adgen.editor import render_video, stream_seconds, validate_edit_list
 from adgen.ledger import Ledger
-from adgen.prompts import keyframe_prompt, motion_prompt
+from adgen.prompts import (
+    character_sheet_prompt, keyframe_request, location_prompt, motion_prompt, packshot_prompt,
+)
 from adgen.report import write_decision_log_md, write_storyboard_md
-from adgen.rules import LENGTH_TOLERANCE_S, review_errors, storyboard_errors
+from adgen.rules import LENGTH_TOLERANCE_S, look_errors, review_errors, storyboard_errors
 from adgen.run import Run
 from adgen.schemas import (
     Approval, Audio, Brief, Check, Clips, Concept, Concepts, EditList, FixedClip, Insights,
@@ -88,7 +90,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     # 4 Look and cast, adapted from the category playbook
     def make_look():
         playbook = yaml.safe_load((PLAYBOOKS / f"{brief.category}.yaml").read_text("utf-8"))
-        look = ask("look", brief=b, concept=winner, playbook=playbook)
+        look = ask("look", brief=b, concept=winner, playbook=playbook, check=look_errors)
         why = "; ".join(f"{name}: {choice.reason}" for name, choice in look if name != "cast")
         cast = ", ".join(member.name for member in look.cast)
         return look, f"{look.mood.value}; {look.setting.value}; cast: {cast}", why
@@ -106,8 +108,10 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                      storyboard=draft.model_dump(),
                      check=lambda r: review_errors(r, brief, look))
         run.save("storyboard_critic.json", review)
+        board = review.storyboard
         notes = "; ".join(f"{n.shot_id}: {n.issue}" for n in review.notes) or "the critic changed nothing"
-        return review.storyboard, f"{len(review.storyboard.shots)} shots, {len(review.notes)} critic notes", notes
+        return (board, f"{len(board.shots)} shots, hook type {board.hook_type}, {len(review.notes)} critic notes",
+                f"hook: {board.hook_reason} Critic: {notes}")
     board = step("storyboard.json", Storyboard, make_storyboard)
     errors = storyboard_errors(board, brief, look)  # checked again in case it was edited by hand
     if errors:
@@ -122,8 +126,8 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     step("approval.json", Approval, lambda: (
         Approval(approved=True, by="auto"), "approved", "--auto-approve was set"))
 
-    # 5 References: use the brief's, or generate a portrait per on-screen cast member,
-    #   a packshot and a location plate
+    # 5 References: use the brief's, or generate a character sheet per on-screen cast member,
+    #   a clean packshot and a location plate
     def make_refs():
         if brief.refs:
             return brief.refs, "user references", "provided in the brief"
@@ -131,14 +135,14 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         on_screen = {shot.character for shot in board.shots if shot.character}
         for who in look.cast:
             if who.name in on_screen:
-                out = run.path(f"refs/{who.name}.png")
-                provider.image(f"Identity portrait: {who.look}, age {who.age}, wearing {who.outfit}", [], out)
+                out = run.path(f"refs/{who.name}_sheet.png")
+                provider.image(character_sheet_prompt(who), [], out)
                 refs.characters[who.name] = run.rel(out)
         out = run.path("refs/product.png")
-        provider.image(f"Packshot of {brief.product} by {brief.brand}, plain background", [], out)
+        provider.image(packshot_prompt(brief), [], out)
         refs.product.append(run.rel(out))
         out = run.path("refs/location.png")
-        provider.image(f"Empty location plate: {look.setting.value}", [], out)
+        provider.image(location_prompt(look, brief), [], out)
         refs.location = run.rel(out)
         return refs, "generated references", "none were provided in the brief"
     refs = step("refs.json", Refs, make_refs)
@@ -147,11 +151,9 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     def make_keyframes():
         files = {}
         for shot in board.shots:
-            shot_refs = refs.product + [refs.location]
-            if shot.character:
-                shot_refs.append(refs.characters[shot.character])
+            prompt, shot_refs = keyframe_request(shot, look, brief, refs)
             out = run.path(f"keyframes/{shot.id}.png")
-            provider.image(keyframe_prompt(shot, look, brief), shot_refs, out)
+            provider.image(prompt, shot_refs, out)
             files[shot.id] = run.rel(out)
         return Keyframes(files=files), f"{len(files)} keyframes", "keyframe first, then video"
     keyframes = step("keyframes.json", Keyframes, make_keyframes)
@@ -164,7 +166,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                 continue
             model = ROUTE_MODEL[shot.route]
             out = run.path(f"clips/raw/{shot.id}_take1.mp4")
-            task_id = provider.video(motion_prompt(shot), run.dir / keyframes.files[shot.id],
+            task_id = provider.video(motion_prompt(shot, look, brief), run.dir / keyframes.files[shot.id],
                                      out, model, shot.duration_s)
             takes.append(Take(shot_id=shot.id, take=1, file=run.rel(out), task_id=task_id, model=model))
         return Clips(takes=takes), f"{len(takes)} clips", "model picked by each shot's route"

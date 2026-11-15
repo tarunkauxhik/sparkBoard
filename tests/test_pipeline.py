@@ -1,15 +1,17 @@
-"""Pipeline checks: ledger cap, full dry run, resume, approval stop, retries, editor."""
+"""Pipeline checks: ledger cap, full dry run, resume, approval stop, retries, prompts, editor."""
 import json
+import shutil
 
 import pytest
 from PIL import Image
 
+from adgen.__main__ import clean, save_sample
 from adgen.editor import caption_events, stream_seconds, validate_edit_list
 from adgen.ledger import BudgetExceeded, Ledger
-from adgen.prompts import keyframe_prompt, motion_prompt
-from adgen.providers.kie import veo_payload
+from adgen.prompts import character_sheet_prompt, keyframe_request, motion_prompt
+from adgen.providers.kie import kling_avatar_payload, nano_banana_payload, veo_payload
 from adgen.providers.mock import MockProvider
-from adgen.schemas import Audio, Brief, EditList, Look, Storyboard
+from adgen.schemas import Audio, Brief, EditList, Look, Refs, Storyboard
 from adgen.statics import STATIC_SIZES, static_ad
 from conftest import dry_run
 
@@ -19,6 +21,13 @@ STEP_FILES = [
     "keyframes.json", "clips.json", "audio.json", "edit_list.json", "render.json",
     "qa_report.json", "decision_log.jsonl", "decision_log.md", "ledger.jsonl",
 ]
+PERSONA = "woman with shoulder-length dark hair, age 28, wearing a plain grey t-shirt"
+
+
+@pytest.fixture
+def story(done):
+    run = done[0]
+    return run.load("storyboard.json", Storyboard), run.load("look.json", Look), run.load("brief.json", Brief)
 
 
 def test_ledger_refuses_to_pass_the_cap(tmp_path):
@@ -38,7 +47,7 @@ def test_dry_run_creates_every_file_within_the_caps(done):
     run, ledger, finished = done
     assert finished
     assert [name for name in STEP_FILES if not run.has(name)] == []
-    for name in ("refs/maya.png", "keyframes/s01.png", "clips/raw/s01_take1.mp4", "clips/fixed/s01.mp4"):
+    for name in ("refs/maya_sheet.png", "keyframes/s01.png", "clips/raw/s01_take1.mp4", "clips/fixed/s01.mp4"):
         assert run.has(name), name
     assert all(entry["mock"] for entry in ledger.entries)
     assert 0 < ledger.spent("kie") <= ledger.caps["kie"]
@@ -79,7 +88,7 @@ def test_a_rejected_reply_is_retried_once_with_the_errors(tmp_path):
             if task == "storyboard":
                 self.feedback_seen.append(feedback)
                 if not feedback:
-                    reply["shots"][1]["duration_s"] = 5  # not a Veo length
+                    reply["shots"][2]["duration_s"] = 5  # not a Veo length
             return reply
 
     run, _, finished = dry_run(tmp_path, provider_cls=BadFirstStoryboard)
@@ -101,20 +110,59 @@ def test_schema_retries_stop_after_two_tries(tmp_path):
     assert AlwaysBad.calls == 2
 
 
-def test_each_shot_has_a_keyframe_prompt_and_a_motion_prompt(done):
-    run = done[0]
-    board, look, brief = (run.load("storyboard.json", Storyboard), run.load("look.json", Look),
-                          run.load("brief.json", Brief))
-    still, motion = keyframe_prompt(board.shots[0], look, brief), motion_prompt(board.shots[0])
-    assert "phone front camera" in still and "Dialogue:" not in still  # UGC realism layer, no speech
-    assert "woman with shoulder-length dark hair" in still             # cast look, word for word
-    assert 'says, in Indian English: "Okay, I almost returned this."' in motion
-    assert "No one speaks" in motion_prompt(board.shots[2])            # the silent b-roll shot
+def test_keyframe_prompt_names_a_role_for_every_reference_image(done, story):
+    board, look, brief = story
+    refs = done[0].load("refs.json", Refs)
+    prompt, images = keyframe_request(board.shots[0], look, brief, refs)
+    assert images == ["refs/maya_sheet.png", "refs/product.png", "refs/location.png"]
+    assert "image 1 is the character sheet of maya" in prompt and "image 2 is the product" in prompt
+    assert PERSONA in prompt
+    assert "visible pores" in prompt and "24 mm" in prompt  # UGC phone look, named lens
+    assert "says" not in prompt                              # a still image has no dialogue
+    _, silent_images = keyframe_request(board.shots[2], look, brief, refs)
+    assert silent_images == ["refs/product.png", "refs/location.png"]  # b-roll: no person, no sheet
 
 
-def test_veo_request_never_translates_the_prompt():
-    payload = veo_payload("a prompt", ["https://example.com/k.png"], "veo3_fast", 6)
-    assert payload["input"]["enable_translation"] is False
+def test_motion_prompt_follows_the_veo_order(story):
+    board, look, brief = story
+    prompt = motion_prompt(board.shots[0], look, brief)
+    parts = ["Medium close-up", "the same person as in the reference image", "[00:00-00:04]",
+             'Maya says, in Indian English, neutral urban accent: "I almost returned this."',
+             "Ambient noise:", "Clean frame without captions"]
+    positions = [prompt.index(part) for part in parts]
+    assert positions == sorted(positions)
+    assert PERSONA in prompt
+    assert "The scene plays without speech." in motion_prompt(board.shots[2], look, brief)
+
+
+def test_audio_tags_are_not_read_aloud_by_veo(story):
+    board, look, brief = story
+    shot = board.shots[0].model_copy(update={"dialogue_tts": "[sighs] I almost returned this."})
+    assert '"I almost returned this."' in motion_prompt(shot, look, brief)
+
+
+def test_character_sheet_uses_the_same_persona_words(story):
+    look = story[1]
+    assert PERSONA in character_sheet_prompt(look.cast[0])
+
+
+def test_kie_requests_match_the_docs():
+    veo = veo_payload("a prompt", "https://example.com/k.png", "veo3_fast", 6)
+    assert veo["model"] == "veo-3-1"
+    assert veo["input"] == {
+        "model": "veo3_fast", "prompt": "a prompt", "image_urls": ["https://example.com/k.png"],
+        "generation_type": "FIRST_AND_LAST_FRAMES_2_VIDEO", "aspect_ratio": "9:16",
+        "resolution": "720p", "duration": 6, "enable_translation": False}
+    image = nano_banana_payload("a prompt", ["https://example.com/a.png"])
+    assert image["model"] == "nano-banana-2-1"
+    assert image["input"]["image_input"] == ["https://example.com/a.png"]
+    with pytest.raises(ValueError, match="at most 10"):
+        nano_banana_payload("a prompt", ["u"] * 11)
+    avatar = kling_avatar_payload("she talks calmly", "https://example.com/k.png", "https://example.com/a.mp3")
+    assert avatar["model"] == "kling/ai-avatar-standard"
+    assert set(avatar["input"]) == {"image_url", "audio_url", "prompt"}
+    for payload in (veo, image, avatar):  # Kie documents no seed field
+        assert "seed" not in payload["input"] and "seeds" not in payload["input"]
 
 
 def test_validator_catches_bad_cuts(done):
@@ -148,7 +196,6 @@ def test_static_ads_come_out_in_every_size(done, tmp_path):
 
 
 def test_clean_keeps_runs_that_cost_real_money(tmp_path, monkeypatch):
-    from adgen.__main__ import clean
     monkeypatch.chdir(tmp_path)
     for name, mock in (("dry", True), ("paid", False)):
         (tmp_path / "runs" / name).mkdir(parents=True)
@@ -157,3 +204,12 @@ def test_clean_keeps_runs_that_cost_real_money(tmp_path, monkeypatch):
     assert [d.name for d in (tmp_path / "runs").iterdir()] == ["paid"]
     clean(older_than_days=0, include_paid=True)
     assert list((tmp_path / "runs").iterdir()) == []
+
+
+def test_save_sample_copies_json_and_markdown_only(done, tmp_path, monkeypatch):
+    shutil.copytree(done[0].dir, tmp_path / "runs" / "r1")
+    monkeypatch.chdir(tmp_path)
+    save_sample("r1", "skincare")
+    saved = {f.name for f in (tmp_path / "samples/skincare").iterdir()}
+    assert {"storyboard.json", "storyboard.md", "decision_log.jsonl", "ledger.jsonl"} <= saved
+    assert not any(name.endswith((".mp4", ".png")) for name in saved)

@@ -78,5 +78,22 @@ def clean(
                f"Kept {len(kept)} paid run(s).")
 
 
+@app.command()
+def save_sample(run_id: str, name: str):
+    """Copy a reviewed run's JSON and markdown files into samples/<name>/, ready to commit.
+
+    Media and LLM call logs stay in runs/ (gitignored).
+    """
+    source, target = RUNS_DIR / run_id, Path("samples") / name
+    if not source.is_dir():
+        typer.echo(f"No such run: {source}")
+        raise typer.Exit(1)
+    target.mkdir(parents=True, exist_ok=True)
+    files = [f for f in source.iterdir() if f.suffix in (".json", ".jsonl", ".md")]
+    for file in files:
+        shutil.copyfile(file, target / file.name)
+    typer.echo(f"Copied {len(files)} files to {target}")
+
+
 if __name__ == "__main__":
     app()

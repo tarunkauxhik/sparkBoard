@@ -12,6 +12,7 @@ Route = Literal["veo_talk", "veo_broll", "avatar_talk", "vo_only", "static"]
 VEO_ROUTES = ("veo_talk", "veo_broll", "vo_only")  # clips made by Veo: only 4, 6 or 8 s
 ON_CAMERA = ("veo_talk", "avatar_talk")            # the speaker is on screen, lip-synced
 SPOKEN = ON_CAMERA + ("vo_only",)                  # shots that have a spoken line
+SPEAKING_CAMERA = ("static", "light handheld")     # the only camera moves for on-camera speech
 MAX_WORDS_PER_SECOND = 2.2
 EDGE_SILENCE_S = 0.5  # silence at the start and end of a spoken shot, so no word gets cut off
 MIN_CAST_AGE = 25
@@ -112,12 +113,21 @@ class Choice(BaseModel):
 
 
 class CastMember(BaseModel):
-    """A fictional adult. Shots and references refer to the cast by name only."""
+    """A persona: a fictional adult. Shots and references refer to the cast by name only."""
     name: str
     age: int
     look: str    # face, hair, build: plain description, no real person
     outfit: str  # worn in every shot
-    voice: str   # e.g. "warm, mid-pitch, Indian English"
+    voice: str   # how the voice sounds, e.g. "warm, mid-pitch"
+    accent: str  # e.g. "neutral urban Indian English"
+    pace: str    # e.g. "unhurried, with small pauses"
+    energy: str  # e.g. "low-key and dry"
+    speech_habits: list[str] = Field(min_length=2, max_length=3)  # e.g. "trails off with 'so, yeah'"
+
+    @property
+    def persona(self) -> str:
+        """The exact words used for this person in every image and video prompt."""
+        return f"{self.look.rstrip('.')}, age {self.age}, wearing {self.outfit.rstrip('.').lower()}"
 
     @model_validator(mode="after")
     def is_a_fictional_adult(self):
@@ -141,6 +151,14 @@ class Look(BaseModel):
     cast: list[CastMember]
 
 
+class Beat(BaseModel):
+    """One timed moment inside a shot: a physical action and where the eyes look."""
+    start_s: float
+    end_s: float
+    action: str         # one clear physical action, never an emotion alone
+    eye_line: str = ""  # e.g. "looks into the lens", "looks at riya off-left"; empty if no person
+
+
 class Shot(BaseModel):
     id: str
     purpose: str  # hook, problem, product, proof, payoff, cta ...
@@ -150,18 +168,18 @@ class Shot(BaseModel):
     framing: str
     character: str | None = None  # cast name of the person on screen
     speaker: str | None = None    # cast name of the person speaking
-    expression: str = ""
     first_frame: str  # the still moment the shot starts on (becomes the keyframe)
-    action: str       # what moves after the first frame
+    beats: list[Beat] = Field(default=[], max_length=2)  # what happens after the first frame
     lighting: str
     location: str
     product_visible: bool = False
-    dialogue_tts: str = ""      # the spoken line; Hindi words in Devanagari, English in Latin
-    dialogue_caption: str = ""  # the same line in Roman script only, for captions
-    dialogue_lang: str = ""     # language and accent of this line, e.g. "Hinglish, Mumbai accent"
+    dialogue_tts: str = ""      # the spoken line; Hindi words in Devanagari, English in Latin.
+                                # May hold one ElevenLabs audio tag such as [sighs] on TTS routes.
+    dialogue_caption: str = ""  # the same line in Roman script only, for captions and word counts
+    dialogue_lang: str = ""     # language of this line, e.g. "Hinglish"; the accent comes from the persona
     headline: str = ""          # static shots only: the text on the static ad
     camera_move: str = ""
-    audio_notes: str = "room tone only, no music"
+    audio_notes: str = "quiet room tone"  # the ambient sound of the place
     route: Route
 
     @model_validator(mode="after")
@@ -172,6 +190,10 @@ class Shot(BaseModel):
             raise ValueError(f"{self.id}: static shots need a headline")
         if self.route in ON_CAMERA and self.shot_type.lower() != "medium close-up":
             raise ValueError(f"{self.id}: on-camera speaking shots must be 'medium close-up'")
+        if self.route in ON_CAMERA and self.character != self.speaker:
+            raise ValueError(f"{self.id}: in an on-camera speaking shot the speaker is the person on screen")
+        if self.route in ON_CAMERA and self.camera_move.lower() not in SPEAKING_CAMERA:
+            raise ValueError(f"{self.id}: speaking shots need camera_move 'static' or 'light handheld'")
         if self.route in SPOKEN:
             if not (self.speaker and self.dialogue_tts and self.dialogue_caption and self.dialogue_lang):
                 raise ValueError(f"{self.id}: spoken shots need speaker, dialogue_tts, "
@@ -186,13 +208,30 @@ class Shot(BaseModel):
                 self.duration_s = fits[0]
         elif self.dialogue_tts or self.dialogue_caption:
             raise ValueError(f"{self.id}: route {self.route} is silent, remove the dialogue")
-        if DEVANAGARI.search(self.dialogue_caption):
-            raise ValueError(f"{self.id}: dialogue_caption must be in Roman script")
+        if DEVANAGARI.search(self.dialogue_caption) or "[" in self.dialogue_caption:
+            raise ValueError(f"{self.id}: dialogue_caption must be Roman script with no audio tags")
+        if self.dialogue_tts.count("[") > 1:
+            raise ValueError(f"{self.id}: at most one audio tag per line")
+        if self.route != "static":
+            if not self.beats:
+                raise ValueError(f"{self.id}: every clip needs 1 or 2 beats")
+            for beat in self.beats:
+                if not 0 <= beat.start_s < beat.end_s <= self.duration_s:
+                    raise ValueError(f"{self.id}: beat {beat.start_s}-{beat.end_s} s is outside "
+                                     f"the shot (0-{self.duration_s} s)")
+                if self.character and not beat.eye_line:
+                    raise ValueError(f"{self.id}: each beat needs an eye_line when a person is on screen")
         return self
+
+
+HookType = Literal["first_use_reaction", "drop_in_mid_scene", "symptom_diagnosis",
+                   "contrarian", "third_person_proof"]
 
 
 class Storyboard(BaseModel):
     title: str
+    hook_type: HookType
+    hook_reason: str  # why this hook type suits the audience and concept
     # The model's working notes. Written before the shots, so it does its sums first.
     plan: str = Field(description="Working notes on one line, written first: for each shot the word "
                                   "count of its line and its duration, then the total in seconds.")
@@ -210,16 +249,20 @@ class Storyboard(BaseModel):
 
 class CriticNote(BaseModel):
     shot_id: str
-    kind: Literal["ad_like", "claim", "overused_hook", "other"]
+    kind: Literal["ad_like", "claim", "overused_hook", "micro_expression", "other"]
     issue: str
     change: str  # what the critic changed, or "none" if only flagged
 
 
-class LineCheck(BaseModel):
-    """The critic's claim check for one spoken line."""
-    shot_id: str
-    claim: str = ""          # the product claim the line makes; empty if it makes none
+class Claim(BaseModel):
+    claim: str               # a product claim, in the line's own words
     fact: int | None = None  # index (from 0) of the brief's product_facts entry that backs it
+
+
+class LineCheck(BaseModel):
+    """The critic's claim check for one spoken line: every claim it makes."""
+    shot_id: str
+    claims: list[Claim] = []  # empty if the line makes no product claim
 
 
 class StoryboardReview(BaseModel):
