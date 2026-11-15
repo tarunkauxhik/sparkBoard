@@ -10,9 +10,11 @@ from dotenv import load_dotenv
 
 from adgen.ledger import CAPS, Ledger, has_real_spend
 from adgen.pipeline import run_pipeline
+from adgen.providers.kie import Kie
 from adgen.providers.mock import MockProvider
 from adgen.providers.openrouter import OpenRouter
 from adgen.run import RUNS_DIR, Run
+from adgen.smoke import STEPS
 
 app = typer.Typer(add_completion=False, help="sparkBoard: brand brief in, checked ad creatives out.")
 
@@ -70,6 +72,27 @@ def clean(
         shutil.rmtree(folder)
     typer.echo(f"Deleted {len(old_runs)} run(s) and {len(caches)} cache folder(s). "
                f"Kept {len(kept)} paid run(s).")
+
+
+@app.command()
+def smoke(
+    step: str = typer.Argument(..., help="Which step to run: " + ", ".join(STEPS)),
+    cap_kie: float = typer.Option(..., help="Hard cap in USD for Kie across the whole smoke folder."),
+    folder: Path = typer.Option(None, help="Output folder. Default: runs/smoke-<today>."),
+):
+    """Run one step of the paid smoke test. Real calls: each step needs Tarun's OK first."""
+    if step not in STEPS:
+        typer.echo(f"Unknown step {step!r}. Steps: {', '.join(STEPS)}")
+        raise typer.Exit(1)
+    load_dotenv()
+    folder = folder or RUNS_DIR / f"smoke-{datetime.now():%Y%m%d}"
+    folder.mkdir(parents=True, exist_ok=True)
+    ledger = Ledger(folder / "ledger.jsonl", {**CAPS, "kie": cap_kie})
+    typer.echo(f"Smoke step {step} in {folder} (LIVE)")
+    try:
+        STEPS[step](Kie(ledger, folder / "tasks", os.environ["KIE_API_KEY"]), folder)
+    finally:  # always say what was spent, also when a task failed
+        typer.echo(f"Kie spent in this folder: ${ledger.spent('kie'):.3f} of {cap_kie:.2f}")
 
 
 @app.command()
