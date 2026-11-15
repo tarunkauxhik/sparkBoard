@@ -16,7 +16,9 @@ MAX_WORDS_PER_SECOND = 2.2
 EDGE_SILENCE_S = 0.5  # silence at the start and end of a spoken shot, so no word gets cut off
 MIN_CAST_AGE = 25
 DEVANAGARI = re.compile(r"[ऀ-ॿ]")
-LIKENESS = re.compile(r"looks? like|resembl|lookalike|celebrit|actor|actress", re.IGNORECASE)
+# Not plain "looks like": that also matched "looks like someone with sensitive skin".
+LIKENESS = re.compile(r"resembl|lookalike|celebrit|famous|actor|actress|film star|bollywood|hollywood",
+                      re.IGNORECASE)
 
 
 def max_words(duration_s: int) -> int:

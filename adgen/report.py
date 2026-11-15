@@ -47,7 +47,8 @@ def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
             out.append(f"- Headline: {shot.headline}")
         out += [f"- Keyframe prompt: {keyframe_prompt(shot, look, brief)}",
                 f"- Motion prompt: {motion_prompt(shot)}"]
-    run.path("storyboard.md").write_text("\n".join(out) + "\n", "utf-8")
+    text = "\n".join(out).replace("..", ".")  # fields may already end with a full stop
+    run.path("storyboard.md").write_text(text + "\n", "utf-8")
 
 
 def write_decision_log_md(run: Run) -> None:
