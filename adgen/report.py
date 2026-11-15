@@ -10,7 +10,7 @@ from adgen.schemas import Brief, Concepts, Look, Refs, Storyboard, StoryboardRev
 def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
                         board: Storyboard, review: StoryboardReview) -> None:
     """The storyboard for review: concept, look, cast, critic notes, then every shot with its prompts."""
-    total = sum(shot.duration_s for shot in board.shots if shot.route != "static")
+    total = board.length_s
     winner = concepts.winner
     product = brief.product if brief.product.startswith(brief.brand) else f"{brief.brand} {brief.product}"
     out = [
@@ -32,6 +32,7 @@ def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
     out += [f"- **{m.name}**, {m.age}: {m.look}. Outfit: {m.outfit}. Voice: {m.voice}; accent: {m.accent}; "
             f"pace: {m.pace}; energy: {m.energy}. Speech habits: {'; '.join(m.speech_habits)}." for m in look.cast]
     out += ["", "## Hook", f"Type: **{board.hook_type}**. {board.hook_reason}"]
+    out += ["", "## Length", f"{board.counts} (counted by code). End card line: \"{board.end_card_line}\""]
     out += ["", "## Critic notes"]
     out += [f"- {n.shot_id} ({n.kind}): {n.issue} Change: {n.change}" for n in review.notes] or ["- none"]
     out += ["", "## Claims check"]
@@ -48,10 +49,15 @@ def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
                 f"- First frame: {shot.first_frame}",
                 *[f"- Beat {b.start_s:g}-{b.end_s:g} s: {b.action}" + (f" ({b.eye_line})" if b.eye_line else "")
                   for b in shot.beats],
-                f"- Lighting: {shot.lighting}; camera: {shot.camera_move or 'static'}; sound: {shot.audio_notes}"]
+                f"- Setting: {shot.setting}",
+                f"- Lens: {shot.lens}; lighting: {shot.lighting}; camera: {shot.camera_move or 'static'}; "
+                f"sound: {shot.audio_notes}"]
+        if shot.blank_label_text:
+            out.append(f"- Added in code later (label area left blank): \"{shot.blank_label_text}\"")
         if shot.dialogue_tts:
             out += [f"- **{shot.speaker}** ({shot.dialogue_lang}): \"{shot.dialogue_tts}\"",
-                    f"- Caption: \"{shot.dialogue_caption}\" ({len(shot.dialogue_caption.split())} words)"]
+                    f"- Caption: \"{shot.dialogue_caption}\" ({shot.words} words, counted by code)",
+                    f"- Delivery: {shot.delivery}"]
         if shot.headline:
             out.append(f"- Headline: {shot.headline}")
         out.append(f"- Keyframe prompt (Nano Banana): {keyframe_request(shot, look, brief, refs)[0]}")

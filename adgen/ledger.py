@@ -19,6 +19,12 @@ PRICES = {
 }
 
 
+def has_real_spend(run_dir: Path) -> bool:
+    """True if the run's ledger has any real (not mock) charge."""
+    ledger = run_dir / "ledger.jsonl"
+    return ledger.exists() and '"mock": false' in ledger.read_text("utf-8")
+
+
 class BudgetExceeded(RuntimeError):
     pass
 

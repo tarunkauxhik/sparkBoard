@@ -10,6 +10,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from adgen.ledger import PRICES, Ledger
+from adgen.rules import VOICEOVER_FORMATS
 from adgen.schemas import EDGE_SILENCE_S
 from adgen.statics import FONT
 
@@ -21,6 +22,8 @@ def _color(seed: str) -> str:
 
 
 class MockProvider:
+    placeholder_cast = True  # its personas are stand-ins; the pipeline skips the cast variety check
+
     def __init__(self, ledger: Ledger):
         self.ledger = ledger
 
@@ -114,6 +117,11 @@ class MockProvider:
         category = ctx["brief"]["category"]
         look = {field: {"value": value, "reason": f"from the {category} playbook (mock)"}
                 for field, value in ctx["playbook"].items()}
+        if ctx["brief"]["format"] in VOICEOVER_FORMATS:
+            look["cast"] = [{"name": "narrator", "age": 40, "on_screen": False, "voice": "calm, low (mock)",
+                             "accent": "neutral accent", "pace": "unhurried", "energy": "low-key",
+                             "speech_habits": ["short sentences", "dry understatement"]}]
+            return look
         look["cast"] = [{"name": "maya", "age": 28, "look": "woman with shoulder-length dark hair",
                          "outfit": "a plain grey t-shirt", "voice": "warm, mid-pitch (mock)",
                          "accent": "neutral urban accent", "pace": "unhurried", "energy": "low-key",
@@ -122,11 +130,12 @@ class MockProvider:
 
     def _storyboard(self, ctx: dict) -> dict:
         brief = ctx["brief"]
-        place = {"lighting": "soft window light from the left", "location": "main_location"}
+        place = {"lighting": "soft window light from the left", "location": "main_location",
+                 "setting": "a plain surface by a window", "lens": "35 mm lens at f/2.8"}
         talk = {**place, "shot_type": "medium close-up", "angle": "eye level, front phone camera",
                 "framing": "head and shoulders, slightly off-center", "character": "maya",
                 "speaker": "maya", "camera_move": "light handheld", "route": "veo_talk",
-                "dialogue_lang": brief["language"]}
+                "dialogue_lang": brief["language"], "delivery": "quiet and plain"}
         broll = {**place, "purpose": "product", "duration_s": 4, "shot_type": "close-up",
                  "angle": "top down", "framing": "product resting on a surface, off-center",
                  "first_frame": "the product stands on the surface",
@@ -146,7 +155,7 @@ class MockProvider:
             {**talk, "id": "s02", "purpose": "problem", "duration_s": 6,
              "first_frame": "she rests her hand on her cheek", **beat("she lowers her hand", 6),
              **line("I have tried so many things, and nothing really changed.")},
-            {**broll, "id": "s03"},
+            {**broll, "id": "s03", **line("")},
             {**talk, "id": "s04", "purpose": "cta", "duration_s": 4,
              "first_frame": "she holds the product at her shoulder", **beat("she shrugs", 4),
              **line("It is linked below.")},
@@ -155,20 +164,29 @@ class MockProvider:
         while sum(s["duration_s"] for s in shots) > brief["target_length_s"] + 2:
             shots.pop()
         while sum(s["duration_s"] for s in shots) < brief["target_length_s"] - 2:
-            shots.append({**broll, "id": f"s{len(shots) + 1:02d}"})
-        [s for s in shots if s["route"] == "veo_talk"][-1]["purpose"] = "cta"  # the last line is the CTA
+            shots.append({**broll, "id": f"s{len(shots) + 1:02d}", **line("")})
+        if brief["format"] in VOICEOVER_FORMATS:  # told by a narrator over b-roll
+            voice = {"character": None, "speaker": "narrator", "route": "vo_only", "shot_type": "close-up",
+                     "camera_move": "static", "product_visible": True}
+            shots = [{**shot, **voice} if shot["route"] == "veo_talk" else shot for shot in shots]
+        [s for s in shots if s["dialogue_tts"]][-1]["purpose"] = "cta"  # the last line is the CTA
         if brief["format"] == "product_hero":  # product ads also need a static ad
             shots.append({**place, "id": f"s{len(shots) + 1:02d}", "purpose": "static", "duration_s": 0,
                           "shot_type": "close-up", "angle": "eye level", "framing": "product centred",
                           "first_frame": "the product stands on the surface", "product_visible": True,
-                          "headline": brief["product_facts"][0].capitalize(), "route": "static"})
+                          "headline": brief["product_facts"][0].capitalize(), "route": "static", **line("")})
         plan = " + ".join(str(s["duration_s"]) for s in shots) + f" = {sum(s['duration_s'] for s in shots)} s"
         return {"title": ctx["concept"]["title"], "hook_type": "first_use_reaction",
-                "hook_reason": "mock: the first concept is a first-use story", "plan": plan, "shots": shots}
+                "hook_reason": "mock: the first concept is a first-use story", "plan": plan, "shots": shots,
+                "end_card_line": f"Try {brief['brand']}"}
 
     def _storyboard_critic(self, ctx: dict) -> dict:
-        spoken = [shot["id"] for shot in ctx["storyboard"]["shots"] if shot["dialogue_tts"]]
-        return {"notes": [], "line_checks": [{"shot_id": shot_id, "claims": []} for shot_id in spoken],
+        shots = ctx["storyboard"]["shots"]
+        texts = [shot["id"] for shot in shots if shot["dialogue_tts"]]
+        statics = [{"shot_id": shot["id"], "claims": [{"claim": shot["headline"], "fact": 0}]}
+                   for shot in shots if shot["route"] == "static"]
+        texts.append("end_card")
+        return {"notes": [], "line_checks": [{"shot_id": text, "claims": []} for text in texts] + statics,
                 "storyboard": ctx["storyboard"]}
 
     def _edit_list(self, ctx: dict) -> dict:

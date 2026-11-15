@@ -10,6 +10,7 @@ import yaml
 from pydantic import ValidationError
 
 from adgen.brain import TASKS
+from adgen.casting import casting_errors, used_personas
 from adgen.editor import render_video, stream_seconds, validate_edit_list
 from adgen.ledger import Ledger
 from adgen.prompts import (
@@ -90,7 +91,10 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     # 4 Look and cast, adapted from the category playbook
     def make_look():
         playbook = yaml.safe_load((PLAYBOOKS / f"{brief.category}.yaml").read_text("utf-8"))
-        look = ask("look", brief=b, concept=winner, playbook=playbook, check=look_errors)
+        # The mock's people are placeholders, so cast variety is only checked for real casts.
+        used = [] if getattr(provider, "placeholder_cast", False) else used_personas(brief.brand, run.dir.parent)
+        look = ask("look", brief=b, concept=winner, playbook=playbook, used_personas=used,
+                   check=lambda look: look_errors(look) + casting_errors(look, used))
         why = "; ".join(f"{name}: {choice.reason}" for name, choice in look if name != "cast")
         cast = ", ".join(member.name for member in look.cast)
         return look, f"{look.mood.value}; {look.setting.value}; cast: {cast}", why
@@ -199,6 +203,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         clip_info = [{"shot_id": c.shot_id, "file": c.file, "duration_s": shots[c.shot_id].duration_s}
                      for c in audio.clips]
         edit = ask("edit_list", brief=b, clips=clip_info)
+        edit.end_card.line = board.end_card_line  # the claim-checked line from the storyboard
         return edit, f"{len(edit.cuts)} cuts + end card", "; ".join(c.reason for c in edit.cuts)
     edit = step("edit_list.json", EditList, make_edit_list)
 

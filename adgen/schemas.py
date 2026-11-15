@@ -116,8 +116,9 @@ class CastMember(BaseModel):
     """A persona: a fictional adult. Shots and references refer to the cast by name only."""
     name: str
     age: int
-    look: str    # face, hair, build: plain description, no real person
-    outfit: str  # worn in every shot
+    on_screen: bool = True  # false for a narrator who is only heard
+    look: str = ""    # skin tone, face, hair, build: plain description, no real person
+    outfit: str = ""  # worn in every shot
     voice: str   # how the voice sounds, e.g. "warm, mid-pitch"
     accent: str  # e.g. "neutral urban Indian English"
     pace: str    # e.g. "unhurried, with small pauses"
@@ -135,6 +136,8 @@ class CastMember(BaseModel):
             raise ValueError(f"{self.name}: cast must be {MIN_CAST_AGE} or older, got {self.age}")
         if LIKENESS.search(self.look):
             raise ValueError(f"{self.name}: describe the look plainly, never by likeness to a real person")
+        if self.on_screen and not (self.look and self.outfit):
+            raise ValueError(f"{self.name}: an on-screen persona needs a look and an outfit")
         return self
 
 
@@ -169,15 +172,21 @@ class Shot(BaseModel):
     framing: str
     character: str | None = None  # cast name of the person on screen
     speaker: str | None = None    # cast name of the person speaking
+    face_visible: bool = True     # false when only hands or the back of a person show
     first_frame: str  # the still moment the shot starts on (becomes the keyframe)
     beats: list[Beat] = Field(default=[], max_length=2)  # what happens after the first frame
-    lighting: str
-    location: str
+    setting: str   # only the part of the location and the objects visible in this shot
+    lens: str      # one lens for this shot, with focal length and f-stop
+    lighting: str  # one real light source
+    location: str  # short name of the place, the same in every shot filmed there
     product_visible: bool = False
+    blank_label_text: str = ""  # printed text (a date, a price) that code adds later; the
+                                # keyframe leaves that label area blank
     dialogue_tts: str = ""      # the spoken line; Hindi words in Devanagari, English in Latin.
                                 # May hold one ElevenLabs audio tag such as [sighs] on TTS routes.
     dialogue_caption: str = ""  # the same line in Roman script only, for captions and word counts
     dialogue_lang: str = ""     # language of this line, e.g. "Hinglish"; the accent comes from the persona
+    delivery: str = ""          # how this one line is said in this shot, e.g. "quiet, half to herself"
     headline: str = ""          # static shots only: the text on the static ad
     camera_move: str = ""
     audio_notes: str = "quiet room tone"  # the ambient sound of the place
@@ -185,8 +194,8 @@ class Shot(BaseModel):
 
     @model_validator(mode="after")
     def follows_shot_rules(self):
-        if self.route in VEO_ROUTES and self.duration_s not in (4, 6, 8):
-            raise ValueError(f"{self.id}: Veo shots must be 4, 6 or 8 s, got {self.duration_s}")
+        if self.route == "veo_broll" and self.duration_s not in (4, 6, 8):
+            raise ValueError(f"{self.id}: silent Veo shots must be 4, 6 or 8 s, got {self.duration_s}")
         if self.route == "static" and not self.headline:
             raise ValueError(f"{self.id}: static shots need a headline")
         if self.route in ON_CAMERA and self.shot_type.lower() != "medium close-up":
@@ -195,17 +204,26 @@ class Shot(BaseModel):
             raise ValueError(f"{self.id}: in an on-camera speaking shot the speaker is the person on screen")
         if self.route in ON_CAMERA and self.camera_move.lower() not in SPEAKING_CAMERA:
             raise ValueError(f"{self.id}: speaking shots need camera_move 'static' or 'light handheld'")
+        if self.lens.lower().count("mm") > 1 or " or " in self.lens.lower():
+            raise ValueError(f"{self.id}: name exactly one lens for this shot, got {self.lens!r}")
         if self.route in SPOKEN:
-            if not (self.speaker and self.dialogue_tts and self.dialogue_caption and self.dialogue_lang):
+            if not (self.speaker and self.dialogue_tts and self.dialogue_caption
+                    and self.dialogue_lang and self.delivery):
                 raise ValueError(f"{self.id}: spoken shots need speaker, dialogue_tts, "
-                                 "dialogue_caption and dialogue_lang")
-            # LLMs miscount words, so code picks the length: the shortest one that fits the line.
-            words = len(self.dialogue_caption.split())
-            if words > max_words(self.duration_s):
-                fits = [seconds for seconds in (4, 6, 8) if words <= max_words(seconds)]
-                if not fits:
-                    raise ValueError(f"{self.id}: {words} words is too long for one shot "
-                                     f"(max {max_words(8)}); shorten the line or split the shot")
+                                 "dialogue_caption, dialogue_lang and delivery")
+            if "!" in self.dialogue_caption + self.dialogue_tts:
+                raise ValueError(f"{self.id}: no exclamation marks, they read as forced enthusiasm")
+            # The model's own word count is never trusted: code counts the caption and sets
+            # the length to the shortest one that fits, moving the beats with it.
+            fits = [seconds for seconds in (4, 6, 8) if self.words <= max_words(seconds)]
+            if not fits:
+                raise ValueError(f"{self.id}: {self.words} words is too long for one shot "
+                                 f"(max {max_words(8)}); shorten the line or split the shot")
+            if self.duration_s != fits[0]:
+                scale = fits[0] / max(self.duration_s, 1)
+                for beat in self.beats:
+                    beat.start_s = round(beat.start_s * scale, 1)
+                    beat.end_s = min(round(beat.end_s * scale, 1), fits[0])
                 self.duration_s = fits[0]
         elif self.dialogue_tts or self.dialogue_caption:
             raise ValueError(f"{self.id}: route {self.route} is silent, remove the dialogue")
@@ -220,9 +238,14 @@ class Shot(BaseModel):
                 if not 0 <= beat.start_s < beat.end_s <= self.duration_s:
                     raise ValueError(f"{self.id}: beat {beat.start_s}-{beat.end_s} s is outside "
                                      f"the shot (0-{self.duration_s} s)")
-                if self.character and not beat.eye_line:
-                    raise ValueError(f"{self.id}: each beat needs an eye_line when a person is on screen")
+                if self.character and self.face_visible and not beat.eye_line:
+                    raise ValueError(f"{self.id}: each beat needs an eye_line when a face is on screen")
         return self
+
+    @property
+    def words(self) -> int:
+        """Words in the spoken line, counted by code on the Roman caption."""
+        return len(self.dialogue_caption.split())
 
 
 HookType = Literal["first_use_reaction", "drop_in_mid_scene", "symptom_diagnosis",
@@ -233,10 +256,12 @@ class Storyboard(BaseModel):
     title: str
     hook_type: HookType
     hook_reason: str  # why this hook type suits the audience and concept
-    # The model's working notes. Written before the shots, so it does its sums first.
+    # Written first by the model so it does its sums before the shots; then replaced by
+    # code with the real counts, because the model's counts are often wrong.
     plan: str = Field(description="Working notes on one line, written first: for each shot the word "
                                   "count of its line and its duration, then the total in seconds.")
     shots: list[Shot] = Field(min_length=1)
+    end_card_line: str  # the one line under the brand name on the end card (drawn in code)
 
     @model_validator(mode="after")
     def starts_with_the_hook(self):
@@ -245,7 +270,20 @@ class Storyboard(BaseModel):
         ids = [shot.id for shot in self.shots]
         if len(ids) != len(set(ids)):
             raise ValueError("shot ids must be unique")
+        self.plan = self.counts
         return self
+
+    @property
+    def length_s(self) -> int:
+        return sum(shot.duration_s for shot in self.shots if shot.route != "static")
+
+    @property
+    def counts(self) -> str:
+        """The real word count and duration of every shot, and the total."""
+        parts = [f"{shot.id} {shot.words} words = {shot.duration_s} s" if shot.route in SPOKEN
+                 else f"{shot.id} silent = {shot.duration_s} s"
+                 for shot in self.shots if shot.route != "static"]
+        return "; ".join(parts) + f"; total {self.length_s} s"
 
 
 class CriticNote(BaseModel):
@@ -261,14 +299,15 @@ class Claim(BaseModel):
 
 
 class LineCheck(BaseModel):
-    """The critic's claim check for one spoken line: every claim it makes."""
-    shot_id: str
-    claims: list[Claim] = []  # empty if the line makes no product claim
+    """The critic's claim check for one piece of text the viewer hears or reads."""
+    shot_id: str = Field(description="The shot id for a spoken line or a static headline; "
+                                     "'end_card' for the end card line.")
+    claims: list[Claim] = []  # empty if the text makes no product claim
 
 
 class StoryboardReview(BaseModel):
     notes: list[CriticNote]
-    line_checks: list[LineCheck]  # one per spoken shot
+    line_checks: list[LineCheck]  # one per spoken line, per static headline, and one for the end card
     storyboard: Storyboard  # the full storyboard after the critic's rewrites
 
 

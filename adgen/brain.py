@@ -32,8 +32,12 @@ STORYBOARD_RULES = f"""Hard rules (checked by code; a storyboard that breaks one
   vo_only = silent footage under a narrator's line (it still needs speaker, dialogue_tts,
   dialogue_caption and dialogue_lang); static = a still ad with a headline (duration_s 0,
   no beats, no dialogue).
-- The words decide the length. Code sets every spoken shot to the shortest duration that
-  fits its line: up to {max_words(4)} words = 4 s, up to {max_words(6)} words = 6 s, up to
+- brand_story and product_hero ads are told by a narrator: vo_only shots over b-roll, with at
+  most one on-camera veo_talk line in the whole ad. The narrator is the cast member with
+  on_screen false and is never a `character`.
+- The words decide the length. Code counts the words itself and sets every spoken shot to
+  the shortest duration that fits its line (the duration_s you write for a spoken shot is
+  ignored): up to {max_words(4)} words = 4 s, up to {max_words(6)} words = 6 s, up to
   {max_words(8)} words = 8 s. A line over {max_words(8)} words is rejected. Words are counted
   on dialogue_caption. (This leaves half a second of silence at each end of the line.)
 - Those durations must add up to between length_s.min and length_s.max (see CONTEXT).
@@ -45,6 +49,18 @@ STORYBOARD_RULES = f"""Hard rules (checked by code; a storyboard that breaks one
 - Silent veo_broll shots last exactly 4, 6 or 8 seconds.
 - One speaker per shot. In a veo_talk shot the speaker is the person on screen, the
   shot_type is exactly "medium close-up" and camera_move is exactly "static" or "light handheld".
+  In a ugc ad these selfie shots are always "light handheld".
+- Every spoken shot has `delivery`: how this one line is said in this shot, drawn from its
+  beat ("quiet, half to herself, a short pause before the last word"). Not the persona's
+  general pace.
+- `setting` lists only the part of the location and the objects visible in this shot.
+  `lens` names exactly one lens with its f-stop, taken from the look (if the look offers
+  two, pick the one this shot uses).
+- face_visible is false when only hands or the back of a person show; that shot needs no eye_line.
+- Printed text other than the brand name (a date, a price, a number) is added by code later:
+  put the text in blank_label_text and describe that label area as blank in first_frame.
+- end_card_line is the one short line under the brand name on the end card: 6 words or
+  fewer, and any claim in it comes from product_facts.
 - The first shot has purpose "hook". Its line is {HOOK_MAX_WORDS} words or fewer, opens on the
   tension itself and makes no product claim. It never starts with a warm-up word
   ({", ".join(WARM_UP_WORDS)}).
@@ -55,7 +71,8 @@ STORYBOARD_RULES = f"""Hard rules (checked by code; a storyboard that breaks one
   the brief's goal, said the way a friend would ("it's linked below if you want to try it").
 - Product claims, in lines and in headlines, come only from the brief's product_facts.
   Never add an ingredient, result, number, price, guarantee, refund or policy that is not listed.
-- character and speaker are cast names from the look, nothing else. Adults only, no children.
+- character is an on-screen cast name from the look; speaker is any cast name. Adults only,
+  no children.
 - Every spoken shot has dialogue_tts, dialogue_caption and dialogue_lang, all non-empty.
   dialogue_tts is what the voice says: Hindi words in Devanagari, English words in Latin.
   dialogue_caption is the same line in Roman script only. dialogue_lang names the language
@@ -122,7 +139,13 @@ TASKS = {
         "real or famous person), one outfit worn in every shot, a voice, an accent, a speaking "
         "pace, an energy level and 2 or 3 speech habits (how this person actually talks: a "
         "pet phrase, trailing off, dry understatement). If the ad needs a narrator, add them "
-        "to the cast too. Keep the cast as small as the concept allows.")),
+        "to the cast with on_screen false (no look or outfit needed). Keep the cast as small "
+        "as the concept allows.\n"
+        "CONTEXT.used_personas lists people already cast in ads for other brands. Every "
+        "on-screen persona you create must be clearly different from all of them: a different "
+        "name, an age at least 4 years away, and a different gender or age group, skin tone, "
+        "hair, build, wardrobe, voice and speech habits. Describe the look in your own fresh "
+        "words; do not reuse their phrases.")),
     "storyboard": Task(Storyboard, 5000, 0.3, (
         "Write the storyboard and script for the winning concept, shot ids s01, s02, ...\n\n"
         + HOOK_TYPES + "\n\n" + STORYBOARD_RULES), reasoning="medium"),
@@ -131,10 +154,15 @@ TASKS = {
         "storyboard with your fixes applied, plus one note per issue you found.\n"
         "- Rewrite any line that sounds like ad copy or a script (kind: ad_like).\n"
         "- Flag and soften health or money claims that cannot be proven (kind: claim).\n"
-        "- For each spoken shot add one line_checks entry listing every product claim the "
-        "line makes, each with `fact`: the index, counting from 0, of the product_facts entry "
-        "that backs it. If nothing backs a claim, rewrite the line without it (kind: claim) so "
-        "that no unbacked claim is left in the storyboard you return.\n"
+        "- Add one line_checks entry for every text the viewer hears or reads: each spoken "
+        "shot (shot_id = its id), each static headline (shot_id = its id) and the end card "
+        "line (shot_id = 'end_card'). List every product claim the text makes, each with "
+        "`fact`: the index, counting from 0, of the product_facts entry that backs it. If "
+        "nothing backs a claim, rewrite the text without it (kind: claim) so that no unbacked "
+        "claim is left in the storyboard you return.\n"
+        "- Notes: issue and change are each one or two plain sentences. change states only "
+        "the final change, with no earlier drafts and no word counts or durations (code "
+        "reports those).\n"
         "- Replace overused hooks and stock phrases; fix a hook that warms up before the "
         "tension (kind: overused_hook).\n"
         "- Flag shots that depend on a micro-expression landing exactly, and replace the "

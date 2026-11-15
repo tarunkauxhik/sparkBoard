@@ -117,7 +117,9 @@ def test_keyframe_prompt_names_a_role_for_every_reference_image(done, story):
     assert images == ["refs/maya_sheet.png", "refs/product.png", "refs/location.png"]
     assert "image 1 is the character sheet of maya" in prompt and "image 2 is the product" in prompt
     assert PERSONA in prompt
-    assert "visible pores" in prompt and "24 mm" in prompt  # UGC phone look, named lens
+    assert "visible pores" in prompt                         # UGC phone look
+    assert "Lens: 35 mm lens at f/2.8." in prompt            # the shot's own lens
+    assert "Setting: a plain surface by a window." in prompt  # the shot's own setting
     assert "says" not in prompt                              # a still image has no dialogue
     _, silent_images = keyframe_request(board.shots[2], look, brief, refs)
     assert silent_images == ["refs/product.png", "refs/location.png"]  # b-roll: no person, no sheet
@@ -132,6 +134,7 @@ def test_motion_prompt_follows_the_veo_order(story):
     positions = [prompt.index(part) for part in parts]
     assert positions == sorted(positions)
     assert PERSONA in prompt
+    assert "The delivery is quiet and plain." in prompt  # this shot's delivery, not the persona's pace
     assert "The scene plays without speech." in motion_prompt(board.shots[2], look, brief)
 
 
@@ -213,3 +216,19 @@ def test_save_sample_copies_json_and_markdown_only(done, tmp_path, monkeypatch):
     saved = {f.name for f in (tmp_path / "samples/skincare").iterdir()}
     assert {"storyboard.json", "storyboard.md", "decision_log.jsonl", "ledger.jsonl"} <= saved
     assert not any(name.endswith((".mp4", ".png")) for name in saved)
+
+
+def test_hands_only_shot_drops_the_character_sheet(done, story):
+    board, look, brief = story
+    refs = done[0].load("refs.json", Refs)
+    hands = board.shots[0].model_copy(update={"face_visible": False})
+    prompt, images = keyframe_request(hands, look, brief, refs)
+    assert "refs/maya_sheet.png" not in images and "Person (face out of frame)" in prompt
+
+
+def test_text_added_by_code_leaves_a_blank_label_area(done, story):
+    board, look, brief = story
+    refs = done[0].load("refs.json", Refs)
+    dated = board.shots[2].model_copy(update={"blank_label_text": "ROASTED 12 NOV"})
+    prompt, _ = keyframe_request(dated, look, brief, refs)
+    assert "left blank and plain" in prompt and "ROASTED" not in prompt

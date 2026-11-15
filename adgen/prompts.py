@@ -14,13 +14,8 @@ from adgen.schemas import ON_CAMERA, Brief, CastMember, Look, Refs, Shot
 
 UGC_LOOK = ("smartphone front camera, handheld, natural window light, visible pores and "
             "skin texture, slight noise, unretouched")
-UGC_LENS = "smartphone front camera, 24 mm equivalent lens at f/1.9"
 CLEAN_FRAME = "The frame is clean, without captions, on-screen text or graphics"
 AUDIO_TAG = re.compile(r"\s*\[[^\]]*\]\s*")  # ElevenLabs tags like [sighs]; Veo must not read them aloud
-
-
-def _lens(look: Look, brief: Brief) -> str:
-    return UGC_LENS if brief.format == "ugc" else look.lens.value.rstrip(".")
 
 
 def _style(look: Look, brief: Brief) -> str:
@@ -61,7 +56,7 @@ def packshot_prompt(brief: Brief) -> str:
 def location_prompt(look: Look, brief: Brief) -> str:
     return (
         f"Create a photo of an empty location with nobody in it: {look.setting.value.rstrip('.')}. "
-        f"Light: {look.light.value.rstrip('.')}. Lens: {_lens(look, brief)}. Vertical 9:16. {CLEAN_FRAME}."
+        f"Light: {look.light.value.rstrip('.')}. Eye-level view, natural perspective. Vertical 9:16. {CLEAN_FRAME}."
     )
 
 
@@ -74,7 +69,7 @@ def keyframe_request(shot: Shot, look: Look, brief: Brief, refs: Refs) -> tuple[
         roles.append(f"image {len(images)} is {role}")
 
     who = _member(look, shot.character) if shot.character else None
-    if who:
+    if who and shot.face_visible:  # hands-only shots do not need the face sheet
         use(refs.characters[who.name], f"the character sheet of {who.name}: keep the face, hair and outfit exactly")
     if shot.product_visible:
         for path in refs.product:
@@ -86,14 +81,16 @@ def keyframe_request(shot: Shot, look: Look, brief: Brief, refs: Refs) -> tuple[
              "Use the reference images like this: " + "; ".join(roles) + ".",
              f"The moment: {shot.first_frame.rstrip('.')}."]
     if who:
-        parts.append(f"Person: {who.persona}.")
+        parts.append(f"Person{'' if shot.face_visible else ' (face out of frame)'}: {who.persona}.")
     parts += [
         f"Framing: {shot.shot_type}, {shot.angle}, {shot.framing.rstrip('.')}.",
-        f"Setting: {look.setting.value.rstrip('.')}.",
-        f"Lens: {_lens(look, brief)}. Light: {shot.lighting.rstrip('.')}.",
+        f"Setting: {shot.setting.rstrip('.')}.",
+        f"Lens: {shot.lens.rstrip('.')}. Light: {shot.lighting.rstrip('.')}.",
         f"Look: {_style(look, brief)}.",
         CLEAN_FRAME + (", apart from the product's own label." if shot.product_visible else "."),
     ]
+    if shot.blank_label_text:  # dates and prices are printed by code later, never by the image model
+        parts.append("One label area on the product is left blank and plain, with nothing printed on it.")
     return " ".join(parts), images
 
 
@@ -111,13 +108,13 @@ def motion_prompt(shot: Shot, look: Look, brief: Brief) -> str:
     for beat in shot.beats:                                                             # action
         eyes = f", {beat.eye_line.rstrip('.')}" if beat.eye_line else ""
         parts.append(f"[{_stamp(beat.start_s)}-{_stamp(beat.end_s)}] {_sentence(beat.action + eyes)}")
-    parts += [_sentence(look.setting.value), _sentence(shot.lighting)]                 # context
+    parts += [_sentence(shot.setting), _sentence(shot.lighting)]                       # context
     parts.append(_sentence(_style(look, brief)))                                        # style
     if shot.route == "veo_talk":
         speaker = _member(look, shot.speaker)
         line = AUDIO_TAG.sub(" ", shot.dialogue_tts).strip()
         parts.append(f'{speaker.name.capitalize()} says, in {shot.dialogue_lang}, {speaker.accent}: "{line}"')
-        parts.append(f"The delivery is {speaker.pace.rstrip('.')}, {speaker.energy.rstrip('.')}.")
+        parts.append(f"The delivery is {shot.delivery.rstrip('.')}.")
     else:  # b-roll, and routes whose voice is added later from TTS
         parts.append("The scene plays without speech.")
     parts.append(f"Ambient noise: {shot.audio_notes.rstrip('.')}.")
