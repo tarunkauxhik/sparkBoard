@@ -8,7 +8,7 @@ from PIL import Image
 from adgen.__main__ import clean, save_sample
 from adgen.editor import caption_events, stream_seconds, validate_edit_list
 from adgen.ledger import BudgetExceeded, Ledger
-from adgen.prompts import character_sheet_prompt, keyframe_request, motion_prompt
+from adgen.prompts import character_sheet_prompt, keyframe_request, motion_prompt, packshot_prompt
 from adgen.providers.kie import kling_avatar_payload, nano_banana_payload, veo_payload
 from adgen.providers.mock import MockProvider
 from adgen.schemas import Audio, Brief, EditList, Look, Refs, Storyboard
@@ -232,3 +232,11 @@ def test_text_added_by_code_leaves_a_blank_label_area(done, story):
     dated = board.shots[2].model_copy(update={"blank_label_text": "ROASTED 12 NOV"})
     prompt, _ = keyframe_request(dated, look, brief, refs)
     assert "left blank and plain" in prompt and "ROASTED" not in prompt
+
+
+def test_packshot_prompt_spells_out_the_whole_label(story):
+    brief = story[2]
+    prompt = packshot_prompt(brief)
+    assert 'exactly this text and nothing else: "Dewline" and "Barrier Repair Serum".' in prompt
+    earbuds = brief.model_copy(update={"brand": "Noctave", "product": "Noctave Air wireless earbuds"})
+    assert 'nothing else: "Noctave".' in packshot_prompt(earbuds)  # the brand is not repeated

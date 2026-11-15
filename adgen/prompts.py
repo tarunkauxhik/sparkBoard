@@ -46,9 +46,15 @@ def character_sheet_prompt(member: CastMember) -> str:
 
 
 def packshot_prompt(brief: Brief) -> str:
+    """The clean product photo. The label text is spelled out in full, because an image
+    model left to itself invents ingredients and sizes that are not product facts."""
+    lines = [brief.brand] if brief.product.startswith(brief.brand) else [brief.brand, brief.product]
+    label = " and ".join(f'"{line}"' for line in lines)
     return (
         f"Create a product photo of {brief.product} by {brief.brand}: the product alone, upright "
-        f'in the centre of a plain off-white background, its label facing the camera and reading "{brief.brand}". '
+        "in the centre of a plain off-white background, its label facing the camera. "
+        f"The label carries exactly this text and nothing else: {label}. No ingredients, "
+        "no sizes, no other words or numbers anywhere on the product. "
         "Soft daylight from the left, 85 mm lens at f/8, true-to-life colors and materials."
     )
 
