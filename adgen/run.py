@@ -37,11 +37,3 @@ class Run:
         entry = {"step": step, "choice": choice, "reason": reason, "cost": round(cost, 4)}
         with self.path("decision_log.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-
-    def write_decision_log_md(self) -> None:
-        """Readable copy of the decision log, for the sample deliverables."""
-        lines = ["# Decision log", "", "| Step | Choice | Reason | Cost |", "| --- | --- | --- | --- |"]
-        for raw in self.path("decision_log.jsonl").read_text("utf-8").splitlines():
-            e = json.loads(raw)
-            lines.append(f"| {e['step']} | {e['choice']} | {e['reason']} | ${e['cost']:.3f} |")
-        self.path("decision_log.md").write_text("\n".join(lines) + "\n", "utf-8")

@@ -1,12 +1,27 @@
-"""Pydantic models for every JSON file a run writes (one model per pipeline step)."""
+"""Pydantic models for every JSON file a run writes (one model per pipeline step).
+
+Rules about a single shot or cast member are checked here. Rules that need the
+brief or the cast as well (total length, cast names) are in rules.py.
+"""
+import re
 from typing import Literal
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 Route = Literal["veo_talk", "veo_broll", "avatar_talk", "vo_only", "static"]
-TALK_ROUTES = ("veo_talk", "avatar_talk")
-# About 15 words in 6 s. Longer lines get their last word cut off by the video model.
-MAX_WORDS_PER_SECOND = 2.5
+VEO_ROUTES = ("veo_talk", "veo_broll", "vo_only")  # clips made by Veo: only 4, 6 or 8 s
+ON_CAMERA = ("veo_talk", "avatar_talk")            # the speaker is on screen, lip-synced
+SPOKEN = ON_CAMERA + ("vo_only",)                  # shots that have a spoken line
+MAX_WORDS_PER_SECOND = 2.2
+EDGE_SILENCE_S = 0.5  # silence at the start and end of a spoken shot, so no word gets cut off
+MIN_CAST_AGE = 25
+DEVANAGARI = re.compile(r"[ऀ-ॿ]")
+LIKENESS = re.compile(r"looks? like|resembl|lookalike|celebrit|actor|actress", re.IGNORECASE)
+
+
+def max_words(duration_s: int) -> int:
+    """Most words a spoken shot of this length may carry."""
+    return int(MAX_WORDS_PER_SECOND * (duration_s - 2 * EDGE_SILENCE_S))
 
 
 class Refs(BaseModel):
@@ -25,6 +40,7 @@ class Brief(BaseModel):
     goal: str
     platform: str
     language: str
+    target_length_s: int  # length of the shots together, without the end card
     product_url: str | None = None
     refs: Refs | None = None
 
@@ -36,24 +52,50 @@ class Insights(BaseModel):
     proof_points: list[str]
 
 
-class Concept(BaseModel):
+class ConceptDraft(BaseModel):
     id: str
     title: str
-    hook: str
+    hook: str     # the first spoken line or first image
     insight: str  # the customer insight this concept is built on
-    score: float  # from the critic pass, 0-10
+    summary: str  # what happens, in two or three sentences
+
+
+class ConceptDrafts(BaseModel):
+    concepts: list[ConceptDraft] = Field(min_length=5, max_length=5)
+
+
+class Scores(BaseModel):
+    """Critic scores, 1 (weak) to 10 (strong)."""
+    hook: int = Field(ge=1, le=10)
+    brief_fit: int = Field(ge=1, le=10)
+    platform_fit: int = Field(ge=1, le=10)
+    feasibility: int = Field(ge=1, le=10)  # can today's AI video models make this look real?
+    distinctiveness: int = Field(ge=1, le=10)
+
+    @property
+    def total(self) -> int:
+        return self.hook + self.brief_fit + self.platform_fit + self.feasibility + self.distinctiveness
+
+
+class ConceptScore(BaseModel):
+    id: str
+    scores: Scores
+    note: str  # why these scores, in one or two sentences
+
+
+class ConceptReview(BaseModel):
+    reviews: list[ConceptScore]
+
+
+class Concept(ConceptDraft):
+    scores: Scores
+    note: str
 
 
 class Concepts(BaseModel):
     concepts: list[Concept]
-    winner_id: str
+    winner_id: str  # picked in code: the highest total score
     reason: str
-
-    @model_validator(mode="after")
-    def winner_exists(self):
-        if self.winner_id not in {c.id for c in self.concepts}:
-            raise ValueError(f"winner_id {self.winner_id!r} is not one of the concepts")
-        return self
 
     @property
     def winner(self) -> Concept:
@@ -63,6 +105,23 @@ class Concepts(BaseModel):
 class Choice(BaseModel):
     value: str
     reason: str
+
+
+class CastMember(BaseModel):
+    """A fictional adult. Shots and references refer to the cast by name only."""
+    name: str
+    age: int
+    look: str    # face, hair, build: plain description, no real person
+    outfit: str  # worn in every shot
+    voice: str   # e.g. "warm, mid-pitch, Indian English"
+
+    @model_validator(mode="after")
+    def is_a_fictional_adult(self):
+        if self.age < MIN_CAST_AGE:
+            raise ValueError(f"{self.name}: cast must be {MIN_CAST_AGE} or older, got {self.age}")
+        if LIKENESS.search(self.look):
+            raise ValueError(f"{self.name}: describe the look plainly, never by likeness to a real person")
+        return self
 
 
 class Look(BaseModel):
@@ -75,60 +134,79 @@ class Look(BaseModel):
     light: Choice
     palette: Choice
     pacing: Choice
-
-
-class Character(BaseModel):
-    name: str
-    description: str
-    outfit: str
-    voice: str
+    cast: list[CastMember]
 
 
 class Shot(BaseModel):
     id: str
-    purpose: str
+    purpose: str  # hook, problem, product, proof, payoff, cta ...
     duration_s: int
     shot_type: str
     angle: str
     framing: str
-    character: str | None = None
-    speaker: str | None = None
+    character: str | None = None  # cast name of the person on screen
+    speaker: str | None = None    # cast name of the person speaking
     expression: str = ""
-    action: str
+    first_frame: str  # the still moment the shot starts on (becomes the keyframe)
+    action: str       # what moves after the first frame
     lighting: str
     location: str
     product_visible: bool = False
-    dialogue_tts: str = ""      # what the voice says (Hindi words in Devanagari)
-    dialogue_caption: str = ""  # same line in Roman script, for captions
+    dialogue_tts: str = ""      # the spoken line; Hindi words in Devanagari, English in Latin
+    dialogue_caption: str = ""  # the same line in Roman script only, for captions
+    dialogue_lang: str = ""     # language and accent of this line, e.g. "Hinglish, Mumbai accent"
+    headline: str = ""          # static shots only: the text on the static ad
     camera_move: str = ""
     audio_notes: str = "room tone only, no music"
     route: Route
 
     @model_validator(mode="after")
-    def dialogue_fits(self):
-        if self.route in TALK_ROUTES and not (self.speaker and self.dialogue_tts):
-            raise ValueError(f"{self.id}: talking shots need a speaker and dialogue")
-        words = len(self.dialogue_caption.split())
-        if words > MAX_WORDS_PER_SECOND * self.duration_s:
-            raise ValueError(f"{self.id}: {words} words is too many for {self.duration_s} s")
+    def follows_shot_rules(self):
+        if self.route in VEO_ROUTES and self.duration_s not in (4, 6, 8):
+            raise ValueError(f"{self.id}: Veo shots must be 4, 6 or 8 s, got {self.duration_s}")
+        if self.route == "static" and not self.headline:
+            raise ValueError(f"{self.id}: static shots need a headline")
+        if self.route in ON_CAMERA and self.shot_type.lower() != "medium close-up":
+            raise ValueError(f"{self.id}: on-camera speaking shots must be 'medium close-up'")
+        if self.route in SPOKEN:
+            if not (self.speaker and self.dialogue_tts and self.dialogue_caption and self.dialogue_lang):
+                raise ValueError(f"{self.id}: spoken shots need speaker, dialogue_tts, "
+                                 "dialogue_caption and dialogue_lang")
+            words = len(self.dialogue_caption.split())
+            if words > max_words(self.duration_s):
+                raise ValueError(f"{self.id}: {words} words is too many for {self.duration_s} s "
+                                 f"(max {max_words(self.duration_s)})")
+        elif self.dialogue_tts or self.dialogue_caption:
+            raise ValueError(f"{self.id}: route {self.route} is silent, remove the dialogue")
+        if DEVANAGARI.search(self.dialogue_caption):
+            raise ValueError(f"{self.id}: dialogue_caption must be in Roman script")
         return self
 
 
 class Storyboard(BaseModel):
     title: str
-    characters: list[Character]
-    shots: list[Shot]
+    shots: list[Shot] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def shots_are_consistent(self):
+    def starts_with_the_hook(self):
         if self.shots[0].purpose != "hook":
-            raise ValueError("the first shot must be the hook")
-        names = {c.name for c in self.characters}
-        for shot in self.shots:
-            for who in (shot.character, shot.speaker):
-                if who and who not in names:
-                    raise ValueError(f"{shot.id}: unknown character {who!r}")
+            raise ValueError("the first shot's purpose must be 'hook'")
+        ids = [shot.id for shot in self.shots]
+        if len(ids) != len(set(ids)):
+            raise ValueError("shot ids must be unique")
         return self
+
+
+class CriticNote(BaseModel):
+    shot_id: str
+    kind: Literal["ad_like", "claim", "overused_hook", "other"]
+    issue: str
+    change: str  # what the critic changed, or "none" if only flagged
+
+
+class StoryboardReview(BaseModel):
+    notes: list[CriticNote]
+    storyboard: Storyboard  # the full storyboard after the critic's rewrites
 
 
 class Approval(BaseModel):

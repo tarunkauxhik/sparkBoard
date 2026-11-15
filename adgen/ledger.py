@@ -1,11 +1,12 @@
-"""Cost ledger: every paid call is recorded here first, and refused if it would pass the cap."""
+"""Cost ledger: every paid call is checked against the cap first, then recorded."""
 import json
 from pathlib import Path
 
 # Hard caps per sample, in USD, one per API key (docs/04_BUILD_PLAN.md section 11).
 CAPS = {"kie": 3.00, "elevenlabs": 0.50, "openrouter": 1.00}
 
-# Approx prices in USD (docs/04_BUILD_PLAN.md section 3). Re-check before phase 4.
+# Approx prices in USD for the mock provider (docs/04_BUILD_PLAN.md section 3).
+# Live OpenRouter calls do not use these: they read real prices and real costs from the API.
 PRICES = {
     "sonnet_call": 0.05,
     "gemini_review": 0.01,
@@ -38,14 +39,22 @@ class Ledger:
     def total(self) -> float:
         return sum(e["cost"] for e in self.entries)
 
-    def charge(self, key: str, item: str, cost: float, mock: bool = False) -> None:
-        """Call this BEFORE the paid call. Raises instead of letting spend pass the cap."""
-        if self.spent(key) + cost > self.caps[key] + 1e-9:
+    def check(self, key: str, worst_cost: float) -> None:
+        """Call BEFORE a paid call, with the most it could cost. Raises if that could pass the cap."""
+        if self.spent(key) + worst_cost > self.caps[key] + 1e-9:
             raise BudgetExceeded(
-                f"{item} (${cost:.3f}) would pass the {key} cap: "
-                f"${self.spent(key):.2f} spent of ${self.caps[key]:.2f}"
+                f"a call of up to ${worst_cost:.3f} could pass the {key} cap: "
+                f"${self.spent(key):.3f} spent of ${self.caps[key]:.2f}"
             )
+
+    def record(self, key: str, item: str, cost: float, mock: bool = False) -> None:
+        """Call AFTER a paid call, with what it really cost."""
         entry = {"key": key, "item": item, "cost": cost, "mock": mock}
         self.entries.append(entry)
         with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
+
+    def charge(self, key: str, item: str, cost: float, mock: bool = False) -> None:
+        """Check and record in one step, for calls with a fixed, known price."""
+        self.check(key, cost)
+        self.record(key, item, cost, mock)

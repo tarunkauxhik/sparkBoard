@@ -10,6 +10,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from adgen.ledger import PRICES, Ledger
+from adgen.schemas import EDGE_SILENCE_S
 from adgen.statics import FONT
 
 COLORS = ["#6b7a8f", "#8f6b6b", "#6b8f76", "#8f866b", "#7a6b8f"]
@@ -25,7 +26,7 @@ class MockProvider:
 
     # --- text (OpenRouter in the live provider) ---
 
-    def chat_json(self, task: str, ctx: dict) -> dict:
+    def chat_json(self, task: str, ctx: dict, feedback: str = "") -> dict:
         """Canned answer for one LLM task, built from the brief so it reads sensibly."""
         self.ledger.charge("openrouter", f"sonnet:{task}", PRICES["sonnet_call"], mock=True)
         return getattr(self, f"_{task}")(ctx)
@@ -67,13 +68,13 @@ class MockProvider:
         shutil.copyfile(src, out)
 
     def transcribe(self, path: Path, expected: str, duration_s: int) -> list[dict]:
-        """Word timings: the expected words spread evenly over the clip."""
+        """Word timings: the expected words spread evenly, with silence at both ends."""
         self.ledger.charge("elevenlabs", f"scribe:{path.stem}",
                            PRICES["scribe_per_s"] * duration_s, mock=True)
         words = expected.split()
-        step = duration_s / max(len(words), 1)
-        return [{"word": w, "start_s": round(i * step, 2), "end_s": round((i + 1) * step, 2)}
-                for i, w in enumerate(words)]
+        step = (duration_s - 2 * EDGE_SILENCE_S) / max(len(words), 1)
+        return [{"word": w, "start_s": round(EDGE_SILENCE_S + i * step, 2),
+                 "end_s": round(EDGE_SILENCE_S + (i + 1) * step, 2)} for i, w in enumerate(words)]
 
     # --- canned LLM answers ---
 
@@ -89,56 +90,71 @@ class MockProvider:
     def _concepts(self, ctx: dict) -> dict:
         product = ctx["brief"]["product"]
         ideas = [
-            ("c1", "Honest first week", f"I almost returned this {product}.", 8.5),
-            ("c2", "The skeptic friend", "My friend would not stop talking about it.", 7.5),
-            ("c3", "Morning routine", "This is the only step I never skip.", 7.0),
-            ("c4", "Before the meeting", "Ten minutes before the call, I panicked.", 6.5),
-            ("c5", "Unboxing", "Okay, it finally came.", 6.0),
+            ("c1", "Honest first week", f"I almost returned this {product}."),
+            ("c2", "The friend who kept asking", "My friend would not stop talking about it."),
+            ("c3", "Morning routine", "This is the only step I never skip."),
+            ("c4", "Before the meeting", "Ten minutes before the call, I panicked."),
+            ("c5", "Unboxing", "Okay, it finally came."),
         ]
-        return {
-            "concepts": [{"id": i, "title": t, "hook": h, "score": s,
-                          "insight": ctx["insights"]["pains"][0]} for i, t, h, s in ideas],
-            "winner_id": "c1",
-            "reason": "strongest hook, and it answers the 'will it work for me?' objection (mock)",
-        }
+        return {"concepts": [{"id": i, "title": title, "hook": hook,
+                              "insight": ctx["insights"]["pains"][0],
+                              "summary": f"{title}: one person, one room, told to camera."}
+                             for i, title, hook in ideas]}
+
+    def _concept_critic(self, ctx: dict) -> dict:
+        reviews = []
+        for rank, concept in enumerate(ctx["concepts"]):
+            score = max(9 - rank, 1)  # the first concept wins
+            reviews.append({"id": concept["id"], "note": "mock score, by position in the list",
+                            "scores": {"hook": score, "brief_fit": score, "platform_fit": score,
+                                       "feasibility": score, "distinctiveness": score}})
+        return {"reviews": reviews}
 
     def _look(self, ctx: dict) -> dict:
         category = ctx["brief"]["category"]
-        return {field: {"value": value, "reason": f"from the {category} playbook (mock)"}
+        look = {field: {"value": value, "reason": f"from the {category} playbook (mock)"}
                 for field, value in ctx["playbook"].items()}
+        look["cast"] = [{"name": "maya", "age": 28, "look": "woman with shoulder-length dark hair",
+                         "outfit": "a plain grey t-shirt", "voice": "warm, mid-pitch (mock)"}]
+        return look
 
     def _storyboard(self, ctx: dict) -> dict:
         brief = ctx["brief"]
-        talk = {"shot_type": "medium close-up", "angle": "eye level, front phone camera",
+        place = {"lighting": "soft window light from the left", "location": "main_location"}
+        talk = {**place, "shot_type": "medium close-up", "angle": "eye level, front phone camera",
                 "framing": "head and shoulders, slightly off-center", "character": "maya",
-                "speaker": "maya", "lighting": "soft window light from the left",
-                "location": "bathroom_plate", "camera_move": "handheld, slight sway",
-                "duration_s": 6, "route": "veo_talk"}
+                "speaker": "maya", "camera_move": "handheld, slight sway", "route": "veo_talk",
+                "dialogue_lang": brief["language"]}
+        broll = {**place, "purpose": "product", "duration_s": 4, "shot_type": "close-up",
+                 "angle": "top down", "framing": "product resting on a surface, off-center",
+                 "first_frame": "the product stands on the surface",
+                 "action": "a hand sets a towel down next to it",
+                 "product_visible": True, "camera_move": "static", "route": "veo_broll"}
 
         def line(text: str) -> dict:
             return {"dialogue_tts": text, "dialogue_caption": text}
 
-        return {
-            "title": ctx["concept"]["title"],
-            "characters": [{"name": "maya", "description": "woman in her late 20s, shoulder-length dark hair",
-                            "outfit": "a plain grey t-shirt", "voice": "mock-voice-1"}],
-            "shots": [
-                {**talk, "id": "s01", "purpose": "hook", "expression": "a little embarrassed",
-                 "action": "holds the bottle up near her face",  "product_visible": True,
-                 **line(f"Okay, I almost returned this {brief['product']}. Honestly.")},
-                {**talk, "id": "s02", "purpose": "problem", "expression": "tired, half-smile",
-                 "action": "touches her cheek, then looks into the lens",
-                 **line("I have tried so many things, and nothing really changed.")},
-                {"id": "s03", "purpose": "product", "duration_s": 4, "shot_type": "close-up",
-                 "angle": "top down", "framing": "bottle resting on the counter, off-center",
-                 "action": "a hand sets the bottle down next to a towel",
-                 "lighting": "soft window light from the left", "location": "bathroom_plate",
-                 "product_visible": True, "camera_move": "static", "route": "veo_broll"},
-                {**talk, "id": "s04", "purpose": "payoff", "expression": "relaxed smile",
-                 "action": "shrugs and smiles at the lens",
-                 **line(f"Two weeks in, I get it now. {brief['brand']}, try it.")},
-            ],
-        }
+        shots = [
+            {**talk, "id": "s01", "purpose": "hook", "duration_s": 4, "expression": "a little embarrassed",
+             "first_frame": "she holds the product up near her face", "action": "she tilts it toward the lens",
+             "product_visible": True, **line("Okay, I almost returned this.")},
+            {**talk, "id": "s02", "purpose": "problem", "duration_s": 6, "expression": "tired, half-smile",
+             "first_frame": "she looks just past the lens", "action": "she touches her cheek, then looks into the lens",
+             **line("I have tried so many things, and nothing really changed.")},
+            {**broll, "id": "s03"},
+            {**talk, "id": "s04", "purpose": "payoff", "duration_s": 4, "expression": "relaxed smile",
+             "first_frame": "she smiles at the lens", "action": "she shrugs",
+             **line("Two weeks in, I get it.")},
+        ]
+        # Fit other target lengths: drop shots from the end, or pad with b-roll.
+        while sum(s["duration_s"] for s in shots) > brief["target_length_s"] + 2:
+            shots.pop()
+        while sum(s["duration_s"] for s in shots) < brief["target_length_s"] - 2:
+            shots.append({**broll, "id": f"s{len(shots) + 1:02d}"})
+        return {"title": ctx["concept"]["title"], "shots": shots}
+
+    def _storyboard_critic(self, ctx: dict) -> dict:
+        return {"notes": [], "storyboard": ctx["storyboard"]}
 
     def _edit_list(self, ctx: dict) -> dict:
         return {

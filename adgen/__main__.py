@@ -1,14 +1,17 @@
 """Command line: `python -m adgen run <brief>` and `python -m adgen clean`."""
+import os
 import shutil
 import time
 from datetime import datetime
 from pathlib import Path
 
 import typer
+from dotenv import load_dotenv
 
-from adgen.ledger import Ledger
+from adgen.ledger import CAPS, Ledger
 from adgen.pipeline import run_pipeline
 from adgen.providers.mock import MockProvider
+from adgen.providers.openrouter import OpenRouter
 from adgen.run import RUNS_DIR, Run
 
 app = typer.Typer(add_completion=False, help="sparkBoard: brand brief in, checked ad creatives out.")
@@ -18,20 +21,34 @@ app = typer.Typer(add_completion=False, help="sparkBoard: brand brief in, checke
 def run(
     brief: Path = typer.Argument(..., exists=True, help="Brief JSON, e.g. briefs/skincare.json"),
     live: bool = typer.Option(False, "--live/--dry-run", help="Real paid calls. Dry run is the default."),
+    cap_openrouter: float = typer.Option(None, help="Hard cap in USD for OpenRouter. Required with --live."),
     auto_approve: bool = typer.Option(False, help="Skip the storyboard approval stop."),
     run_id: str = typer.Option(None, help="Resume this run instead of starting a new one."),
 ):
     """Run the pipeline. Steps that already have output are skipped."""
-    if live:
-        typer.echo("Live providers are not built yet (phases 3-5). Use --dry-run.")
+    if live and cap_openrouter is None:
+        typer.echo("--live needs a cost cap, e.g. --cap-openrouter 0.50")
+        raise typer.Exit(1)
+    if live and auto_approve:
+        typer.echo("Live image and video providers are not built yet (phase 5). "
+                   "Run --live without --auto-approve: it stops at the storyboard.")
         raise typer.Exit(1)
     current = Run(run_id or f"{brief.stem}-{datetime.now():%Y%m%d-%H%M%S}")
-    ledger = Ledger(current.path("ledger.jsonl"))
-    typer.echo(f"Run {current.id} (dry run, mock providers)")
-    finished = run_pipeline(brief, current, MockProvider(ledger), ledger, auto_approve)
-    typer.echo(f"\n{'Finished' if finished else 'Stopped for approval'}: {current.dir}")
-    typer.echo(f"Projected cost of a live run: ${ledger.total():.2f} "
-               + ", ".join(f"{key} ${ledger.spent(key):.2f}/{cap:.2f}" for key, cap in ledger.caps.items()))
+    typer.echo(f"Run {current.id} ({'LIVE, real paid calls' if live else 'dry run, mock providers'})")
+    if live:
+        load_dotenv()
+        ledger = Ledger(current.path("ledger.jsonl"), {**CAPS, "openrouter": cap_openrouter})
+        provider = OpenRouter(ledger, current.dir / "llm", os.environ["OPENROUTER_API_KEY"])
+    else:
+        ledger = Ledger(current.path("ledger.jsonl"))
+        provider = MockProvider(ledger)
+    try:
+        finished = run_pipeline(brief, current, provider, ledger, auto_approve)
+        typer.echo(f"\n{'Finished' if finished else 'Stopped for approval'}: {current.dir}")
+    finally:  # always say what was spent, also when a step failed
+        typer.echo(f"{'Spent' if live else 'Projected cost of a live run'}: ${ledger.total():.3f} ("
+                   + ", ".join(f"{key} ${ledger.spent(key):.3f} of {cap:.2f}" for key, cap in ledger.caps.items())
+                   + ")")
 
 
 @app.command()

@@ -1,0 +1,114 @@
+"""The LLM tasks: what each one is asked, and the JSON it must return.
+
+One Task per LLM call. The provider builds the messages with build_messages();
+the pipeline validates the reply against Task.schema and the code rules.
+"""
+import json
+from dataclasses import dataclass
+
+from pydantic import BaseModel
+
+from adgen.rules import HOOK_MAX_WORDS, LENGTH_TOLERANCE_S, OVERUSED_HOOKS
+from adgen.schemas import (
+    MIN_CAST_AGE, ConceptDrafts, ConceptReview, EditList, Insights, Look, Storyboard,
+    StoryboardReview, max_words,
+)
+
+SYSTEM = (
+    "You are the creative team behind short social video ads that feel like real people, "
+    "not like ads. You write the way people actually talk. "
+    "Reply with one JSON object only: no markdown fences, no text before or after it."
+)
+
+STORYBOARD_RULES = f"""Hard rules (checked by code; a storyboard that breaks one is rejected):
+- Routes: veo_talk = a cast member speaks on camera; veo_broll = silent footage;
+  vo_only = silent footage under a narrator's line; static = a still ad with a headline.
+- veo_talk, veo_broll and vo_only shots last exactly 4, 6 or 8 seconds.
+- Shot durations add up to the brief's target_length_s (within {LENGTH_TOLERANCE_S} s).
+- Spoken lines leave half a second of silence at each end. Max words per line:
+  {max_words(4)} for 4 s, {max_words(6)} for 6 s, {max_words(8)} for 8 s. Count them.
+- One speaker per shot. On-camera speaking shots have shot_type exactly "medium close-up".
+- The first shot has purpose "hook". Its line is {HOOK_MAX_WORDS} words or fewer and gets
+  to the point inside the first 2 seconds: no greeting, no warm-up.
+- In ugc and product_hero ads the product is visible (product_visible true) in shot 1 or 2.
+- character and speaker are cast names from the look, nothing else. Adults only, no children.
+- Every spoken shot has dialogue_tts, dialogue_caption and dialogue_lang, all non-empty.
+  dialogue_tts is what the voice says: Hindi words in Devanagari, English words in Latin.
+  dialogue_caption is the same line in Roman script only.
+  dialogue_lang names the language and accent, e.g. "Indian English, neutral urban accent".
+- Silent shots (veo_broll, static) have empty dialogue fields.
+- Never use these overused phrases: {", ".join(OVERUSED_HOOKS)}.
+
+Craft rules:
+- Dialogue sounds like one friend talking to another: contractions, small hesitations,
+  specific details. No slogans, no feature lists, no superlatives.
+- No health or money claims that cannot be proven (no "cures", "guaranteed", "in 7 days").
+- first_frame describes the still moment the shot opens on. action describes only what
+  moves after that. Keep hand actions simple: the product is held plainly or rests on a surface.
+- Reuse the same location and lighting words in every shot that shares a place."""
+
+
+@dataclass
+class Task:
+    schema: type[BaseModel]
+    max_tokens: int
+    temperature: float
+    instructions: str
+
+
+TASKS = {
+    "insights": Task(Insights, 2000, 0.5, (
+        "Build the insight bank for this brief: the audience's pains, desires and objections "
+        "about this kind of product, and the proof points that would answer them. "
+        "Write each one the way a real customer would say it, 4 to 6 per list.")),
+    "concepts": Task(ConceptDrafts, 3000, 0.9, (
+        "Propose exactly 5 ad concepts for the brief's format and platform, ids c1 to c5. "
+        "Each one is built on a different insight and takes a clearly different angle. "
+        "The hook is the first spoken line or first image and must earn attention in 2 seconds. "
+        f"Avoid overused hooks such as: {', '.join(OVERUSED_HOOKS)}. "
+        "Keep every concept shootable with 1 or 2 adults, simple actions and one location.")),
+    "concept_critic": Task(ConceptReview, 2500, 0.3, (
+        "You are a tough creative director. Score every concept from 1 to 10 on: hook, "
+        "brief_fit, platform_fit, feasibility (can AI video models make it look real: few "
+        "people, simple hands, no crowds, no on-screen text) and distinctiveness. "
+        "Use the full range; generic concepts score low. Do not rewrite or improve the "
+        "concepts. Return one review per concept id with a one or two sentence note.")),
+    "look": Task(Look, 3000, 0.3, (
+        "Decide the look of the ad for the winning concept. Start from the category playbook "
+        "and adapt each field to this brand and concept; give the reason for every choice. "
+        "Then define the cast: fictional people with a short first name in lowercase, "
+        f"age {MIN_CAST_AGE} or older, a plain physical look (never a likeness of a real or "
+        "famous person), one outfit worn in every shot, and a voice description. "
+        "If the ad needs a narrator, add them to the cast too. Keep the cast as small as "
+        "the concept allows.")),
+    "storyboard": Task(Storyboard, 7000, 0.3, (
+        "Write the storyboard and script for the winning concept, shot ids s01, s02, ...\n\n"
+        + STORYBOARD_RULES)),
+    "storyboard_critic": Task(StoryboardReview, 8000, 0.3, (
+        "You are a script editor. Review the storyboard draft, then return the full "
+        "storyboard with your fixes applied, plus one note per issue you found.\n"
+        "- Rewrite any line that sounds like an ad or a script (kind: ad_like).\n"
+        "- Flag and soften health or money claims that cannot be proven (kind: claim).\n"
+        "- Replace overused hooks and stock phrases (kind: overused_hook).\n"
+        "- Anything else worth fixing, e.g. a hook that is slow to start (kind: other).\n"
+        "Keep what already works; do not rewrite for the sake of it. If nothing needs "
+        "changing, return the storyboard unchanged with an empty notes list. "
+        "The returned storyboard must still follow every rule below.\n\n" + STORYBOARD_RULES)),
+    # Used from phase 5, once there are real clips and transcripts to cut.
+    "edit_list": Task(EditList, 3000, 0.3, (
+        "Write the edit list: the clips in order with in and out points and a reason for "
+        "each cut, and the end card line.")),
+}
+
+
+def build_messages(task: str, ctx: dict, feedback: str = "") -> tuple[str, str]:
+    """(system, user) messages for one task. `feedback` holds the errors of a rejected try."""
+    spec = TASKS[task]
+    user = "\n\n".join([
+        f"TASK\n{spec.instructions}",
+        f"CONTEXT\n{json.dumps(ctx, ensure_ascii=False, indent=1)}",
+        f"JSON SCHEMA OF YOUR REPLY\n{json.dumps(spec.schema.model_json_schema())}",
+    ])
+    if feedback:
+        user += f"\n\nYOUR LAST REPLY WAS REJECTED. Fix these problems and reply again:\n{feedback}"
+    return SYSTEM, user

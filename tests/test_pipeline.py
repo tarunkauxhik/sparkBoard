@@ -1,39 +1,24 @@
-"""Pipeline checks: ledger cap, full dry run, resume, approval stop, editor. No paid calls."""
+"""Pipeline checks: ledger cap, full dry run, resume, approval stop, retries, editor."""
 import json
-from pathlib import Path
 
 import pytest
 from PIL import Image
 
 from adgen.editor import caption_events, stream_seconds, validate_edit_list
 from adgen.ledger import BudgetExceeded, Ledger
-from adgen.pipeline import run_pipeline
-from adgen.prompts import shot_prompt
+from adgen.prompts import keyframe_prompt, motion_prompt
 from adgen.providers.kie import veo_payload
 from adgen.providers.mock import MockProvider
-from adgen.run import Run
-from adgen.schemas import Audio, Brief, EditList, Look, Shot, Storyboard
+from adgen.schemas import Audio, Brief, EditList, Look, Storyboard
 from adgen.statics import STATIC_SIZES, static_ad
+from conftest import dry_run
 
-BRIEF = Path(__file__).parent.parent / "briefs/skincare.json"
 STEP_FILES = [
-    "brief.json", "insights.json", "concepts.json", "look.json", "refs.json", "storyboard.json",
-    "approval.json", "keyframes.json", "clips.json", "audio.json", "edit_list.json",
-    "render.json", "qa_report.json", "decision_log.jsonl", "decision_log.md", "ledger.jsonl",
+    "brief.json", "insights.json", "concepts.json", "look.json", "storyboard_draft.json",
+    "storyboard_critic.json", "storyboard.json", "storyboard.md", "approval.json", "refs.json",
+    "keyframes.json", "clips.json", "audio.json", "edit_list.json", "render.json",
+    "qa_report.json", "decision_log.jsonl", "decision_log.md", "ledger.jsonl",
 ]
-
-
-def dry_run(root, auto_approve=True):
-    run = Run("test", root=root)
-    ledger = Ledger(run.path("ledger.jsonl"))
-    finished = run_pipeline(BRIEF, run, MockProvider(ledger), ledger, auto_approve)
-    return run, ledger, finished
-
-
-@pytest.fixture(scope="module")
-def done(tmp_path_factory):
-    """One finished dry run, shared by the tests that only read it."""
-    return dry_run(tmp_path_factory.mktemp("runs"))
 
 
 def test_ledger_refuses_to_pass_the_cap(tmp_path):
@@ -60,12 +45,12 @@ def test_dry_run_creates_every_file_within_the_caps(done):
     assert json.loads(run.path("qa_report.json").read_text("utf-8"))["passed"]
 
 
-def test_final_video_has_the_right_shape_and_length(done):
+def test_final_video_has_the_right_length(done):
     run = done[0]
     final = run.dir / "final/ad_9x16.mp4"
-    # 3 talking shots of 6 s + one 4 s b-roll + a 2 s end card
-    assert stream_seconds(final, "v:0") == pytest.approx(24.0, abs=0.05)
-    assert stream_seconds(final, "a:0") == pytest.approx(24.0, abs=0.03)
+    # shots of 4 + 6 + 4 + 4 s, plus a 2 s end card
+    assert stream_seconds(final, "v:0") == pytest.approx(20.0, abs=0.05)
+    assert stream_seconds(final, "a:0") == pytest.approx(20.0, abs=0.03)
     assert not run.has("work")  # temp folder is removed after the render
 
 
@@ -78,27 +63,53 @@ def test_second_run_skips_everything(done):
     assert run.path("decision_log.jsonl").read_text("utf-8") == decisions
 
 
-def test_stops_for_approval_without_auto_approve(tmp_path):
-    run, _, finished = dry_run(tmp_path, auto_approve=False)
+def test_stops_for_approval_before_any_image_is_made(tmp_path):
+    run, ledger, finished = dry_run(tmp_path, auto_approve=False)
     assert not finished
-    assert run.has("storyboard.json") and not run.has("keyframes.json")
+    assert run.has("storyboard.md") and not run.has("refs.json")
+    assert ledger.spent("kie") == 0
 
 
-def test_shot_rejects_a_line_too_long_for_its_duration(done):
-    shot = json.loads(done[0].path("storyboard.json").read_text("utf-8"))["shots"][0]
-    shot["dialogue_caption"] = "word " * 20  # 20 words in 6 s
-    with pytest.raises(ValueError, match="too many"):
-        Shot.model_validate(shot)
+def test_a_rejected_reply_is_retried_once_with_the_errors(tmp_path):
+    class BadFirstStoryboard(MockProvider):
+        feedback_seen = []
+
+        def chat_json(self, task, ctx, feedback=""):
+            reply = super().chat_json(task, ctx, feedback)
+            if task == "storyboard":
+                self.feedback_seen.append(feedback)
+                if not feedback:
+                    reply["shots"][1]["duration_s"] = 5  # not a Veo length
+            return reply
+
+    run, _, finished = dry_run(tmp_path, provider_cls=BadFirstStoryboard)
+    assert finished
+    assert len(BadFirstStoryboard.feedback_seen) == 2
+    assert "4, 6 or 8" in BadFirstStoryboard.feedback_seen[1]
 
 
-def test_prompt_has_the_fixed_parts_in_order(done):
+def test_schema_retries_stop_after_two_tries(tmp_path):
+    class AlwaysBad(MockProvider):
+        calls = 0
+
+        def chat_json(self, task, ctx, feedback=""):
+            AlwaysBad.calls += 1
+            return {}
+
+    with pytest.raises(ValueError, match="after 2 tries"):
+        dry_run(tmp_path, provider_cls=AlwaysBad)
+    assert AlwaysBad.calls == 2
+
+
+def test_each_shot_has_a_keyframe_prompt_and_a_motion_prompt(done):
     run = done[0]
-    board = run.load("storyboard.json", Storyboard)
-    prompt = shot_prompt(board.shots[0], board, run.load("look.json", Look), run.load("brief.json", Brief))
-    labels = ["Camera:", "Subject:", "Action:", "Setting:", "Lighting:", "Dialogue:", "Audio:", "Style:", "Avoid:"]
-    positions = [prompt.index(label) for label in labels]
-    assert positions == sorted(positions)
-    assert "phone front camera" in prompt  # UGC realism layer
+    board, look, brief = (run.load("storyboard.json", Storyboard), run.load("look.json", Look),
+                          run.load("brief.json", Brief))
+    still, motion = keyframe_prompt(board.shots[0], look, brief), motion_prompt(board.shots[0])
+    assert "phone front camera" in still and "Dialogue:" not in still  # UGC realism layer, no speech
+    assert "woman with shoulder-length dark hair" in still             # cast look, word for word
+    assert 'says, in Indian English: "Okay, I almost returned this."' in motion
+    assert "No one speaks" in motion_prompt(board.shots[2])            # the silent b-roll shot
 
 
 def test_veo_request_never_translates_the_prompt():
@@ -110,7 +121,7 @@ def test_validator_catches_bad_cuts(done):
     run = done[0]
     edit, audio = run.load("edit_list.json", EditList), run.load("audio.json", Audio)
     assert validate_edit_list(edit, audio, run) == []
-    edit.cuts[0].out_s = 3.1          # inside a word of shot 1
+    edit.cuts[0].out_s = 3.1          # inside the last word of shot 1
     edit.cuts[1].file = "clips/fixed/missing.mp4"
     edit.cuts[2].out_s = 99           # past the end of the clip
     errors = "\n".join(validate_edit_list(edit, audio, run))
@@ -122,9 +133,9 @@ def test_captions_are_short_and_follow_the_timeline(done):
     events = caption_events(run.load("edit_list.json", EditList), run.load("audio.json", Audio))
     assert all(len(text.split()) <= 4 for _, _, text in events)
     assert [start for start, _, _ in events] == sorted(start for start, _, _ in events)
-    # shot 3 is silent b-roll at 12-16 s, so no caption may sit there; shot 4 starts at 16 s
-    assert not any(12 < start < 16 for start, _, _ in events)
-    assert any(start == pytest.approx(16.0) for start, _, _ in events)
+    # shot 3 is silent b-roll at 10-14 s; shot 4 starts at 14 s and speaks after 0.5 s of silence
+    assert not any(10 < start < 14 for start, _, _ in events)
+    assert any(start == pytest.approx(14.5) for start, _, _ in events)
 
 
 def test_static_ads_come_out_in_every_size(done, tmp_path):

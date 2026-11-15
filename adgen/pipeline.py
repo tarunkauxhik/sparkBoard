@@ -8,13 +8,16 @@ from pathlib import Path
 
 import yaml
 
+from adgen.brain import TASKS
 from adgen.editor import render_video, stream_seconds, validate_edit_list
 from adgen.ledger import Ledger
-from adgen.prompts import shot_prompt
+from adgen.prompts import keyframe_prompt, motion_prompt
+from adgen.report import write_decision_log_md, write_storyboard_md
+from adgen.rules import storyboard_errors
 from adgen.run import Run
 from adgen.schemas import (
-    Approval, Audio, Brief, Check, Clips, Concepts, EditList, FixedClip, Insights,
-    Keyframes, Look, QAReport, Refs, Render, Storyboard, Take,
+    Approval, Audio, Brief, Check, Clips, Concept, Concepts, EditList, FixedClip, Insights,
+    Keyframes, Look, QAReport, Refs, Render, Storyboard, StoryboardReview, Take,
 )
 from adgen.statics import STATIC_SIZES, static_ad
 
@@ -22,6 +25,7 @@ PLAYBOOKS = Path(__file__).parent.parent / "playbooks"
 # Which video model each storyboard route uses. "static" shots have no clip.
 ROUTE_MODEL = {"veo_talk": "veo3_fast", "veo_broll": "veo3_lite",
                "vo_only": "veo3_lite", "avatar_talk": "kling_avatar"}
+SCHEMA_TRIES = 2  # one try, plus one more with the errors sent back. Never a loop.
 
 
 def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_approve: bool) -> bool:
@@ -39,48 +43,91 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         print(f"  done  {name}")
         return result
 
-    def ask(task: str, cls, **ctx):
-        return cls.model_validate(provider.chat_json(task, ctx))
+    def ask(task: str, check=None, **ctx):
+        """One LLM task. The reply must pass the schema and the code rules in `check`."""
+        feedback = ""
+        for _ in range(SCHEMA_TRIES):
+            try:
+                result = TASKS[task].schema.model_validate(provider.chat_json(task, ctx, feedback))
+                errors = check(result) if check else []
+            except ValueError as error:  # bad JSON or a schema rule
+                errors = [str(error)]
+            if not errors:
+                return result
+            feedback = "\n".join(errors)
+        raise ValueError(f"{task}: still not valid after {SCHEMA_TRIES} tries:\n{feedback}")
 
     # 1 Brief
     brief = step("brief.json", Brief, lambda: (
         Brief.model_validate_json(brief_path.read_text("utf-8")), brief_path.name, "input brief"))
-    b = brief.model_dump()
+    b = brief.model_dump(exclude_none=True)
 
     # 2 Insights
     insights = step("insights.json", Insights, lambda: (
-        ask("insights", Insights, brief=b), "insight bank", "from the brief and product knowledge"))
+        ask("insights", brief=b), "insight bank", "from the brief and product knowledge"))
 
-    # 3 Concepts (write, then critic scores and picks)
+    # 3 Concepts: one call writes five, a separate critic call scores them, code picks the top score
     def make_concepts():
-        concepts = ask("concepts", Concepts, brief=b, insights=insights.model_dump())
-        return concepts, concepts.winner.title, concepts.reason
+        drafts = ask("concepts", brief=b, insights=insights.model_dump()).concepts
+        ids = {d.id for d in drafts}
+        review = ask("concept_critic", brief=b, concepts=[d.model_dump() for d in drafts],
+                     check=lambda r: [] if {x.id for x in r.reviews} == ids
+                     else [f"return exactly one review for each of {sorted(ids)}"])
+        scored = {x.id: x for x in review.reviews}
+        concepts = [Concept(**d.model_dump(), scores=scored[d.id].scores, note=scored[d.id].note)
+                    for d in drafts]
+        winner = max(concepts, key=lambda c: c.scores.total)
+        result = Concepts(concepts=concepts, winner_id=winner.id, reason=winner.note)
+        return result, f"{winner.title} ({winner.scores.total}/50)", winner.note
     concepts = step("concepts.json", Concepts, make_concepts)
+    winner = concepts.winner.model_dump()
 
-    # 4 Look, adapted from the category playbook
+    # 4 Look and cast, adapted from the category playbook
     def make_look():
         playbook = yaml.safe_load((PLAYBOOKS / f"{brief.category}.yaml").read_text("utf-8"))
-        look = ask("look", Look, brief=b, concept=concepts.winner.model_dump(), playbook=playbook)
-        why = "; ".join(f"{name}: {choice.reason}" for name, choice in look)
-        return look, f"{look.mood.value}, {look.setting.value}", why
+        look = ask("look", brief=b, concept=winner, playbook=playbook)
+        why = "; ".join(f"{name}: {choice.reason}" for name, choice in look if name != "cast")
+        cast = ", ".join(member.name for member in look.cast)
+        return look, f"{look.mood.value}; {look.setting.value}; cast: {cast}", why
     look = step("look.json", Look, make_look)
 
-    # 6 Storyboard (written before step 5, because references need the character list)
+    # 6 Storyboard: draft, then a critic rewrite. Both must pass the code rules.
+    #   (Written before step 5, because references are only made for cast who appear on screen.)
     def make_storyboard():
-        board = ask("storyboard", Storyboard, brief=b, concept=concepts.winner.model_dump(),
-                    look=look.model_dump())
-        return board, f"{len(board.shots)} shots", "one shot per beat of the winning concept"
+        draft = ask("storyboard", brief=b, concept=winner, insights=insights.model_dump(),
+                    look=look.model_dump(), check=lambda board: storyboard_errors(board, brief, look))
+        run.save("storyboard_draft.json", draft)
+        review = ask("storyboard_critic", brief=b, look=look.model_dump(), storyboard=draft.model_dump(),
+                     check=lambda r: storyboard_errors(r.storyboard, brief, look))
+        run.save("storyboard_critic.json", review)
+        notes = "; ".join(f"{n.shot_id}: {n.issue}" for n in review.notes) or "the critic changed nothing"
+        return review.storyboard, f"{len(review.storyboard.shots)} shots, {len(review.notes)} critic notes", notes
     board = step("storyboard.json", Storyboard, make_storyboard)
+    errors = storyboard_errors(board, brief, look)  # checked again in case it was edited by hand
+    if errors:
+        raise ValueError("storyboard.json breaks the rules:\n" + "\n".join(errors))
+    write_storyboard_md(run, brief, concepts, look, board, run.load("storyboard_critic.json", StoryboardReview))
 
-    # 5 References: use the brief's, or generate a portrait per character, a packshot, a location
+    # 7 Approve
+    if not run.has("approval.json") and not auto_approve:
+        print(f"\nStoryboard is ready to review: {run.path('storyboard.md')}")
+        print(f"Edit storyboard.json if you like, then continue with: --run-id {run.id} --auto-approve")
+        return False
+    step("approval.json", Approval, lambda: (
+        Approval(approved=True, by="auto"), "approved", "--auto-approve was set"))
+
+    # 5 References: use the brief's, or generate a portrait per on-screen cast member,
+    #   a packshot and a location plate
     def make_refs():
         if brief.refs:
             return brief.refs, "user references", "provided in the brief"
         refs = Refs()
-        for who in board.characters:
-            out = run.path(f"refs/{who.name}.png")
-            provider.image(f"Identity portrait: {who.description}, wearing {who.outfit}", [], out)
-            refs.characters[who.name] = run.rel(out)
+        on_screen = {shot.character for shot in board.shots if shot.character}
+        for who in look.cast:
+            if who.name in on_screen:
+                out = run.path(f"refs/{who.name}.png")
+                provider.image(f"Identity portrait: {who.look}, age {who.age}, wearing {who.outfit}", [], out)
+                refs.characters[who.name] = run.rel(out)
         out = run.path("refs/product.png")
         provider.image(f"Packshot of {brief.product} by {brief.brand}, plain background", [], out)
         refs.product.append(run.rel(out))
@@ -90,14 +137,6 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         return refs, "generated references", "none were provided in the brief"
     refs = step("refs.json", Refs, make_refs)
 
-    # 7 Approve
-    if not run.has("approval.json") and not auto_approve:
-        print(f"\nStoryboard is ready: {run.path('storyboard.json')}")
-        print(f"Edit it if you like, then continue with: --run-id {run.id} --auto-approve")
-        return False
-    step("approval.json", Approval, lambda: (
-        Approval(approved=True, by="auto"), "approved", "--auto-approve was set"))
-
     # 8 Keyframes: one still per shot, with the same references every time
     def make_keyframes():
         files = {}
@@ -106,7 +145,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             if shot.character:
                 shot_refs.append(refs.characters[shot.character])
             out = run.path(f"keyframes/{shot.id}.png")
-            provider.image(shot_prompt(shot, board, look, brief), shot_refs, out)
+            provider.image(keyframe_prompt(shot, look, brief), shot_refs, out)
             files[shot.id] = run.rel(out)
         return Keyframes(files=files), f"{len(files)} keyframes", "keyframe first, then video"
     keyframes = step("keyframes.json", Keyframes, make_keyframes)
@@ -119,14 +158,14 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                 continue
             model = ROUTE_MODEL[shot.route]
             out = run.path(f"clips/raw/{shot.id}_take1.mp4")
-            task_id = provider.video(shot_prompt(shot, board, look, brief),
-                                     run.dir / keyframes.files[shot.id], out, model, shot.duration_s)
+            task_id = provider.video(motion_prompt(shot), run.dir / keyframes.files[shot.id],
+                                     out, model, shot.duration_s)
             takes.append(Take(shot_id=shot.id, take=1, file=run.rel(out), task_id=task_id, model=model))
         return Clips(takes=takes), f"{len(takes)} clips", "model picked by each shot's route"
     clips = step("clips.json", Clips, make_clips)
     shots = {shot.id: shot for shot in board.shots}
 
-    # 10 Audio: swap talking clips to the character's fixed voice, then get word timings
+    # 10 Audio: swap talking clips to the speaker's fixed voice, then get word timings
     def make_audio():
         fixed = []
         for take in clips.takes:
@@ -135,20 +174,20 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             out = run.path(f"clips/fixed/{shot.id}.mp4")
             words = []
             if shot.route == "veo_talk":
-                voice = next(c.voice for c in board.characters if c.name == shot.speaker)
+                voice = next(member.voice for member in look.cast if member.name == shot.speaker)
                 provider.voice_change(src, out, voice, shot.duration_s)
                 words = provider.transcribe(out, shot.dialogue_caption, shot.duration_s)
             else:
                 shutil.copyfile(src, out)
             fixed.append(FixedClip(shot_id=shot.id, file=run.rel(out), words=words))
-        return Audio(clips=fixed), "one voice per character", "voice changer keeps timing, so lip-sync holds"
+        return Audio(clips=fixed), "one voice per cast member", "voice changer keeps timing, so lip-sync holds"
     audio = step("audio.json", Audio, make_audio)
 
     # 11 Edit list
     def make_edit_list():
         clip_info = [{"shot_id": c.shot_id, "file": c.file, "duration_s": shots[c.shot_id].duration_s}
                      for c in audio.clips]
-        edit = ask("edit_list", EditList, brief=b, clips=clip_info)
+        edit = ask("edit_list", brief=b, clips=clip_info)
         return edit, f"{len(edit.cuts)} cuts + end card", "; ".join(c.reason for c in edit.cuts)
     edit = step("edit_list.json", EditList, make_edit_list)
 
@@ -162,7 +201,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             if shot.route == "static":
                 for name, size in STATIC_SIZES.items():
                     out = run.path(f"statics/{shot.id}_{name}.png")
-                    static_ad(run.dir / keyframes.files[shot.id], shot.dialogue_caption, brief.brand, size, out)
+                    static_ad(run.dir / keyframes.files[shot.id], shot.headline, brief.brand, size, out)
                     files.append(run.rel(out))
         return Render(files=files), f"{len(files)} file(s)", "edit list passed validation"
     render = step("render.json", Render, make_render)
@@ -180,5 +219,5 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         return report, "pass" if report.passed else "fail", "; ".join(c.name for c in checks if not c.passed)
     step("qa_report.json", QAReport, make_qa)
 
-    run.write_decision_log_md()
+    write_decision_log_md(run)
     return True
