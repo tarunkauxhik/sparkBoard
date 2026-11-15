@@ -1,0 +1,8 @@
+.env
+docs/private/
+runs/
+.venv/
+.uv/
+__pycache__/
+.pytest_cache/
+*.pyc
