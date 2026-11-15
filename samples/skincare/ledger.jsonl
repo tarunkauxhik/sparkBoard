@@ -1,0 +1,4 @@
+{"key": "openrouter", "item": "sonnet:storyboard (no reply, worst case)", "cost": 0.08367, "mock": false}
+{"key": "openrouter", "item": "correction: the no-reply storyboard call was billed 0.04498 (from the key usage), not the 0.08367 worst case", "cost": -0.03869, "mock": false}
+{"key": "openrouter", "item": "sonnet:storyboard", "cost": 0.04238, "mock": false}
+{"key": "openrouter", "item": "sonnet:storyboard_critic", "cost": 0.050202, "mock": false}

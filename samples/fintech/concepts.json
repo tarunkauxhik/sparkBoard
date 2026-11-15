@@ -1,0 +1,81 @@
+{
+  "concepts": [
+    {
+      "id": "c1",
+      "title": "Court Mein Hisaab",
+      "hook": "Order order! Case number 4: Rohan ke 800 rupaye, pichle teen mahine se pending.",
+      "insight": "Friends keep saying 'kal de dunga' and tomorrow never comes, while the person asking feels awkward.",
+      "summary": "Role play in one living room. One friend plays judge with a steel tumbler as gavel, the other plays the accused flatmate who keeps saying 'kal de dunga'. Judge sighs and says the court has no time for this, then holds up the phone showing the Chukta group where everyone can see who owes what. The app sends the reminder automatically, so the judge never has to ask. Accused settles by UPI inside the app on the spot. Judge bangs the tumbler: 'Case dismissed.' End card: Chukta, free to download.",
+      "scores": {
+        "hook": 9,
+        "brief_fit": 9,
+        "platform_fit": 8,
+        "feasibility": 8,
+        "distinctiveness": 8
+      },
+      "note": "The courtroom hook is instantly funny and relatable, and the steel tumbler gavel is a lovely Indian-household touch. It covers the group view, auto-reminders and UPI settle-up. Two people in one room is easy for AI video; only the phone screen needs care."
+    },
+    {
+      "id": "c2",
+      "title": "Bad Guy Ka Interview",
+      "hook": "Interviewer: Aap flatmates se paise maangne mein itne awkward kyun ho jaate ho?",
+      "insight": "The person who asks for money always becomes the 'bad guy' and it feels awkward.",
+      "summary": "Mock talk-show on a sofa. One person is the host holding a spoon as a mic, the other is the 'Bad Guy' guest who sighs about being the one who always asks for money back. Host asks what changed. Guest shows the phone: Chukta sends payment reminders automatically, so the app is the bad guy now. Guest relaxes, smiling, as a UPI settle-up notification pops in. Host: 'Toh aap ab kya karte ho?' Guest: 'Chai.' End card: Chukta, free to download.",
+      "scores": {
+        "hook": 7,
+        "brief_fit": 7,
+        "platform_fit": 7,
+        "feasibility": 8,
+        "distinctiveness": 7
+      },
+      "note": "'The app is the bad guy now' is a sharp, true insight, and the 'Chai.' punchline lands. The hook is a bit formal and interview-like for a first-second scroll stopper. It leans on the reminder feature and underplays the group view. Two people on a sofa with a spoon mic is simple to generate."
+    },
+    {
+      "id": "c3",
+      "title": "WhatsApp Scroll Challenge",
+      "hook": "Bhai, bata 14 March ko kisne petrol ke paise diye the. Sirf 5 second hain.",
+      "insight": "Hisaab in a WhatsApp group gets buried in scrolling and nobody remembers what they owe.",
+      "summary": "Game-show role play in a flat. One friend is the host with a buzzer sound, the other is the contestant who frantically scrolls a chaotic WhatsApp group with a ticking timer overlay and loses. The host then says, 'Ab Chukta se try kar.' Contestant opens the group in the app, where it is all in one place and everyone sees who owes what, and answers in two seconds. Host rings the buzzer for the win. End card: Chukta, free to download.",
+      "scores": {
+        "hook": 8,
+        "brief_fit": 7,
+        "platform_fit": 8,
+        "feasibility": 5,
+        "distinctiveness": 6
+      },
+      "note": "The specific date and the 5-second pressure make a strong hook. Feasibility suffers: a chaotic WhatsApp scroll, a timer overlay and screen content are exactly where AI video fails. Game-show formats are also fairly common."
+    },
+    {
+      "id": "c4",
+      "title": "Trip Ke Baad Ka Bill",
+      "hook": "Goa se wapas aaye 10 minute hue hain aur Aman already calculator nikaal ke baith gaya.",
+      "insight": "After a trip, everyone paid in different places and sorting out the hisaab drains the mood.",
+      "summary": "Two friends on a couch, bags still at their feet. Friend A is exhausted, using a calculator and a crumpled receipt list, muttering that you paid for the cab, I paid for the stay, who paid for the shack. Friend B calmly says 'Ruk' and shows the phone: split each bill inside a Chukta group, everyone sees who owes what. They settle by UPI in the app within two minutes. A is stunned and puts the calculator away. End card: Chukta, free to download.",
+      "scores": {
+        "hook": 6,
+        "brief_fit": 7,
+        "platform_fit": 6,
+        "feasibility": 6,
+        "distinctiveness": 5
+      },
+      "note": "The post-trip scene is relatable, but the hook is a narration line rather than a punchy visual. It feels like a standard problem-solution ad, and it is only loosely role play. A calculator and a crumpled receipt list add hand-detail risk."
+    },
+    {
+      "id": "c5",
+      "title": "Naye Flatmate Ka Sawaal",
+      "hook": "Tu bol raha hai ek aur app? Mere phone mein already 63 apps hain.",
+      "insight": "People resist downloading yet another app, but the payoff is not having to chase friends for money.",
+      "summary": "Role play of an objection. Friend A is the sceptical flatmate holding a phone with a cluttered screen and Friend B is the one pitching. B answers calmly with real facts: it is free, bills get split in the group, everyone sees who owes what, and reminders go out on their own. A challenges: 'Aur agar main bhool gaya?' B points at the phone: the app already reminded him. A grudgingly deletes an old game to make space and installs Chukta. End card: Chukta, free to download.",
+      "scores": {
+        "hook": 6,
+        "brief_fit": 6,
+        "platform_fit": 5,
+        "feasibility": 7,
+        "distinctiveness": 6
+      },
+      "note": "The objection-handling idea is honest, and '63 apps' is a decent line. But the pitch recites features and sounds scripted, the middle drags, and the cluttered phone screen and the uninstall/install action are tricky to render. It is the least entertaining of the set."
+    }
+  ],
+  "winner_id": "c1",
+  "reason": "The courtroom hook is instantly funny and relatable, and the steel tumbler gavel is a lovely Indian-household touch. It covers the group view, auto-reminders and UPI settle-up. Two people in one room is easy for AI video; only the phone screen needs care."
+}

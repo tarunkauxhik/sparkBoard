@@ -1,0 +1,151 @@
+{
+  "title": "The Date on the Bag",
+  "hook_type": "drop_in_mid_scene",
+  "hook_reason": "We land mid-search with Dana already turning a store bag over and muttering, so the tension of no roast date is on screen before any product claim.",
+  "plan": "s01 5 words = 4 s; s02 5 words = 4 s; s03 7 words = 6 s; s04 8 words = 6 s; total 20 s",
+  "shots": [
+    {
+      "id": "s01",
+      "purpose": "hook",
+      "duration_s": 4,
+      "shot_type": "medium close-up",
+      "angle": "eye level",
+      "framing": "Dana at the counter holding a generic store coffee bag up close, turning it over",
+      "character": "dana",
+      "speaker": "dana",
+      "face_visible": true,
+      "first_frame": "Dana stands at a kitchen counter holding a plain generic coffee bag in both hands, tilted to read the back, brow slightly furrowed, the bag's label area blank of readable text.",
+      "beats": [
+        {
+          "start_s": 0.0,
+          "end_s": 2.0,
+          "action": "Dana turns the bag over and scans the back of it",
+          "eye_line": "looks down at the bag"
+        },
+        {
+          "start_s": 2.0,
+          "end_s": 4.0,
+          "action": "She lowers the bag a little and glances up",
+          "eye_line": "looks into the lens"
+        }
+      ],
+      "setting": "home kitchen counter, wooden board, window at left, ceramic mug in soft focus behind her",
+      "lens": "Sony FE 50mm f/1.8 at f/2.2",
+      "lighting": "low morning sun through a kitchen window at camera left",
+      "location": "home kitchen counter, early morning",
+      "product_visible": false,
+      "blank_label_text": "",
+      "dialogue_tts": "It's probably on the... nope.",
+      "dialogue_caption": "It's probably on the... nope.",
+      "dialogue_lang": "Indian English",
+      "delivery": "dry and low, trailing off on 'the', then a flat beat before 'nope'",
+      "headline": "",
+      "camera_move": "light handheld",
+      "audio_notes": "quiet kitchen room tone, faint paper crinkle of the bag",
+      "route": "veo_talk"
+    },
+    {
+      "id": "s02",
+      "purpose": "problem",
+      "duration_s": 4,
+      "shot_type": "close-up",
+      "angle": "high angle over the shoulder",
+      "framing": "Dana's hands setting the generic bag down on the wooden board, a dark green Brasswick bag already standing beside it",
+      "character": null,
+      "speaker": "the narrator",
+      "face_visible": false,
+      "first_frame": "Two hands rest flat on the wooden board next to a plain generic bag lying on its side and a dark green Brasswick bag standing upright, a brass bangle on the left wrist.",
+      "beats": [
+        {
+          "start_s": 0.0,
+          "end_s": 4.0,
+          "action": "Dana's right hand slides the generic bag aside and her left hand rests on the green bag",
+          "eye_line": ""
+        }
+      ],
+      "setting": "wooden board on the counter, green plant on the windowsill behind, ceramic mug",
+      "lens": "Sony FE 50mm f/1.8 at f/2.2",
+      "lighting": "low morning sun through a kitchen window at camera left",
+      "location": "home kitchen counter, early morning",
+      "product_visible": true,
+      "blank_label_text": "",
+      "dialogue_tts": "[sighs] Some bags just tell you.",
+      "dialogue_caption": "Some bags just tell you.",
+      "dialogue_lang": "Indian English",
+      "delivery": "slow and even, a pause before 'tell'",
+      "headline": "",
+      "camera_move": "light handheld",
+      "audio_notes": "quiet kitchen room tone, soft thud of a bag on wood",
+      "route": "vo_only"
+    },
+    {
+      "id": "s03",
+      "purpose": "proof",
+      "duration_s": 6,
+      "shot_type": "close-up",
+      "angle": "eye level",
+      "framing": "Brasswick bag held toward lens, a finger resting beside the printed date area",
+      "character": null,
+      "speaker": "the narrator",
+      "face_visible": false,
+      "first_frame": "Dana's hand holds the dark green Brasswick bag steady, a finger resting beside a blank rectangular label area where the roast date is printed.",
+      "beats": [
+        {
+          "start_s": 0.0,
+          "end_s": 6.0,
+          "action": "Camera pushes slowly in toward the blank label area while her finger stays still beside it",
+          "eye_line": ""
+        }
+      ],
+      "setting": "dark green Brasswick bag in hand, blurred kitchen window behind",
+      "lens": "Sony FE 50mm f/1.8 at f/2.2",
+      "lighting": "low morning sun through a kitchen window at camera left",
+      "location": "home kitchen counter, early morning",
+      "product_visible": true,
+      "blank_label_text": "Roasted: date",
+      "dialogue_tts": "Whole beans. Roast date on every bag.",
+      "dialogue_caption": "Whole beans. Roast date on every bag.",
+      "dialogue_lang": "Indian English",
+      "delivery": "calm and plain, a short pause after 'beans'",
+      "headline": "",
+      "camera_move": "slow push-in",
+      "audio_notes": "quiet kitchen room tone, faint bag rustle",
+      "route": "vo_only"
+    },
+    {
+      "id": "s04",
+      "purpose": "cta",
+      "duration_s": 6,
+      "shot_type": "close-up",
+      "angle": "eye level",
+      "framing": "hand grinder on the board with beans in the hopper, held steady",
+      "character": null,
+      "speaker": "the narrator",
+      "face_visible": false,
+      "first_frame": "A hand grinder sits on the wooden board with whole beans in the hopper, Dana's hand resting on the crank, a ceramic mug beside it.",
+      "beats": [
+        {
+          "start_s": 0.0,
+          "end_s": 6.0,
+          "action": "Dana's hand turns the crank slowly and steadily while the camera stays still",
+          "eye_line": ""
+        }
+      ],
+      "setting": "hand grinder, wooden board, ceramic mug, green plant on the sill",
+      "lens": "Sony FE 50mm f/1.8 at f/2.2",
+      "lighting": "low morning sun through a kitchen window at camera left",
+      "location": "home kitchen counter, early morning",
+      "product_visible": true,
+      "blank_label_text": "",
+      "dialogue_tts": "Single-origin, small batch. Monthly box is linked below.",
+      "dialogue_caption": "Single-origin, small batch. Monthly box is linked below.",
+      "dialogue_lang": "Indian English",
+      "delivery": "quiet and sincere, a pause before 'below'",
+      "headline": "",
+      "camera_move": "static",
+      "audio_notes": "quiet kitchen room tone, slow grinder crank and beans cracking",
+      "route": "vo_only"
+    }
+  ],
+  "end_card_line": "Roasted in small batches"
+}

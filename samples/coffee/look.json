@@ -1,0 +1,67 @@
+{
+  "mood": {
+    "value": "warm and unhurried, with a small dry-funny beat at the start and a quiet satisfied settle at the end",
+    "reason": "The playbook's daily-ritual warmth fits a coffee brand. The hook is a playful search, so one light comic beat keeps the scroll-stopper from feeling like a hard sell."
+  },
+  "tone": {
+    "value": "quiet and personal, like a note from the maker, with understatement instead of hype",
+    "reason": "The playbook tone suits brand_story. The line 'that's the flex' gets delivered flat and low-key, which removes the cute edge and sounds like a real person."
+  },
+  "setting": {
+    "value": "a lived-in home kitchen counter early in the morning, with a window at left, a wooden board, a hand grinder and a ceramic mug",
+    "reason": "This is the playbook's real kitchen counter. A home brewer audience will see themselves in it, and one small set is easy to keep consistent across shots."
+  },
+  "camera": {
+    "value": "handheld at chest height, close on hands and the bag, with one slow push-in on the printed roast date and a held, steady final shot of the grinder",
+    "reason": "Handheld close details come from the playbook and feel like real footage. The push-in puts the proof point on screen, and holding still on the last shot keeps AI motion from wobbling."
+  },
+  "lens": {
+    "value": "Sony FE 50mm f/1.8 at f/2.2",
+    "reason": "The playbook calls for a 50 mm close to hands and steam. A shallow f/2.2 blurs the kitchen behind and keeps the bag and hands sharp."
+  },
+  "light": {
+    "value": "low morning sun through a kitchen window at camera left",
+    "reason": "This is the playbook's single real source. It gives warm side light on the bag, hands and steam, and it reads as honest morning light rather than a studio setup."
+  },
+  "palette": {
+    "value": "browns, cream and brass, with one dark green (the Brasswick bag and a plant on the sill)",
+    "reason": "The playbook palette ties the brand to its name through the brass. Making the bag the green accent pulls the eye to it against the generic bag."
+  },
+  "pacing": {
+    "value": "four shots at about 5 seconds each: the search, the sigh, the Brasswick bag with the date, the grind and tag",
+    "reason": "Cuts every 4-6 seconds from the playbook fit a 20 second ad. The structure is simple: the problem first, then the answer, then the close."
+  },
+  "cast": [
+    {
+      "name": "dana",
+      "age": 38,
+      "on_screen": true,
+      "look": "White woman with a sturdy medium build, fair freckled skin, wavy auburn hair pulled into a low knot with loose strands, light hazel eyes, and a wry, easy half-smile",
+      "outfit": "rust-colored linen button shirt with the sleeves rolled to the elbow, and a thin brass bangle on her left wrist",
+      "voice": "low, dry and slightly raspy, friendly and unforced",
+      "accent": "Midwestern American",
+      "pace": "unhurried, with small pauses before the punchline",
+      "energy": "low-key and amused",
+      "speech_habits": [
+        "says 'Okay, hang on' while searching",
+        "dry understatement like 'Huh. Nothing.'",
+        "trails off with 'it's probably on the...' when she can't find it"
+      ]
+    },
+    {
+      "name": "the narrator",
+      "age": 45,
+      "on_screen": false,
+      "look": "",
+      "outfit": "",
+      "voice": "warm, calm and close to the mic, like a note read aloud by the roaster",
+      "accent": "neutral American",
+      "pace": "slow and even",
+      "energy": "quiet and sincere",
+      "speech_habits": [
+        "short plain sentences, often just three or four words",
+        "pauses before the last word of a line"
+      ]
+    }
+  ]
+}

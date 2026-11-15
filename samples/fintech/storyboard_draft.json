@@ -1,0 +1,185 @@
+{
+  "title": "Court Mein Hisaab",
+  "hook_type": "drop_in_mid_scene",
+  "hook_reason": "We land mid-trial: Neha is already in judge mode and reading out Rohan's pending 800 rupees, so the tension is there from the first second.",
+  "plan": "s01 6 words = 4 s; s02 4 words = 4 s; s03 silent = 4 s; s04 5 words = 4 s; s05 9 words = 6 s; total 22 s",
+  "shots": [
+    {
+      "id": "s01",
+      "purpose": "hook",
+      "duration_s": 4,
+      "shot_type": "medium close-up",
+      "angle": "eye level, slightly low",
+      "framing": "Neha centered on the sofa, navy dupatta over her shoulder, steel tumbler raised in one hand, phone held in the other hand at chest height",
+      "character": "neha",
+      "speaker": "neha",
+      "face_visible": true,
+      "first_frame": "Neha sits upright on the faded teal sofa with the navy dupatta over one shoulder, a steel tumbler in her right hand like a gavel and her phone in her left hand, her face mock-serious.",
+      "beats": [
+        {
+          "start_s": 0.5,
+          "end_s": 3.5,
+          "action": "Taps the steel tumbler twice on the table edge and then points it toward the off-screen accused",
+          "eye_line": "looks at rohan off-right"
+        }
+      ],
+      "setting": "faded teal sofa, low center table with chai cups, beige wall behind",
+      "lens": "iPhone 15 main camera, 24mm equivalent, f/1.78",
+      "lighting": "low evening sun through the living room window, warm yellow table lamp as fill",
+      "location": "lived-in Indian flat living room",
+      "product_visible": true,
+      "blank_label_text": "",
+      "dialogue_tts": "Order order. Rohan, 800 rupaye pending.",
+      "dialogue_caption": "Order order. Rohan, 800 rupaye pending.",
+      "dialogue_lang": "Hinglish",
+      "delivery": "theatrical and deliberate, dry judge voice, a small pause after the second order",
+      "headline": "",
+      "camera_move": "light handheld",
+      "audio_notes": "quiet living room tone, faint traffic outside the window, soft tumbler tap",
+      "route": "veo_talk"
+    },
+    {
+      "id": "s02",
+      "purpose": "problem",
+      "duration_s": 4,
+      "shot_type": "medium close-up",
+      "angle": "eye level",
+      "framing": "Rohan alone on the other end of the sofa, a cushion in his lap, a drying rack blurred behind him",
+      "character": "rohan",
+      "speaker": "rohan",
+      "face_visible": true,
+      "first_frame": "Rohan sits barefoot on the sofa in the mustard t-shirt, a cushion in his lap, his hands open at his sides, his face wide-eyed and pretending to be innocent.",
+      "beats": [
+        {
+          "start_s": 0.5,
+          "end_s": 3.5,
+          "action": "Spreads both hands out palms up and shrugs his shoulders",
+          "eye_line": "looks at neha off-left"
+        }
+      ],
+      "setting": "sofa end, drying rack with clothes in the corner, beige wall",
+      "lens": "iPhone 15 main camera, 24mm equivalent, f/1.78",
+      "lighting": "low evening sun through the living room window, warm yellow table lamp as fill",
+      "location": "lived-in Indian flat living room",
+      "product_visible": false,
+      "blank_label_text": "",
+      "dialogue_tts": "कल दे दूँगा, पक्का।",
+      "dialogue_caption": "Kal de dunga, pakka.",
+      "dialogue_lang": "Hinglish",
+      "delivery": "total confidence, lazy and drawling, slight Pune lilt, a little too smooth",
+      "headline": "",
+      "camera_move": "light handheld",
+      "audio_notes": "quiet living room tone, faint traffic outside the window",
+      "route": "veo_talk"
+    },
+    {
+      "id": "s03",
+      "purpose": "product",
+      "duration_s": 4,
+      "shot_type": "close-up insert",
+      "angle": "over the shoulder, slightly high",
+      "framing": "Phone screen filling most of the frame, held in Neha's hand, the table edge below",
+      "character": null,
+      "speaker": null,
+      "face_visible": false,
+      "first_frame": "Neha's hand holds the phone steady in front of the lens, showing a bright Chukta green group screen with a list of names and amounts, the amount area blank.",
+      "beats": [
+        {
+          "start_s": 0.0,
+          "end_s": 4.0,
+          "action": "The phone is held still while a thumb rests at the screen edge, the group list visible with Rohan's row at the top",
+          "eye_line": ""
+        }
+      ],
+      "setting": "phone in hand, steel tumbler and chai cups blurred on the center table",
+      "lens": "iPhone 15 main camera, 24mm equivalent, f/1.78",
+      "lighting": "low evening sun through the living room window, warm yellow table lamp as fill",
+      "location": "lived-in Indian flat living room",
+      "product_visible": true,
+      "blank_label_text": "Rohan 800",
+      "dialogue_tts": "",
+      "dialogue_caption": "",
+      "dialogue_lang": "",
+      "delivery": "",
+      "headline": "",
+      "camera_move": "static",
+      "audio_notes": "quiet living room tone, a soft phone tap",
+      "route": "veo_broll"
+    },
+    {
+      "id": "s04",
+      "purpose": "proof",
+      "duration_s": 4,
+      "shot_type": "medium close-up",
+      "angle": "eye level",
+      "framing": "Rohan on the sofa holding his own phone at chest height, cushion beside him",
+      "character": "rohan",
+      "speaker": "rohan",
+      "face_visible": true,
+      "first_frame": "Rohan sits on the sofa holding his phone in both hands at chest height, the cushion pushed aside, his shoulders dropped.",
+      "beats": [
+        {
+          "start_s": 0.5,
+          "end_s": 3.5,
+          "action": "Taps his phone screen once with his thumb, then lowers the phone to his lap",
+          "eye_line": "looks at neha off-left"
+        }
+      ],
+      "setting": "sofa end, chai cups on the center table, beige wall",
+      "lens": "iPhone 15 main camera, 24mm equivalent, f/1.78",
+      "lighting": "low evening sun through the living room window, warm yellow table lamp as fill",
+      "location": "lived-in Indian flat living room",
+      "product_visible": true,
+      "blank_label_text": "",
+      "dialogue_tts": "अरे यार, UPI कर दिया।",
+      "dialogue_caption": "Arre yaar, UPI kar diya.",
+      "dialogue_lang": "Hinglish",
+      "delivery": "gives in with a short sigh, speeds up a little, caught out but smiling",
+      "headline": "",
+      "camera_move": "light handheld",
+      "audio_notes": "quiet living room tone, a soft phone notification chime",
+      "route": "veo_talk"
+    },
+    {
+      "id": "s05",
+      "purpose": "cta",
+      "duration_s": 6,
+      "shot_type": "medium close-up",
+      "angle": "eye level",
+      "framing": "Neha centered on the sofa, tumbler in one hand, phone in the other, a small smile starting",
+      "character": "neha",
+      "speaker": "neha",
+      "face_visible": true,
+      "first_frame": "Neha sits upright on the teal sofa with the dupatta over her shoulder, the steel tumbler resting on the table in front of her and her phone in her left hand.",
+      "beats": [
+        {
+          "start_s": 0.5,
+          "end_s": 2.5,
+          "action": "Bangs the steel tumbler once on the center table",
+          "eye_line": "looks at rohan off-right"
+        },
+        {
+          "start_s": 2.5,
+          "end_s": 5.5,
+          "action": "Turns to the lens and lifts her phone slightly toward it",
+          "eye_line": "looks into the lens"
+        }
+      ],
+      "setting": "teal sofa, low center table with steel tumbler and chai cups, beige wall",
+      "lens": "iPhone 15 main camera, 24mm equivalent, f/1.78",
+      "lighting": "low evening sun through the living room window, warm yellow table lamp as fill",
+      "location": "lived-in Indian flat living room",
+      "product_visible": true,
+      "blank_label_text": "",
+      "dialogue_tts": "Case dismissed. Reminder ab app bhejega, link neeche hai.",
+      "dialogue_caption": "Case dismissed. Reminder ab app bhejega, link neeche hai.",
+      "dialogue_lang": "Hinglish",
+      "delivery": "judge voice for the first two words, then drops the act and talks quicker like a friend, easy and relaxed",
+      "headline": "",
+      "camera_move": "light handheld",
+      "audio_notes": "quiet living room tone, a steel tumbler bang, faint traffic outside the window",
+      "route": "veo_talk"
+    }
+  ],
+  "end_card_line": "Free to download."
+}

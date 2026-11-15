@@ -1,0 +1,81 @@
+{
+  "concepts": [
+    {
+      "id": "c1",
+      "title": "The Sting Test",
+      "hook": "Okay, new serum on my cheek. Let's see how long before it stings.",
+      "insight": "Her face stings the moment anything new touches it, even products that claim to be gentle.",
+      "summary": "One woman in her bedroom, handheld to camera. She dabs Dewline on one cheek and narrates the wait in real time, with an on-screen counter ticking up to 10 seconds. She keeps checking and says 'nothing yet'. She mentions it's fragrance-free and made for sensitive skin, then admits she's still a bit cautious but this is the first time she hasn't flinched. Ends on a calm face and the bottle, with a line like 'Patch test it yourself.' No claims beyond the product facts.",
+      "scores": {
+        "hook": 8,
+        "brief_fit": 8,
+        "platform_fit": 9,
+        "feasibility": 5,
+        "distinctiveness": 7
+      },
+      "note": "The real-time sting test turns the audience's biggest fear into the hook, and it feels native to Reels. The on-screen counter breaks the no-text rule for AI video, and 'first time I haven't flinched' edges toward a claim, though it stays mostly within the facts."
+    },
+    {
+      "id": "c2",
+      "title": "The Graveyard Shelf",
+      "hook": "This is ten half-used products and my skin is still angry.",
+      "insight": "She has a pile of half-used products and her skin is still irritated, so she's tired of experimenting.",
+      "summary": "One woman at a dressing table sweeps her arm across a messy pile of bottles and pushes them aside. She leaves a single Dewline 30 ml bottle in the middle. She says she wants one simple thing she can trust on her face. She points to ceramides and fragrance-free as the reasons she picked it, and applies it in one quick step. Ends with 'Short routine. That's the point.'",
+      "scores": {
+        "hook": 6,
+        "brief_fit": 7,
+        "platform_fit": 7,
+        "feasibility": 6,
+        "distinctiveness": 3
+      },
+      "note": "The pile-of-products-versus-one-bottle idea is a skincare cliché, so it's relatable but forgettable. The arm sweep over many bottles is hard for AI to render cleanly, and the product reasons arrive late."
+    },
+    {
+      "id": "c3",
+      "title": "Mumbai Humidity, No Stickiness",
+      "hook": "Serums and Mumbai humidity never get along. Watch this.",
+      "insight": "She assumes serums feel heavy, greasy and sticky in humid weather.",
+      "summary": "One woman by a window with a fan on, fanning herself with a dramatic sigh. She says she hates sticky serums and puts a few drops of Dewline on the back of her hand. She rubs it in and tilts her hand to the camera, then presses her palm to her cheek and says it feels light and water-based, nothing heavy. Ends with her touching her hair away from her face without any tackiness, and the line 'Light enough for this weather.'",
+      "scores": {
+        "hook": 7,
+        "brief_fit": 5,
+        "platform_fit": 7,
+        "feasibility": 7,
+        "distinctiveness": 6
+      },
+      "note": "The humidity angle is fresh and gives a visual demo, with a clear tie to the lightweight water-based fact. It drifts from the sensitive, irritated-skin insight toward a texture story, and the hand-rubbing and hair touch are fiddly for AI."
+    },
+    {
+      "id": "c4",
+      "title": "Is It Just a Moisturiser?",
+      "hook": "Be honest, is this just a moisturiser with a fancy name?",
+      "insight": "She doubts that a product will actually repair anything and not just be a renamed moisturiser.",
+      "summary": "Two friends on a sofa. One holds Dewline and asks the sceptical question. The other reads the bottle and explains simply: it contains ceramides, which is what a barrier repair serum is about, and it's made for sensitive skin, not labelled that way as an afterthought. The sceptic squints, tries a drop on her wrist, and shrugs approvingly. Ends with the friend saying 'Read the label, then decide.' Keeps to stated facts and makes no medical promises.",
+      "scores": {
+        "hook": 7,
+        "brief_fit": 6,
+        "platform_fit": 6,
+        "feasibility": 5,
+        "distinctiveness": 5
+      },
+      "note": "The skeptical question is a believable hook and the friend banter feels like real talk. Two people on a sofa raises consistency problems for AI, and a friend reading the label drifts into a talking-head explainer rather than an emotional pull."
+    },
+    {
+      "id": "c5",
+      "title": "Evening Cheeks",
+      "hook": "This is my face after a full day of Delhi pollution and office AC.",
+      "insight": "By evening, pollution and air conditioning leave her cheeks red and flaky, and she feels conscious about it.",
+      "summary": "One woman comes home, drops her bag and faces the camera in close-up, showing her tired, red cheeks without filters. She sighs and says she just wants something that doesn't sting. She takes the Dewline bottle, applies it in two simple steps, and says it's fragrance-free with ceramides and feels lightweight. Ends with her relaxed on the couch, saying 'This is my night routine now: one step.' Talks about comfort only, not guaranteed results.",
+      "scores": {
+        "hook": 8,
+        "brief_fit": 8,
+        "platform_fit": 8,
+        "feasibility": 6,
+        "distinctiveness": 6
+      },
+      "note": "The unfiltered red cheeks and the Delhi pollution and AC specifics are honest and relatable for this audience. Rendering believable red, flaky skin in close-up is hard for AI, and the 'two simple steps' beat is a little vague."
+    }
+  ],
+  "winner_id": "c1",
+  "reason": "The real-time sting test turns the audience's biggest fear into the hook, and it feels native to Reels. The on-screen counter breaks the no-text rule for AI video, and 'first time I haven't flinched' edges toward a claim, though it stays mostly within the facts."
+}

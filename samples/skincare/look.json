@@ -1,0 +1,51 @@
+{
+  "mood": {
+    "value": "calm, honest, a little wary, with a small unforced relief at the end",
+    "reason": "The playbook's calm and vulnerable mood fits the sting-test premise. She starts braced and ends relaxed, so the audience feels the fear first and then the ease."
+  },
+  "tone": {
+    "value": "a friend talking to you from the bathroom mirror, dry and unpolished, with no spokesperson phrasing and no big claims",
+    "reason": "The concept only works if she sounds like a real person. Keeping to the product facts (fragrance-free, made for sensitive skin) also avoids over-claiming."
+  },
+  "setting": {
+    "value": "A small real Indian-home bathroom with a mirror, a hand towel on a hook, a few everyday bottles on a shelf, and a slightly steamy edge to the glass. It is lived-in and not styled.",
+    "reason": "The playbook's bathroom suits a skincare routine. The concept says bedroom, but a bathroom mirror gives the face a natural close-up and reads as an everyday ritual. Ordinary clutter keeps it from looking like an ad."
+  },
+  "camera": {
+    "value": "Phone front camera, handheld, held at arm's length with small natural wobble. She sometimes leans in to show her cheek. One continuous take with a few jump cuts.",
+    "reason": "This matches Reels' native selfie look and the playbook. The slight shake supports the real-time wait. Mostly continuous takes make the 10-second test believable."
+  },
+  "lens": {
+    "value": "Phone front camera wide lens, about 24mm equivalent at f/2.2, close to the face",
+    "reason": "This is the real selfie lens the audience knows. The close distance shows skin texture and the cheek patch clearly, and the slight wide-angle distortion adds to the authentic look."
+  },
+  "light": {
+    "value": "Soft daylight from a single bathroom window on her left, with no other lamps on",
+    "reason": "One window source follows the playbook. It is honest to skin, showing any redness or calm clearly. It also keeps the scene easy to render consistently across shots."
+  },
+  "palette": {
+    "value": "Warm whites, natural brown skin tones, and one muted sage green taken from the bottle and a small towel accent",
+    "reason": "This keeps to the playbook's single brand color. Sage reads as gentle and soothing for sensitive skin, and the neutral surroundings make the bottle the only color note."
+  },
+  "pacing": {
+    "value": "Slow start with the hook in the first second, then cuts every 4-6 seconds across about 18 seconds: dab and wait, check and 'nothing yet', facts and cautious admission, calm face and bottle",
+    "reason": "The slow pace lets the wait feel real, and the cuts at playbook intervals hold attention on Reels. The final beat gives the bottle and the 'patch test it yourself' line room to land."
+  },
+  "cast": [
+    {
+      "name": "meera",
+      "age": 28,
+      "look": "Indian woman with medium-brown skin, slightly flushed cheeks, dark eyes, and shoulder-length black hair clipped up loosely. She wears no makeup and has a faint mark near her jaw.",
+      "outfit": "Soft oatmeal cotton t-shirt with a loose neckline, and a thin black hair clip",
+      "voice": "Warm, slightly husky, conversational, and a little quiet, like talking to a friend in the next room",
+      "accent": "Urban Indian English with a light Mumbai lilt",
+      "pace": "Unhurried and measured, with pauses while she waits and checks her cheek",
+      "energy": "Low to medium: calm, a little guarded, and warming up gently by the end",
+      "speech_habits": [
+        "Says 'okay so' to start a thought",
+        "Trails off mid-sentence while checking her cheek, as in 'nothing yet...'",
+        "Dry understatement, like 'not bad, honestly'"
+      ]
+    }
+  ]
+}

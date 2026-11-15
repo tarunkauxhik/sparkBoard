@@ -1,0 +1,81 @@
+{
+  "concepts": [
+    {
+      "id": "c1",
+      "title": "Podcast Volume Slider",
+      "hook": "Watch my volume bar: 90% on the train, then I tap one earbud and it drops to 40%.",
+      "insight": "Commuters keep turning the volume up to beat the noise until their ears hurt.",
+      "summary": "Single location: a train platform or carriage. One person holds the phone to the camera with a podcast playing and the volume bar nearly maxed. They put in Noctave Air, turn on active noise cancellation, and lower the volume with a relieved face. They say 'Same podcast, way less volume.' Product hero shot of the earbuds in the matte graphite finish. End on a text card: 'Noctave Air. Quiet for your commute.'",
+      "scores": {
+        "hook": 7,
+        "brief_fit": 7,
+        "platform_fit": 7,
+        "feasibility": 4,
+        "distinctiveness": 6
+      },
+      "note": "The volume-bar demo is a clear, believable proof of ANC and the hook is concrete. The phone UI and volume bar are hard for AI video to render legibly, the end text card is on-screen text, and a train setting is a lot to ask in 12 seconds."
+    },
+    {
+      "id": "c2",
+      "title": "Pocket Check",
+      "hook": "Me, leaving for work: phone, keys, and... that's it. That's the whole bag.",
+      "insight": "Bulky over-ear headphones are a pain to carry and feel ridiculous on the train.",
+      "summary": "One person at the door pats down their pockets, then pulls out the Noctave Air pocket charging case and holds it up. They compare it to a bulky pair of over-ear headphones on a shelf and leave them behind. Close-up of the case sliding into a jeans pocket, then the earbuds going in. Voiceover: 'Real quiet, no headphones to carry.' End on the product page call to action.",
+      "scores": {
+        "hook": 5,
+        "brief_fit": 5,
+        "platform_fit": 6,
+        "feasibility": 6,
+        "distinctiveness": 5
+      },
+      "note": "The pocketability angle is relatable, but the hook is vague and gives little reason to stop scrolling. Pocket pat-downs and sliding a case into jeans are fiddly hand actions, and ANC and battery barely appear, so it undersells the product."
+    },
+    {
+      "id": "c3",
+      "title": "3pm Charger Hunt",
+      "hook": "It's 3pm and everyone in this room is looking for a charger. Except me.",
+      "insight": "Earbuds that die halfway through the day force people to hunt for a charger.",
+      "summary": "One home office or cafe table. Person A frantically digs through a bag for a cable with dead earbuds in hand. Person B calmly keeps working with Noctave Air in, tapping a text overlay: 'Up to 8 hours of playback per charge.' B slides the pocket case into a pocket as a casual closer. Tone is dry and funny, with no hard sell. End card: 'Get through the day. Noctave Air.'",
+      "scores": {
+        "hook": 7,
+        "brief_fit": 6,
+        "platform_fit": 6,
+        "feasibility": 4,
+        "distinctiveness": 7
+      },
+      "note": "The dry charger-panic contrast is funny and the hook is relatable. It needs two people, bag-digging hands, and a text overlay, and it leans on battery while ignoring the core quiet promise for commuters."
+    },
+    {
+      "id": "c4",
+      "title": "Drill vs. Deadline",
+      "hook": "[Sound of a loud drill through the wall] Watch my face when I put these in.",
+      "insight": "Remote workers can't focus when the apartment is never quiet.",
+      "summary": "One apartment desk. A loud drilling sound plays while the person winces at their laptop. They put in Noctave Air, tap to turn on active noise cancellation, the sound drops away, and they exhale and start typing. A beat later they pull one earbud out and the drilling comes back. They grin and put it back in. Voiceover: 'Active noise cancellation, for the noise you can't control.' Product hero close-up on the earbuds.",
+      "scores": {
+        "hook": 9,
+        "brief_fit": 9,
+        "platform_fit": 9,
+        "feasibility": 8,
+        "distinctiveness": 7
+      },
+      "note": "A sound-led hook with a built-in on/off demo that proves ANC in seconds. It has one person, one desk, and simple actions, and the pull-out-and-grin beat is memorable and native to Shorts."
+    },
+    {
+      "id": "c5",
+      "title": "Understated, Not a Gadget",
+      "hook": "Everyone at this table has something loud on their ear. Spot the pair that doesn't.",
+      "insight": "People want gear that looks clean and understated, not like a gadget.",
+      "summary": "One cafe table with two adults. A close-up of the Noctave Air case on the table, with a slow pan across the matte graphite finish. One person wears the earbuds and the other asks, 'Wait, are you wearing something?' The first person smiles and taps one to show the noise cancellation is on. Text overlay: 'Matte graphite. Active noise cancellation.' Calm, minimal tone. End on the product page prompt.",
+      "scores": {
+        "hook": 4,
+        "brief_fit": 5,
+        "platform_fit": 4,
+        "feasibility": 5,
+        "distinctiveness": 5
+      },
+      "note": "The hook's premise is muddled, since it promises loud gear and then shows nothing loud. The calm, minimal tone is slow for Shorts and relies on a text overlay, while the matte finish is the only real payoff."
+    }
+  ],
+  "winner_id": "c4",
+  "reason": "A sound-led hook with a built-in on/off demo that proves ANC in seconds. It has one person, one desk, and simple actions, and the pull-out-and-grin beat is memorable and native to Shorts."
+}

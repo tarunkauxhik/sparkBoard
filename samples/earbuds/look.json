@@ -1,0 +1,67 @@
+{
+  "mood": {
+    "value": "tense irritation that melts into calm, quiet focus",
+    "reason": "The playbook's calm confidence needs a contrast to land. The ad opens on the annoyance of the drilling, then settles into the quiet payoff the product delivers."
+  },
+  "tone": {
+    "value": "precise, dry and understated; very few words, with the sound doing the talking",
+    "reason": "The playbook asks for few words. The drill on/off demo proves the claim better than any pitch, and a dry, wry person fits the pull-out-and-grin beat."
+  },
+  "setting": {
+    "value": "a small apartment desk with a dark matte top, a closed-edge laptop, a ceramic mug and a notepad; a plain dark wall behind with a hint of a window",
+    "reason": "This keeps the playbook's clean dark desk with one or two real objects. It also reads as a believable home office for remote workers, and the dark surface lets the graphite earbuds stand out."
+  },
+  "camera": {
+    "value": "locked-off tripod medium shot of the desk, one slow slider push-in on the face as the noise drops, then a locked macro close-up of the earbuds in the open case for the hero end",
+    "reason": "Locked frames keep the pace deliberate and make the wince, exhale and grin easy to read. The slow push-in marks the moment the noise vanishes. The macro hero shot closes on the product for the product page visit."
+  },
+  "lens": {
+    "value": "Sony FE 85mm f/1.4 GM at f/2 for the person; Laowa 100mm f/2.8 2x macro at f/4 for the earbud hero",
+    "reason": "The 85mm gives a shallow, flattering, intimate portrait that isolates the face from the background. The macro lens shows the matte graphite texture and the case detail in the final shot."
+  },
+  "light": {
+    "value": "a single Aputure 300d with a small softbox, placed camera-left at desk height as a hard-edged key through a window-like gap",
+    "reason": "One hard key with a soft edge and deep shadows follows the playbook. It reads as a lamp or window light in a real apartment, and it grazes the matte finish so the earbud edges show."
+  },
+  "palette": {
+    "value": "near-black and graphite, with one cool icy blue accent from the laptop glow and the earbud indicator light",
+    "reason": "The playbook's dark palette suits the matte graphite product. A single cool accent draws the eye to the earbuds and signals the quiet switching on."
+  },
+  "pacing": {
+    "value": "slow and deliberate: roughly 4 seconds of drilling and wince, 4 seconds for the earbuds going in and the quiet, 4 seconds for the pull-out gag, grin and hero close-up; hard sound cuts between loud and silent",
+    "reason": "Cuts about every 4 seconds follow the playbook and fit 12 seconds. The sharp audio contrast does the persuading, and the held beats leave room for the exhale and the grin."
+  },
+  "cast": [
+    {
+      "name": "marcus",
+      "age": 34,
+      "on_screen": true,
+      "look": "Black man with a medium-tall, slightly rounded-shoulder build, deep brown skin, a short neat fade, a trimmed goatee and tired, expressive eyes behind thin tortoiseshell glasses",
+      "outfit": "heather-charcoal crewneck sweatshirt with the cuffs pushed up, and a thin silver watch",
+      "voice": "warm baritone, a little gravelly, relaxed",
+      "accent": "General American, with a slight Midwest lilt",
+      "pace": "unhurried, with deadpan pauses",
+      "energy": "low and dry, with a small burst of delight at the end",
+      "speech_habits": [
+        "says 'Yeah. Okay.' under his breath when he gives in",
+        "dry understatement like 'Huh. That's... better.'",
+        "trails off with 'and the drilling's just...' when words fail"
+      ]
+    },
+    {
+      "name": "voiceover",
+      "age": 40,
+      "on_screen": false,
+      "look": "",
+      "outfit": "",
+      "voice": "calm, low and smooth, close to the microphone, with a slight smile",
+      "accent": "neutral General American",
+      "pace": "slow and even",
+      "energy": "low, quietly assured",
+      "speech_habits": [
+        "short declarative sentences",
+        "lets a pause sit before the product line"
+      ]
+    }
+  ]
+}

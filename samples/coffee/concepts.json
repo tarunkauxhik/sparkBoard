@@ -1,0 +1,81 @@
+{
+  "concepts": [
+    {
+      "id": "c1",
+      "title": "The Date on the Bag",
+      "hook": "Find the roast date on this bag. Go. (Person holds up a grocery-store coffee bag, turning it over and over, searching.)",
+      "insight": "I buy 'fresh' coffee at the store and have no idea when it was actually roasted.",
+      "summary": "One person in a kitchen hunts for a roast date on a generic bag and can't find one. They sigh, then pick up a Brasswick bag and point straight to the printed roast date. Voiceover or on-camera line: 'Whole beans, roast date on every bag. That's it. That's the flex.' Close on them grinding a few beans, with a text overlay: 'Brasswick small-batch roasted coffee. Monthly box.' The story is a brand that simply tells you when it roasted.",
+      "scores": {
+        "hook": 8,
+        "brief_fit": 7,
+        "platform_fit": 8,
+        "feasibility": 6,
+        "distinctiveness": 6
+      },
+      "note": "The 'find the date' challenge is a strong scroll-stopper and puts the roast-date proof point front and center. It's held back by a text overlay and a label-reading close-up, both risky for AI video, and the 'that's the flex' line is a bit cute. The subscription is only a tag at the end."
+    },
+    {
+      "id": "c2",
+      "title": "Second-Week Slump",
+      "hook": "Day 1: wow. Day 12: ...is it me? (Person sniffs a mug and frowns on a handwritten calendar overlay.)",
+      "insight": "My coffee tastes flat by the second week and I don't know if it's me or the beans.",
+      "summary": "A single person at a counter does a quick 'day 1 vs day 12' mime of tasting their old coffee, getting more deflated. They then check the roast date on a Brasswick bag and grind whole beans right before brewing. Line: 'Now I know how old it is, and I grind it when I'm ready.' Ends with the monthly box arriving at the door, so a new bag shows up on a regular rhythm. Only claims: whole beans, roast date printed, monthly subscription.",
+      "scores": {
+        "hook": 7,
+        "brief_fit": 7,
+        "platform_fit": 7,
+        "feasibility": 4,
+        "distinctiveness": 7
+      },
+      "note": "The 'is it me or the beans?' insight is relatable and fresh, and it ties roast date and grinding to the subscription rhythm. A handwritten calendar overlay and the day 1 vs day 12 mime depend on text and acting, which AI models handle poorly, and the many beats crowd 20 seconds."
+    },
+    {
+      "id": "c3",
+      "title": "One Place, Not a Mystery",
+      "hook": "Where is your coffee from? Not the country. The actual place. (Person points at a vague 'premium blend' label with a raised eyebrow.)",
+      "insight": "Every bag has a vague 'premium blend' label. I can't tell where it's from or who grew it.",
+      "summary": "Two friends in a kitchen: one reads the vague 'premium blend' label aloud and shrugs. The other slides over a Brasswick bag and says, 'Single-origin. One place, not a mystery blend.' They pour a cup together and the first friend smells it and nods. Warm brand-story tone about knowing what's in your cup, with a closing line: 'Small-batch roasted, single-origin, Brasswick.' No invented farm details, just the origin promise.",
+      "scores": {
+        "hook": 6,
+        "brief_fit": 6,
+        "platform_fit": 6,
+        "feasibility": 4,
+        "distinctiveness": 5
+      },
+      "note": "The origin question is a decent hook and speaks to people who care where coffee comes from. But it needs two people, readable label text and dialogue, and it is a familiar 'vague blend vs ours' comparison. It never mentions the subscription, so it does little for the first-box goal."
+    },
+    {
+      "id": "c4",
+      "title": "The Ritual Minute",
+      "hook": "(Close-up: a hand pours whole beans into a grinder, sound turned up.) This is the best 30 seconds of my day.",
+      "insight": "I want my morning brew to feel like a small ritual I look forward to, not just caffeine.",
+      "summary": "A quiet, sound-led morning scene in one kitchen: beans rattle into the grinder, the grind, the pour, the first sip. Soft voiceover: 'Whole beans, roasted in small batches. I grind, I brew, I stand here for a minute.' Shows that a basic setup is enough: one simple brewer on the counter, no fuss. End card: 'Brasswick. Your morning, slowed down by a minute.'",
+      "scores": {
+        "hook": 5,
+        "brief_fit": 5,
+        "platform_fit": 7,
+        "feasibility": 8,
+        "distinctiveness": 4
+      },
+      "note": "A sound-led close-up of beans and a grinder is easy to produce and feels good in feed. But coffee ritual is the most overused angle in the category, the hook is soft, and nothing here gives a reason to subscribe or to pick Brasswick. Fine mood piece, weak ad."
+    },
+    {
+      "id": "c5",
+      "title": "Stop Thinking About Coffee",
+      "hook": "I haven't run out of coffee in months. (Person casually opens the door to a Brasswick box on the step.)",
+      "insight": "I want good coffee to just show up so I stop thinking about it, and I'm tired of grabbing whatever is left on the shelf.",
+      "summary": "A person brings in the monthly box, opens it, and checks the roast date on the new bag. Addresses the fear of piling up with a light line: 'A new bag on a regular rhythm, and the roast date tells me where I am.' Quick cuts: old bag nearly empty, new bag arriving, a fresh grind. Close: 'Brasswick small-batch roasted coffee, monthly box. Start your first one.' Aimed at driving the first subscription.",
+      "scores": {
+        "hook": 5,
+        "brief_fit": 8,
+        "platform_fit": 6,
+        "feasibility": 7,
+        "distinctiveness": 3
+      },
+      "note": "It is the most direct route to a first subscription, with a clear CTA and a roast-date tie-in. The hook is a flat claim and 'a box shows up at the door' is a stock subscription story. It is simple to shoot, but it feels like an ad and not a real person."
+    }
+  ],
+  "winner_id": "c1",
+  "reason": "The 'find the date' challenge is a strong scroll-stopper and puts the roast-date proof point front and center. It's held back by a text overlay and a label-reading close-up, both risky for AI video, and the 'that's the flex' line is a bit cute. The subscription is only a tag at the end."
+}

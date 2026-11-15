@@ -1,0 +1,231 @@
+{
+  "notes": [
+    {
+      "shot_id": "s01",
+      "kind": "other",
+      "issue": "The hook says 'Serum on my cheek', which narrates what we already see and is a slow lead-in. It also contains no product claim, which is fine.",
+      "change": "The hook now reads 'Waiting for the sting. Okay, nothing yet.' Wait, that adds a filler, so the line is 'Waiting for the sting, any second now.', which opens straight on the tension."
+    },
+    {
+      "shot_id": "s01",
+      "kind": "micro_expression",
+      "issue": "The first frame relies on a set jaw and slightly raised shoulders to show she is braced, and that only reads if a tiny expression lands.",
+      "change": "The first frame now has her gripping the bottle and holding the phone steady, with her free hand hovering near her cheek."
+    },
+    {
+      "shot_id": "s03",
+      "kind": "micro_expression",
+      "issue": "The first frame relies on a relaxed mouth and lowered shoulders to show relief, which is a subtle expression.",
+      "change": "The first frame now shows her turned cheek with the serum sheen and her hand resting on the sink edge."
+    },
+    {
+      "shot_id": "s04",
+      "kind": "micro_expression",
+      "issue": "The first frame relies on relaxed shoulders and a calm cheek to show ease.",
+      "change": "The first frame now shows her holding the bottle beside her chin with her free hand on the sink."
+    },
+    {
+      "shot_id": "s03",
+      "kind": "claim",
+      "issue": "The line 'it's fragrance-free' is backed by product_facts, but it sounds like a spec-sheet point dropped in mid-check.",
+      "change": "It is now phrased as 'Nothing yet... and it's fragrance-free, so that helps.', which keeps the backed claim in a more casual voice."
+    },
+    {
+      "shot_id": "end_card",
+      "kind": "ad_like",
+      "issue": "The end card line repeats the fragrance-free fact as a two-part feature list.",
+      "change": "The end card line is now 'Made for sensitive skin.', one backed fact."
+    }
+  ],
+  "line_checks": [
+    {
+      "shot_id": "s01",
+      "claims": []
+    },
+    {
+      "shot_id": "s03",
+      "claims": [
+        {
+          "claim": "fragrance-free",
+          "fact": 0
+        }
+      ]
+    },
+    {
+      "shot_id": "s04",
+      "claims": []
+    },
+    {
+      "shot_id": "end_card",
+      "claims": [
+        {
+          "claim": "made for sensitive skin",
+          "fact": 3
+        }
+      ]
+    }
+  ],
+  "storyboard": {
+    "title": "The Sting Test",
+    "hook_type": "first_use_reaction",
+    "hook_reason": "We watch her dab the serum on her cheek for the first time, and her line reacts to it while she waits for the sting she expects.",
+    "plan": "s01 7 words = 6 s; s02 silent = 4 s; s03 8 words = 6 s; s04 6 words = 4 s; total 20 s",
+    "shots": [
+      {
+        "id": "s01",
+        "purpose": "hook",
+        "duration_s": 6,
+        "shot_type": "medium close-up",
+        "angle": "eye-level selfie angle, phone held at arm's length",
+        "framing": "her face and shoulders fill the frame, the sage-green bottle held up beside her chin, a patch of serum shining on her left cheek",
+        "character": "meera",
+        "speaker": "meera",
+        "face_visible": true,
+        "first_frame": "Meera stands at the bathroom mirror and holds the phone at arm's length. The sage-green Dewline bottle is gripped in her other hand beside her chin. A small damp patch of serum shows on her left cheek.",
+        "beats": [
+          {
+            "start_s": 0.5,
+            "end_s": 3.0,
+            "action": "She touches two fingertips to the serum patch on her cheek, then lowers her hand",
+            "eye_line": "looks into the lens"
+          },
+          {
+            "start_s": 3.0,
+            "end_s": 5.5,
+            "action": "She holds still and tilts her cheek slightly toward the window light",
+            "eye_line": "looks at her own cheek in the mirror off-left"
+          }
+        ],
+        "setting": "small Indian-home bathroom, mirror with a slightly steamy edge, hand towel on a hook behind her, a few everyday bottles on a shelf",
+        "lens": "phone front camera wide lens, about 24mm equivalent at f/2.2",
+        "lighting": "soft daylight from a single bathroom window on her left",
+        "location": "bathroom",
+        "product_visible": true,
+        "blank_label_text": "",
+        "dialogue_tts": "Waiting for the sting, any second now.",
+        "dialogue_caption": "Waiting for the sting, any second now.",
+        "dialogue_lang": "Indian English",
+        "delivery": "quiet and dry, half to herself, a short pause after 'sting'",
+        "headline": "",
+        "camera_move": "light handheld",
+        "audio_notes": "bathroom room tone, a faint tap drip, distant street hum",
+        "route": "veo_talk"
+      },
+      {
+        "id": "s02",
+        "purpose": "product",
+        "duration_s": 4,
+        "shot_type": "close-up",
+        "angle": "high angle looking down at the shelf edge",
+        "framing": "hands and bottle on the shelf, with the towel's sage accent in the corner",
+        "character": null,
+        "speaker": null,
+        "face_visible": false,
+        "first_frame": "A hand rests the sage-green Dewline Barrier Repair Serum bottle on a bathroom shelf next to a few everyday bottles. The label area is clean. A small sage towel edge is in the corner of the frame.",
+        "beats": [
+          {
+            "start_s": 0.0,
+            "end_s": 4.0,
+            "action": "A woman's fingers set the dropper cap down on the shelf beside the bottle and then rest flat next to it",
+            "eye_line": ""
+          }
+        ],
+        "setting": "bathroom shelf with a few everyday bottles, sage hand towel edge, and the serum bottle",
+        "lens": "phone front camera wide lens, about 24mm equivalent at f/2.2",
+        "lighting": "soft daylight from a single bathroom window on her left",
+        "location": "bathroom",
+        "product_visible": true,
+        "blank_label_text": "",
+        "dialogue_tts": "",
+        "dialogue_caption": "",
+        "dialogue_lang": "",
+        "delivery": "",
+        "headline": "",
+        "camera_move": "static",
+        "audio_notes": "bathroom room tone, soft click of the cap on the shelf",
+        "route": "veo_broll"
+      },
+      {
+        "id": "s03",
+        "purpose": "proof",
+        "duration_s": 6,
+        "shot_type": "medium close-up",
+        "angle": "eye-level selfie angle, phone held at arm's length",
+        "framing": "her face fills the frame and her left cheek is turned slightly toward the lens",
+        "character": "meera",
+        "speaker": "meera",
+        "face_visible": true,
+        "first_frame": "Meera at the bathroom mirror holds the phone close, her left cheek turned toward the lens with a faint sheen of serum on it. Her free hand rests on the sink edge.",
+        "beats": [
+          {
+            "start_s": 0.5,
+            "end_s": 2.5,
+            "action": "She leans in and presses her fingertips lightly on her cheek, then lifts them away",
+            "eye_line": "looks at her cheek in the mirror off-left"
+          },
+          {
+            "start_s": 2.5,
+            "end_s": 5.0,
+            "action": "She turns her face back to the phone and stays still",
+            "eye_line": "looks into the lens"
+          }
+        ],
+        "setting": "small Indian-home bathroom, mirror with a slightly steamy edge, hand towel on a hook behind her",
+        "lens": "phone front camera wide lens, about 24mm equivalent at f/2.2",
+        "lighting": "soft daylight from a single bathroom window on her left",
+        "location": "bathroom",
+        "product_visible": false,
+        "blank_label_text": "",
+        "dialogue_tts": "Nothing yet... and it's fragrance-free, so that helps.",
+        "dialogue_caption": "Nothing yet... and it's fragrance-free, so that helps.",
+        "dialogue_lang": "Indian English",
+        "delivery": "trailing off on 'yet' while she checks her cheek, then a dry, lighter tone for the rest",
+        "headline": "",
+        "camera_move": "light handheld",
+        "audio_notes": "bathroom room tone, a faint tap drip",
+        "route": "veo_talk"
+      },
+      {
+        "id": "s04",
+        "purpose": "cta",
+        "duration_s": 4,
+        "shot_type": "medium close-up",
+        "angle": "eye-level selfie angle, phone held at arm's length",
+        "framing": "her face and shoulders with the sage-green bottle held beside her chin",
+        "character": "meera",
+        "speaker": "meera",
+        "face_visible": true,
+        "first_frame": "Meera stands at the bathroom mirror holding the phone at arm's length and the sage-green Dewline bottle beside her chin. Her free hand rests on the sink edge.",
+        "beats": [
+          {
+            "start_s": 0.5,
+            "end_s": 2.5,
+            "action": "She lifts the bottle slightly toward the lens and holds it there",
+            "eye_line": "looks into the lens"
+          },
+          {
+            "start_s": 2.5,
+            "end_s": 3.5,
+            "action": "She lowers the bottle a little and gives a small nod",
+            "eye_line": "looks into the lens"
+          }
+        ],
+        "setting": "small Indian-home bathroom, mirror with a slightly steamy edge, hand towel on a hook behind her, a few bottles on the shelf",
+        "lens": "phone front camera wide lens, about 24mm equivalent at f/2.2",
+        "lighting": "soft daylight from a single bathroom window on her left",
+        "location": "bathroom",
+        "product_visible": true,
+        "blank_label_text": "",
+        "dialogue_tts": "Patch test it yourself. Link's below.",
+        "dialogue_caption": "Patch test it yourself. Link's below.",
+        "dialogue_lang": "Indian English",
+        "delivery": "easy and low, like a friend's tip, a small pause after 'yourself'",
+        "headline": "",
+        "camera_move": "light handheld",
+        "audio_notes": "bathroom room tone, faint street hum",
+        "route": "veo_talk"
+      }
+    ],
+    "end_card_line": "Made for sensitive skin."
+  }
+}

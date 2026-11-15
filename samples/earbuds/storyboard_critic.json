@@ -1,0 +1,215 @@
+{
+  "notes": [
+    {
+      "shot_id": "s01",
+      "kind": "micro_expression",
+      "issue": "The opening frame leans on a tight jaw to show irritation, which is a tiny facial cue that may not land.",
+      "change": "The first frame now shows hunched shoulders and both hands pressed flat on the desk, and the flinch and palm-to-ear action carry the annoyance."
+    },
+    {
+      "shot_id": "s01",
+      "kind": "other",
+      "issue": "The hook is labelled first_use_reaction, but the shot opens mid-annoyance before any earbud is used.",
+      "change": "The hook type is now drop_in_mid_scene, since we land in the middle of the drilling."
+    },
+    {
+      "shot_id": "s01",
+      "kind": "other",
+      "issue": "dialogue_lang says Indian English, but the brief and persona are US English with a General American accent.",
+      "change": "dialogue_lang is now American English on all spoken shots."
+    },
+    {
+      "shot_id": "s04",
+      "kind": "other",
+      "issue": "The end card line repeated the headline almost word for word.",
+      "change": "The end card line now reads 'Comes with a pocket charging case', which comes from the product facts and adds something new."
+    }
+  ],
+  "line_checks": [
+    {
+      "shot_id": "s01",
+      "claims": []
+    },
+    {
+      "shot_id": "s02",
+      "claims": [
+        {
+          "claim": "The earbuds cut the drilling noise",
+          "fact": 0
+        }
+      ]
+    },
+    {
+      "shot_id": "s03",
+      "claims": []
+    },
+    {
+      "shot_id": "s04",
+      "claims": [
+        {
+          "claim": "Active noise cancellation",
+          "fact": 0
+        }
+      ]
+    },
+    {
+      "shot_id": "end_card",
+      "claims": [
+        {
+          "claim": "Comes with a pocket charging case",
+          "fact": 2
+        }
+      ]
+    }
+  ],
+  "storyboard": {
+    "title": "Drill vs. Deadline",
+    "hook_type": "drop_in_mid_scene",
+    "hook_reason": "We land in the middle of the drilling with Marcus already flinching, and the line names the annoyance. There is no product claim and no warm-up.",
+    "plan": "s01 5 words = 4 s; s02 3 words = 4 s; s03 5 words = 4 s; total 12 s",
+    "shots": [
+      {
+        "id": "s01",
+        "purpose": "hook",
+        "duration_s": 4,
+        "shot_type": "medium shot",
+        "angle": "eye level",
+        "framing": "Marcus at the desk, laptop in front of him, earbud case resting beside the laptop, dark wall behind",
+        "character": "marcus",
+        "speaker": "voiceover",
+        "face_visible": true,
+        "first_frame": "Marcus sits at the dark matte desk with shoulders hunched, hands flat either side of the open laptop. The graphite Noctave Air case rests closed on the desk next to a ceramic mug and a notepad. His eyes are on the screen.",
+        "beats": [
+          {
+            "start_s": 0.5,
+            "end_s": 2.5,
+            "action": "Marcus flinches and presses one palm against his ear as the drilling sound hits",
+            "eye_line": "looks down at the laptop screen"
+          },
+          {
+            "start_s": 2.5,
+            "end_s": 4.0,
+            "action": "Marcus lowers his hand and picks up the earbud case from the desk",
+            "eye_line": "looks at the case in his hand"
+          }
+        ],
+        "setting": "dark matte desk top, open laptop with icy blue glow, ceramic mug, notepad, closed graphite earbud case, plain dark wall",
+        "lens": "Sony FE 85mm f/1.4 GM at f/2",
+        "lighting": "single Aputure 300d with small softbox, camera-left at desk height, hard-edged key",
+        "location": "small apartment home-office desk",
+        "product_visible": true,
+        "blank_label_text": "",
+        "dialogue_tts": "[sighs] Drilling again... through the wall.",
+        "dialogue_caption": "Drilling again through the wall",
+        "dialogue_lang": "American English",
+        "delivery": "flat and dry, low, a short pause before 'through the wall'",
+        "headline": "",
+        "camera_move": "static",
+        "audio_notes": "loud power drill through the wall over faint apartment room tone, laptop fan hum",
+        "route": "vo_only"
+      },
+      {
+        "id": "s02",
+        "purpose": "demo",
+        "duration_s": 4,
+        "shot_type": "medium close-up",
+        "angle": "eye level",
+        "framing": "Marcus's face and shoulders, one earbud in his ear, laptop glow on his glasses",
+        "character": "marcus",
+        "speaker": "marcus",
+        "face_visible": true,
+        "first_frame": "Marcus sits at the desk with a graphite Noctave Air earbud in his right ear and his fingertip resting on it. His shoulders are still slightly raised and the laptop glow shows on his glasses.",
+        "beats": [
+          {
+            "start_s": 0.5,
+            "end_s": 2.0,
+            "action": "Marcus taps the earbud once with his fingertip, then lowers his hand to the keyboard",
+            "eye_line": "looks at the laptop screen"
+          },
+          {
+            "start_s": 2.0,
+            "end_s": 3.5,
+            "action": "Marcus lets out a long breath, shoulders dropping, and starts typing",
+            "eye_line": "looks at the laptop screen"
+          }
+        ],
+        "setting": "dark matte desk edge, open laptop with icy blue glow, plain dark wall with a hint of window",
+        "lens": "Sony FE 85mm f/1.4 GM at f/2",
+        "lighting": "single Aputure 300d with small softbox, camera-left at desk height, hard-edged key",
+        "location": "small apartment home-office desk",
+        "product_visible": true,
+        "blank_label_text": "",
+        "dialogue_tts": "Huh. That's... better.",
+        "dialogue_caption": "Huh. That's... better.",
+        "dialogue_lang": "American English",
+        "delivery": "quiet, under his breath, a deadpan pause after 'Huh', slight lift on 'better'",
+        "headline": "",
+        "camera_move": "light handheld",
+        "audio_notes": "drilling drops to near silence, soft keyboard taps, faint room tone",
+        "route": "veo_talk"
+      },
+      {
+        "id": "s03",
+        "purpose": "cta",
+        "duration_s": 4,
+        "shot_type": "macro close-up",
+        "angle": "slightly high angle",
+        "framing": "pair of earbuds in the open case filling the frame",
+        "character": null,
+        "speaker": "voiceover",
+        "face_visible": false,
+        "first_frame": "The open matte graphite charging case sits on the dark desk with both Noctave Air earbuds seated inside, a small icy blue indicator light glowing. The edges of the case catch a grazing highlight.",
+        "beats": [
+          {
+            "start_s": 0.5,
+            "end_s": 3.5,
+            "action": "Locked frame holds on the earbuds in the open case, the blue indicator light steady",
+            "eye_line": ""
+          }
+        ],
+        "setting": "open graphite charging case with two earbuds on the dark matte desk, dark background",
+        "lens": "Laowa 100mm f/2.8 2x macro at f/4",
+        "lighting": "single Aputure 300d with small softbox, camera-left at desk height, hard-edged key",
+        "location": "small apartment home-office desk",
+        "product_visible": true,
+        "blank_label_text": "",
+        "dialogue_tts": "Linked below, if you're curious.",
+        "dialogue_caption": "Linked below if you're curious",
+        "dialogue_lang": "American English",
+        "delivery": "calm and low, a slight smile, a small pause after 'below'",
+        "headline": "",
+        "camera_move": "static",
+        "audio_notes": "near-silent room tone with a soft case click",
+        "route": "vo_only"
+      },
+      {
+        "id": "s04",
+        "purpose": "end",
+        "duration_s": 0,
+        "shot_type": "still",
+        "angle": "top-down",
+        "framing": "earbuds and closed pocket case centered on a dark surface with space for a headline",
+        "character": null,
+        "speaker": null,
+        "face_visible": false,
+        "first_frame": "A still of the matte graphite Noctave Air earbuds beside the closed pocket charging case on a near-black desk, with a cool icy blue edge glow and clear space above.",
+        "beats": [],
+        "setting": "matte graphite earbuds and pocket case on a dark matte desk",
+        "lens": "Laowa 100mm f/2.8 2x macro at f/4",
+        "lighting": "single Aputure 300d with small softbox, camera-left at desk height, hard-edged key",
+        "location": "small apartment home-office desk",
+        "product_visible": true,
+        "blank_label_text": "",
+        "dialogue_tts": "",
+        "dialogue_caption": "",
+        "dialogue_lang": "",
+        "delivery": "",
+        "headline": "Active noise cancellation",
+        "camera_move": "static",
+        "audio_notes": "silent",
+        "route": "static"
+      }
+    ],
+    "end_card_line": "Comes with a pocket charging case"
+  }
+}

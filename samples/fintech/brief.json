@@ -1,0 +1,20 @@
+{
+  "brand": "Chukta",
+  "product": "Chukta bill-splitting app",
+  "category": "fintech",
+  "format": "role_play",
+  "audience": "flatmates and friend groups aged 22-30 in Indian cities who split rent, food and trips",
+  "goal": "app installs from an Instagram Reels ad",
+  "platform": "Instagram Reels",
+  "language": "Hinglish",
+  "product_facts": [
+    "splits any bill between a group inside the app",
+    "everyone in the group sees who owes what",
+    "sends payment reminders automatically",
+    "settle up by UPI from inside the app",
+    "free to download"
+  ],
+  "target_length_s": 22,
+  "product_url": null,
+  "refs": null
+}
