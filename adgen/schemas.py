@@ -187,9 +187,7 @@ class EditList(BaseModel):
 
 
 class Render(BaseModel):
-    status: Literal["rendered", "not_rendered"]
-    files: list[str] = []
-    note: str = ""
+    files: list[str]  # the final video first, then any static ads
 
 
 class Check(BaseModel):

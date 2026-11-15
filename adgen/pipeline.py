@@ -8,6 +8,7 @@ from pathlib import Path
 
 import yaml
 
+from adgen.editor import render_video, stream_seconds, validate_edit_list
 from adgen.ledger import Ledger
 from adgen.prompts import shot_prompt
 from adgen.run import Run
@@ -15,6 +16,7 @@ from adgen.schemas import (
     Approval, Audio, Brief, Check, Clips, Concepts, EditList, FixedClip, Insights,
     Keyframes, Look, QAReport, Refs, Render, Storyboard, Take,
 )
+from adgen.statics import STATIC_SIZES, static_ad
 
 PLAYBOOKS = Path(__file__).parent.parent / "playbooks"
 # Which video model each storyboard route uses. "static" shots have no clip.
@@ -148,18 +150,30 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                      for c in audio.clips]
         edit = ask("edit_list", EditList, brief=b, clips=clip_info)
         return edit, f"{len(edit.cuts)} cuts + end card", "; ".join(c.reason for c in edit.cuts)
-    step("edit_list.json", EditList, make_edit_list)
+    edit = step("edit_list.json", EditList, make_edit_list)
 
-    # 12 Render (the ffmpeg editor is phase 2; until then this step only records that)
-    render = step("render.json", Render, lambda: (
-        Render(status="not_rendered", note="the ffmpeg editor is built in phase 2"),
-        "not rendered", "editor not built yet"))
+    # 12 Render: code checks the edit list, then ffmpeg builds the video; static shots become static ads
+    def make_render():
+        errors = validate_edit_list(edit, audio, run)
+        if errors:
+            raise ValueError("edit list is not valid:\n" + "\n".join(errors))
+        files = [render_video(run, edit, audio, brief.brand)]
+        for shot in board.shots:
+            if shot.route == "static":
+                for name, size in STATIC_SIZES.items():
+                    out = run.path(f"statics/{shot.id}_{name}.png")
+                    static_ad(run.dir / keyframes.files[shot.id], shot.dialogue_caption, brief.brand, size, out)
+                    files.append(run.rel(out))
+        return Render(files=files), f"{len(files)} file(s)", "edit list passed validation"
+    render = step("render.json", Render, make_render)
 
     # 13 Final QA
     def make_qa():
-        review = provider.review(run.path("edit_list.json"), "final_cut")
+        final = run.dir / render.files[0]
+        review = provider.review(final, "final_cut")
+        gap = abs(stream_seconds(final, "v:0") - stream_seconds(final, "a:0"))
         checks = [
-            Check(name="final video rendered", passed=render.status == "rendered", detail=render.note),
+            Check(name="picture and sound are the same length", passed=gap < 0.1, detail=f"{gap:.3f} s apart"),
             Check(name="final cut review", passed=review["passed"], detail=review["detail"]),
         ]
         report = QAReport(passed=all(c.passed for c in checks), checks=checks)

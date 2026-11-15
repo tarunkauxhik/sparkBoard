@@ -10,8 +10,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from adgen.ledger import PRICES, Ledger
+from adgen.statics import FONT
 
-FONT = Path(__file__).parent.parent.parent / "assets/fonts/InterVariable.ttf"
 COLORS = ["#6b7a8f", "#8f6b6b", "#6b8f76", "#8f866b", "#7a6b8f"]
 
 
