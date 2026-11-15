@@ -12,11 +12,34 @@ from pathlib import Path
 import httpx
 from PIL import Image
 
-from adgen.prompts import character_sheet_prompt, keyframe_request, packshot_prompt
-from adgen.providers.kie import ASSUMED_IMAGE_USD, USD_PER_CREDIT, Kie, nano_banana_payload
+from adgen.prompts import character_sheet_prompt, keyframe_request, motion_prompt, packshot_prompt
+from adgen.providers.kie import (
+    ASSUMED_IMAGE_USD, ASSUMED_VEO_USD_PER_S, USD_PER_CREDIT, Kie, nano_banana_payload, veo_payload,
+)
 from adgen.schemas import Brief, Look, Refs, Storyboard
 
-SAMPLE = Path("samples/skincare")  # the reviewed storyboard the smoke test draws from
+SAMPLES = Path("samples")  # the reviewed storyboards the smoke test draws from
+
+
+def _sample(name: str) -> tuple[Brief, Look, Storyboard]:
+    folder = SAMPLES / name
+    return (Brief.model_validate_json((folder / "brief.json").read_text("utf-8")),
+            Look.model_validate_json((folder / "look.json").read_text("utf-8")),
+            Storyboard.model_validate_json((folder / "storyboard.json").read_text("utf-8")))
+
+
+def _report(log: dict, name: str) -> None:
+    print(f"done  {name}: {log['credits_used']:g} credits = ${log['cost_usd']:.3f} "
+          f"(Kie reports creditsConsumed {log['credits_consumed']}; balance {log['credits_before']:g} -> "
+          f"{log['credits_after']:g})")
+
+
+def _image(kie: Kie, out: Path, prompt: str, reference_urls: list[str], aspect_ratio: str) -> None:
+    if out.exists():
+        print(f"have  {out.name}")
+        return
+    _report(kie.run_task(out.stem, nano_banana_payload(prompt, reference_urls, aspect_ratio),
+                         ASSUMED_IMAGE_USD, out), out.name)
 
 
 def step_a(kie: Kie, folder: Path) -> None:
@@ -44,9 +67,7 @@ def step_a(kie: Kie, folder: Path) -> None:
 
 def step_b(kie: Kie, folder: Path) -> None:
     """Three images: meera's character sheet, the product packshot, and the keyframe of shot 1."""
-    brief = Brief.model_validate_json((SAMPLE / "brief.json").read_text("utf-8"))
-    look = Look.model_validate_json((SAMPLE / "look.json").read_text("utf-8"))
-    board = Storyboard.model_validate_json((SAMPLE / "storyboard.json").read_text("utf-8"))
+    brief, look, board = _sample("skincare")
     shot = board.shots[0]
     who = next(member for member in look.cast if member.name == shot.character)
 
@@ -62,14 +83,16 @@ def step_b(kie: Kie, folder: Path) -> None:
         _image(kie, keyframe, prompt, urls, "9:16")
 
 
-def _image(kie: Kie, out: Path, prompt: str, reference_urls: list[str], aspect_ratio: str) -> None:
-    if out.exists():
-        print(f"have  {out.name}")
+def step_c(kie: Kie, folder: Path) -> None:
+    """One Veo Fast clip in English: skincare shot 1, starting from its keyframe."""
+    brief, look, board = _sample("skincare")
+    shot = board.shots[0]
+    keyframe, clip = folder / f"keyframe_{shot.id}.png", folder / f"clip_{shot.id}_take1.mp4"
+    if clip.exists():
+        print(f"have  {clip.name}")
         return
-    log = kie.run_task(out.stem, nano_banana_payload(prompt, reference_urls, aspect_ratio), ASSUMED_IMAGE_USD, out)
-    print(f"done  {out.name}: {log['credits_used']:g} credits = ${log['cost_usd']:.3f} "
-          f"(Kie reports creditsConsumed {log['credits_consumed']}; balance {log['credits_before']:g} -> "
-          f"{log['credits_after']:g})")
+    payload = veo_payload(motion_prompt(shot, look, brief), kie.upload(keyframe), "veo3_fast", shot.duration_s)
+    _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_USD_PER_S * shot.duration_s, clip), clip.name)
 
 
-STEPS = {"a": step_a, "b": step_b}
+STEPS = {"a": step_a, "b": step_b, "c": step_c}
