@@ -1,7 +1,7 @@
 # sparkBoard
 
 Turns a brand brief into checked ad creatives (images and videos) with one command.
-Work in progress: see [docs/04_BUILD_PLAN.md](docs/04_BUILD_PLAN.md).
+Work in progress. The prompting and API rules the code follows are in [docs/PROMPTING.md](docs/PROMPTING.md).
 
 ## Quickstart (Windows PowerShell)
 

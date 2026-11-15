@@ -2,10 +2,10 @@
 import json
 from pathlib import Path
 
-# Hard caps per sample, in USD, one per API key (docs/04_BUILD_PLAN.md section 11).
+# Hard caps per sample, in USD, one per API key.
 CAPS = {"kie": 3.00, "elevenlabs": 0.50, "openrouter": 1.00}
 
-# Approx prices in USD for the mock provider (docs/04_BUILD_PLAN.md section 3).
+# Approx prices in USD for the mock provider.
 # Live OpenRouter calls do not use these: they read real prices and real costs from the API.
 PRICES = {
     "sonnet_call": 0.05,

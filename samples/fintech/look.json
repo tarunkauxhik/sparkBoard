@@ -16,11 +16,11 @@
     "reason": "The playbook calls for a phone camera and shot/reverse shot. It matches the Reels look, suits the back-and-forth banter, and makes the phone insert the clear product moment."
   },
   "lens": {
-    "value": "iPhone 15 main camera, 24mm equivalent, f/1.78, held at arm's length",
+    "value": "smartphone main camera, 24 mm equivalent, f/1.8, held at arm's length",
     "reason": "The playbook asks for the phone main lens at arm's length. A real 24mm f/1.78 gives the slightly wide, casual selfie-adjacent look of a friend filming, and it keeps both faces and the room in frame."
   },
   "light": {
-    "value": "low evening sun coming through the living room window, with a warm yellow table lamp as fill",
+    "value": "low evening sun coming through the living room window",
     "reason": "The playbook says mixed daylight and warm indoor lamps. A single window sun source with a lamp feels like a real flat at 6pm, and it keeps the phone screen readable."
   },
   "palette": {

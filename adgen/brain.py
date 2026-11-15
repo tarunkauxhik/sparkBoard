@@ -94,7 +94,9 @@ Craft rules:
 - Every shot is a separate clip generated from its own still image. Never carry one
   movement across a cut ("mid-application", "continues to..."): open each shot on a settled pose.
 - Avoid shots that only work if a tiny facial expression lands exactly; show it with an action.
-- lighting names one real light source. audio_notes names the room tone of the place.
+- lighting names exactly one real light source: no fill light, no second lamp, no "and".
+  Never name a real phone, camera or lens brand or model anywhere; for phone shots write
+  "smartphone front camera, 24 mm equivalent". audio_notes names the room tone of the place.
 - Reuse the same location and lighting words in every shot that shares a place.
 - On lines voiced by TTS (vo_only) you may add at most one audio tag such as [sighs] to
   dialogue_tts, and "..." for a pause. Never put tags in dialogue_caption."""
@@ -132,8 +134,9 @@ TASKS = {
     "look": Task(Look, 3000, 0.3, (
         "Decide the look of the ad for the winning concept. Start from the category playbook "
         "and adapt each field to this brand and concept; give the reason for every choice. "
-        "lens names a real lens with its focal length and f-stop; light names one real light "
-        f"source. Never write these words: {', '.join(GLOSSY_WORDS)}.\n"
+        "lens names a lens by focal length and f-stop; light names one real light source. "
+        "Never name a real phone, camera or lens brand or model (for a phone write "
+        f"'smartphone front camera, 24 mm equivalent'). Never write these words: {', '.join(GLOSSY_WORDS)}.\n"
         "Then define the cast as personas: fictional people with a short first name in "
         f"lowercase, age {MIN_CAST_AGE} or older, a plain physical look (never a likeness of a "
         "real or famous person), one outfit worn in every shot, a voice, an accent, a speaking "

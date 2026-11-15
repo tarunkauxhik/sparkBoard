@@ -100,6 +100,9 @@ def test_cast_must_be_adult_not_a_likeness_and_have_speech_habits(parts):
     (1, {"dialogue_caption": "honestly this is a game changer"}, "overused"),
     (1, {"first_frame": "her kid stands next to her"}, "no children"),
     (1, {"lighting": "a ring light in front of her"}, "ring light"),
+    (1, {"lighting": "low evening sun through the window, warm table lamp as fill"}, "one light source"),
+    (1, {"lighting": "window daylight and a warm lamp"}, "one light source"),
+    (1, {"lens": "iPhone 15 main camera, 24mm equivalent, f/1.78"}, "real phone, camera or lens brand"),
     (1, {"first_frame": "a flawless cinematic portrait"}, "cinematic"),
     (3, {"purpose": "payoff"}, "call to action"),
 ])
@@ -121,6 +124,8 @@ def test_look_rejects_glossy_words(parts):
     assert look_errors(look, brief) == []
     glossy = look.model_copy(update={"lens": look.lens.model_copy(update={"value": "8K cinematic lens"})})
     assert "cinematic" in "\n".join(look_errors(glossy, brief))
+    branded = look.model_copy(update={"camera": look.camera.model_copy(update={"value": "shot on a Sony FX3"})})
+    assert "brand" in "\n".join(look_errors(branded, brief))
     story = brief.model_copy(update={"format": "brand_story"})
     assert "add a narrator" in "\n".join(look_errors(look, story))  # a narrator format with no narrator
 

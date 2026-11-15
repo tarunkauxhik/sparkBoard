@@ -16,7 +16,7 @@
     "reason": "Handheld close details come from the playbook and feel like real footage. The push-in puts the proof point on screen, and holding still on the last shot keeps AI motion from wobbling."
   },
   "lens": {
-    "value": "Sony FE 50mm f/1.8 at f/2.2",
+    "value": "50 mm lens at f/2.2",
     "reason": "The playbook calls for a 50 mm close to hands and steam. A shallow f/2.2 blurs the kitchen behind and keeps the bag and hands sharp."
   },
   "light": {

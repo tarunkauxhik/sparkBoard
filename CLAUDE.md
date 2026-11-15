@@ -1,11 +1,11 @@
 # sparkBoard: Ad Creative Generation System
 
 Pipeline that turns a brand brief into checked ad creatives (images and videos).
-Owner: Tarun. Build plan: docs/04_BUILD_PLAN.md (wins over docs/01 where they differ).
+Owner: Tarun. Build plan: docs/private/04_BUILD_PLAN.md (wins over docs/private/01 where they differ).
 
 ## Start of every session (always do this first)
 
-1. Read this file, docs/04_BUILD_PLAN.md, docs/01_PLAN_AND_DECISIONS.md, and docs/private/*.md if present.
+1. Read this file, docs/PROMPTING.md, and docs/private/*.md (the build plan, decisions, brief and budget; not in the public repo).
 2. Check `git log --oneline -15` and the code to see what's already built.
 3. Reply in under 15 short lines: where we are, the next phase, and anything in the plan you'd improve after a fresh deep check (search the web for current best practices, model and API changes, and known issues). Say why for each suggestion.
 4. Wait for Tarun's OK before building.
@@ -51,7 +51,7 @@ Easy English, short clean points, answer first. Plan big work first and wait for
 - `tests/` pytest (no paid calls)
 - `runs/` outputs (gitignored)
 - `samples/` final samples, storyboards, decision logs
-- `docs/` plan and diagrams; `docs/private/` gitignored
+- `docs/` prompting rules and diagrams; `docs/private/` plan, brief, budget (gitignored)
 
 ## Commands
 
