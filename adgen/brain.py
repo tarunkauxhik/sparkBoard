@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 
-from adgen.rules import HOOK_MAX_WORDS, LENGTH_TOLERANCE_S, OVERUSED_HOOKS
+from adgen.rules import HOOK_MAX_WORDS, OVERUSED_HOOKS
 from adgen.schemas import (
     MIN_CAST_AGE, ConceptDrafts, ConceptReview, EditList, Insights, Look, Storyboard,
     StoryboardReview, max_words,
@@ -24,12 +24,17 @@ STORYBOARD_RULES = f"""Hard rules (checked by code; a storyboard that breaks one
 - Routes: veo_talk = a cast member speaks on camera; veo_broll = silent footage;
   vo_only = silent footage under a narrator's line; static = a still ad with a headline.
 - veo_talk, veo_broll and vo_only shots last exactly 4, 6 or 8 seconds.
-- Shot durations add up to the brief's target_length_s (within {LENGTH_TOLERANCE_S} s).
-- Spoken lines leave half a second of silence at each end. Max words per line:
-  {max_words(4)} for 4 s, {max_words(6)} for 6 s, {max_words(8)} for 8 s. Count them.
+- The words decide the length. Code sets every spoken shot to the shortest duration that
+  fits its line: up to {max_words(4)} words = 4 s, up to {max_words(6)} words = 6 s, up to
+  {max_words(8)} words = 8 s. A line over {max_words(8)} words is rejected. (This leaves half
+  a second of silence at each end, so no word is cut off.)
+- Those durations must add up to between length_s.min and length_s.max (see CONTEXT).
+  So first write `plan`: count the words of each line one by one, note the duration that
+  gives, and add up the total. Short lines are better than long ones.
 - One speaker per shot. On-camera speaking shots have shot_type exactly "medium close-up".
-- The first shot has purpose "hook". Its line is {HOOK_MAX_WORDS} words or fewer and gets
-  to the point inside the first 2 seconds: no greeting, no warm-up.
+- The first shot has purpose "hook". Its line is {HOOK_MAX_WORDS} words or fewer (and within
+  the limit for its duration) and gets to the point inside the first 2 seconds: no greeting,
+  no warm-up.
 - In ugc and product_hero ads the product is visible (product_visible true) in shot 1 or 2.
 - character and speaker are cast names from the look, nothing else. Adults only, no children.
 - Every spoken shot has dialogue_tts, dialogue_caption and dialogue_lang, all non-empty.
@@ -54,6 +59,7 @@ class Task:
     max_tokens: int
     temperature: float
     instructions: str
+    reasoning: str = "low"  # thinking effort; the storyboard tasks need more, to count words
 
 
 TASKS = {
@@ -83,7 +89,7 @@ TASKS = {
         "the concept allows.")),
     "storyboard": Task(Storyboard, 7000, 0.3, (
         "Write the storyboard and script for the winning concept, shot ids s01, s02, ...\n\n"
-        + STORYBOARD_RULES)),
+        + STORYBOARD_RULES), reasoning="medium"),
     "storyboard_critic": Task(StoryboardReview, 8000, 0.3, (
         "You are a script editor. Review the storyboard draft, then return the full "
         "storyboard with your fixes applied, plus one note per issue you found.\n"
@@ -93,7 +99,8 @@ TASKS = {
         "- Anything else worth fixing, e.g. a hook that is slow to start (kind: other).\n"
         "Keep what already works; do not rewrite for the sake of it. If nothing needs "
         "changing, return the storyboard unchanged with an empty notes list. "
-        "The returned storyboard must still follow every rule below.\n\n" + STORYBOARD_RULES)),
+        "The returned storyboard must still follow every rule below.\n\n" + STORYBOARD_RULES),
+        reasoning="medium"),
     # Used from phase 5, once there are real clips and transcripts to cut.
     "edit_list": Task(EditList, 3000, 0.3, (
         "Write the edit list: the clips in order with in and out points and a reason for "
@@ -110,5 +117,6 @@ def build_messages(task: str, ctx: dict, feedback: str = "") -> tuple[str, str]:
         f"JSON SCHEMA OF YOUR REPLY\n{json.dumps(spec.schema.model_json_schema())}",
     ])
     if feedback:
-        user += f"\n\nYOUR LAST REPLY WAS REJECTED. Fix these problems and reply again:\n{feedback}"
+        user += (f"\n\nYOUR LAST REPLY WAS REJECTED for the problems below. Fix them without "
+                 f"breaking any other rule, then check every rule once more before replying:\n{feedback}")
     return SYSTEM, user

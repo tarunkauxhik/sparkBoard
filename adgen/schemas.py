@@ -172,10 +172,14 @@ class Shot(BaseModel):
             if not (self.speaker and self.dialogue_tts and self.dialogue_caption and self.dialogue_lang):
                 raise ValueError(f"{self.id}: spoken shots need speaker, dialogue_tts, "
                                  "dialogue_caption and dialogue_lang")
+            # LLMs miscount words, so code picks the length: the shortest one that fits the line.
             words = len(self.dialogue_caption.split())
             if words > max_words(self.duration_s):
-                raise ValueError(f"{self.id}: {words} words is too many for {self.duration_s} s "
-                                 f"(max {max_words(self.duration_s)})")
+                fits = [seconds for seconds in (4, 6, 8) if words <= max_words(seconds)]
+                if not fits:
+                    raise ValueError(f"{self.id}: {words} words is too long for one shot "
+                                     f"(max {max_words(8)}); shorten the line or split the shot")
+                self.duration_s = fits[0]
         elif self.dialogue_tts or self.dialogue_caption:
             raise ValueError(f"{self.id}: route {self.route} is silent, remove the dialogue")
         if DEVANAGARI.search(self.dialogue_caption):
@@ -185,6 +189,9 @@ class Shot(BaseModel):
 
 class Storyboard(BaseModel):
     title: str
+    # The model's working notes. Written before the shots, so it does its sums first.
+    plan: str = Field(description="Working notes on one line, written first: for each shot the word "
+                                  "count of its line and its duration, then the total in seconds.")
     shots: list[Shot] = Field(min_length=1)
 
     @model_validator(mode="after")

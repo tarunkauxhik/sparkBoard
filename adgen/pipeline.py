@@ -7,13 +7,14 @@ import shutil
 from pathlib import Path
 
 import yaml
+from pydantic import ValidationError
 
 from adgen.brain import TASKS
 from adgen.editor import render_video, stream_seconds, validate_edit_list
 from adgen.ledger import Ledger
 from adgen.prompts import keyframe_prompt, motion_prompt
 from adgen.report import write_decision_log_md, write_storyboard_md
-from adgen.rules import storyboard_errors
+from adgen.rules import LENGTH_TOLERANCE_S, storyboard_errors
 from adgen.run import Run
 from adgen.schemas import (
     Approval, Audio, Brief, Check, Clips, Concept, Concepts, EditList, FixedClip, Insights,
@@ -50,7 +51,9 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             try:
                 result = TASKS[task].schema.model_validate(provider.chat_json(task, ctx, feedback))
                 errors = check(result) if check else []
-            except ValueError as error:  # bad JSON or a schema rule
+            except ValidationError as error:  # a schema rule; keep only the plain messages
+                errors = [f"{'.'.join(map(str, e['loc']))}: {e['msg']}" for e in error.errors()]
+            except ValueError as error:  # the reply was not JSON
                 errors = [str(error)]
             if not errors:
                 return result
@@ -94,10 +97,13 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     # 6 Storyboard: draft, then a critic rewrite. Both must pass the code rules.
     #   (Written before step 5, because references are only made for cast who appear on screen.)
     def make_storyboard():
-        draft = ask("storyboard", brief=b, concept=winner, insights=insights.model_dump(),
+        length_s = {"min": brief.target_length_s - LENGTH_TOLERANCE_S,
+                    "max": brief.target_length_s + LENGTH_TOLERANCE_S}
+        draft = ask("storyboard", brief=b, length_s=length_s, concept=winner, insights=insights.model_dump(),
                     look=look.model_dump(), check=lambda board: storyboard_errors(board, brief, look))
         run.save("storyboard_draft.json", draft)
-        review = ask("storyboard_critic", brief=b, look=look.model_dump(), storyboard=draft.model_dump(),
+        review = ask("storyboard_critic", brief=b, length_s=length_s, look=look.model_dump(),
+                     storyboard=draft.model_dump(),
                      check=lambda r: storyboard_errors(r.storyboard, brief, look))
         run.save("storyboard_critic.json", review)
         notes = "; ".join(f"{n.shot_id}: {n.issue}" for n in review.notes) or "the critic changed nothing"

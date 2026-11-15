@@ -25,7 +25,7 @@ def test_word_limits_leave_silence_at_both_ends():
 
 @pytest.mark.parametrize("changes, message", [
     ({"duration_s": 5}, "4, 6 or 8"),
-    ({"dialogue_caption": "word " * 12}, "too many"),
+    ({"dialogue_caption": "word " * 16}, "too long for one shot"),
     ({"dialogue_caption": "सुबह से thakaan"}, "Roman script"),
     ({"dialogue_lang": ""}, "dialogue_lang"),
     ({"shot_type": "wide shot"}, "medium close-up"),
@@ -34,6 +34,11 @@ def test_word_limits_leave_silence_at_both_ends():
 def test_shot_rules(parts, changes, message):
     with pytest.raises(ValueError, match=message):
         Shot.model_validate(changed_shot(parts[0], 1, **changes))  # shot 2: a 6 s talking shot
+
+
+def test_code_stretches_a_shot_to_fit_its_line(parts):
+    shot = Shot.model_validate(changed_shot(parts[0], 0, dialogue_caption="Watch my face when I put this on."))
+    assert shot.duration_s == 6  # 8 words do not fit the 4 s the writer asked for
 
 
 def test_cast_must_be_adult_and_not_a_likeness():
@@ -56,12 +61,12 @@ def test_storyboard_rules(parts, index, changes, message):
     board, brief, look = parts
     shots = [shot.model_dump() for shot in board.shots]
     shots[index] = changed_shot(board, index, **changes)
-    broken = Storyboard.model_validate({"title": board.title, "shots": shots})
+    broken = Storyboard.model_validate({"title": board.title, "plan": board.plan, "shots": shots})
     assert message in "\n".join(storyboard_errors(broken, brief, look))
 
 
 def test_product_must_show_by_shot_two(parts):
     board, brief, look = parts
     shots = [{**shot.model_dump(), "product_visible": False} for shot in board.shots]
-    broken = Storyboard.model_validate({"title": board.title, "shots": shots})
+    broken = Storyboard.model_validate({"title": board.title, "plan": board.plan, "shots": shots})
     assert "visible in shot 1 or 2" in "\n".join(storyboard_errors(broken, brief, look))

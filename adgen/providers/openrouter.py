@@ -53,7 +53,7 @@ class OpenRouter:
             "max_tokens": spec.max_tokens,
             "temperature": spec.temperature,
             "seed": SEED,
-            "reasoning": {"effort": "low"},
+            "reasoning": {"effort": spec.reasoning},
             "usage": {"include": True},
         }
         # A token is at least one byte, so the byte count is a true upper bound on input tokens.
@@ -80,7 +80,8 @@ class OpenRouter:
             raise LLMError(f"{task}: the reply hit max_tokens ({spec.max_tokens}) and was cut off")
         text = choice["message"]["content"] or ""
         try:
-            return json.loads(text[text.find("{"): text.rfind("}") + 1])
+            # strict=False: models sometimes put a raw line break inside a string
+            return json.loads(text[text.find("{"): text.rfind("}") + 1], strict=False)
         except json.JSONDecodeError as error:
             raise ValueError(f"the reply was not valid JSON: {error}")  # the pipeline may retry this
 

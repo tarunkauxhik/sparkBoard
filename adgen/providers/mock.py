@@ -151,7 +151,8 @@ class MockProvider:
             shots.pop()
         while sum(s["duration_s"] for s in shots) < brief["target_length_s"] - 2:
             shots.append({**broll, "id": f"s{len(shots) + 1:02d}"})
-        return {"title": ctx["concept"]["title"], "shots": shots}
+        plan = " + ".join(str(s["duration_s"]) for s in shots) + f" = {sum(s['duration_s'] for s in shots)} s"
+        return {"title": ctx["concept"]["title"], "plan": plan, "shots": shots}
 
     def _storyboard_critic(self, ctx: dict) -> dict:
         return {"notes": [], "storyboard": ctx["storyboard"]}

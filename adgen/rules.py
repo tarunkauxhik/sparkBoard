@@ -4,7 +4,7 @@ Single-shot rules (durations, word rate, script) live on the Shot model in schem
 """
 import re
 
-from adgen.schemas import SPOKEN, Brief, Look, Storyboard
+from adgen.schemas import SPOKEN, Brief, Look, Storyboard, max_words
 
 LENGTH_TOLERANCE_S = 2
 HOOK_MAX_WORDS = 8  # a hook line this short gets to the point in the first seconds
@@ -35,8 +35,16 @@ def storyboard_errors(board: Storyboard, brief: Brief, look: Look) -> list[str]:
 
     total = sum(shot.duration_s for shot in board.shots if shot.route != "static")
     if abs(total - brief.target_length_s) > LENGTH_TOLERANCE_S:
-        errors.append(f"shot durations add up to {total} s, the target is "
-                      f"{brief.target_length_s} s (within {LENGTH_TOLERANCE_S} s)")
+        # Spell out the real numbers: the model cannot be trusted to count them itself.
+        detail = ", ".join(
+            f"{shot.id} {shot.duration_s} s" + (f" ({len(shot.dialogue_caption.split())} words)"
+                                                if shot.route in SPOKEN else "")
+            for shot in board.shots if shot.route != "static")
+        errors.append(
+            f"shot durations add up to {total} s, but must be between "
+            f"{brief.target_length_s - LENGTH_TOLERANCE_S} and {brief.target_length_s + LENGTH_TOLERANCE_S} s. "
+            f"Now: {detail}. A spoken line of up to {max_words(4)} words takes 4 s, up to "
+            f"{max_words(6)} takes 6 s, up to {max_words(8)} takes 8 s: cut words or drop a shot.")
 
     hook = board.shots[0]
     if hook.route in SPOKEN and len(hook.dialogue_caption.split()) > HOOK_MAX_WORDS:
