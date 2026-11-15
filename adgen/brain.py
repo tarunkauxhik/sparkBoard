@@ -29,15 +29,19 @@ HOOK_TYPES = """Hook types (pick the one that fits, set hook_type and say why in
 
 STORYBOARD_RULES = f"""Hard rules (checked by code; a storyboard that breaks one is rejected):
 - Routes: veo_talk = a cast member speaks on camera; veo_broll = silent footage;
-  vo_only = silent footage under a narrator's line; static = a still ad with a headline
-  (duration_s 0, no beats, no dialogue).
+  vo_only = silent footage under a narrator's line (it still needs speaker, dialogue_tts,
+  dialogue_caption and dialogue_lang); static = a still ad with a headline (duration_s 0,
+  no beats, no dialogue).
 - The words decide the length. Code sets every spoken shot to the shortest duration that
   fits its line: up to {max_words(4)} words = 4 s, up to {max_words(6)} words = 6 s, up to
   {max_words(8)} words = 8 s. A line over {max_words(8)} words is rejected. Words are counted
   on dialogue_caption. (This leaves half a second of silence at each end of the line.)
 - Those durations must add up to between length_s.min and length_s.max (see CONTEXT).
   So first write `plan`: count the words of each line one by one, note the duration that
-  gives, and add up the total. Short lines are better than long ones.
+  gives, and add up the total. A word is anything between two spaces, in any language:
+  "Rohan ke 800 rupaye pending hain" is 6 words. Leave a margin, because miscounts are
+  common: aim for 5 words or fewer in a 4 s line and 9 or fewer in a 6 s line, and aim for
+  a total near length_s.min.
 - Silent veo_broll shots last exactly 4, 6 or 8 seconds.
 - One speaker per shot. In a veo_talk shot the speaker is the person on screen, the
   shot_type is exactly "medium close-up" and camera_move is exactly "static" or "light handheld".

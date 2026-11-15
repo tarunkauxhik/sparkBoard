@@ -156,7 +156,8 @@ class Beat(BaseModel):
     start_s: float
     end_s: float
     action: str         # one clear physical action, never an emotion alone
-    eye_line: str = ""  # e.g. "looks into the lens", "looks at riya off-left"; empty if no person
+    eye_line: str = Field(default="", description="Where the eyes look, e.g. 'looks into the lens'. "
+                          "Required in every beat of a shot that has a character on screen.")
 
 
 class Shot(BaseModel):
