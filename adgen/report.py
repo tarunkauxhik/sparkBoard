@@ -1,5 +1,6 @@
 """Readable copies of a run's JSON: storyboard.md and decision_log.md."""
 import json
+import re
 
 from adgen.prompts import keyframe_request, motion_prompt
 from adgen.run import Run
@@ -11,9 +12,10 @@ def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
     """The storyboard for review: concept, look, cast, critic notes, then every shot with its prompts."""
     total = sum(shot.duration_s for shot in board.shots if shot.route != "static")
     winner = concepts.winner
+    product = brief.product if brief.product.startswith(brief.brand) else f"{brief.brand} {brief.product}"
     out = [
         f"# {board.title}",
-        f"{brief.brand} {brief.product} | {brief.format} | {brief.platform} | {brief.language} | "
+        f"{product} | {brief.format} | {brief.platform} | {brief.language} | "
         f"{total} s + end card (target {brief.target_length_s} s)",
         "", "## Concept",
         f"**{winner.title}** (score {winner.scores.total}/50). {winner.summary}",
@@ -55,7 +57,8 @@ def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
         out.append(f"- Keyframe prompt (Nano Banana): {keyframe_request(shot, look, brief, refs)[0]}")
         if shot.route != "static":
             out.append(f"- Motion prompt (Veo): {motion_prompt(shot, look, brief)}")
-    text = "\n".join(out).replace("..", ".")  # fields may already end with a full stop
+    # Fields may already end with a full stop; a real ellipsis ("...") is left alone.
+    text = re.sub(r"(?<!\.)\.\.(?!\.)", ".", "\n".join(out))
     run.path("storyboard.md").write_text(text + "\n", "utf-8")
 
 
