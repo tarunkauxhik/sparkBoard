@@ -75,8 +75,8 @@ STORYBOARD_RULES = f"""Hard rules (checked by code; a storyboard that breaks one
   no children.
 - Every spoken shot has dialogue_tts, dialogue_caption and dialogue_lang, all non-empty.
   dialogue_tts is what the voice says: Hindi words in Devanagari, English words in Latin.
-  dialogue_caption is the same line in Roman script only. dialogue_lang names the language
-  ("Hinglish", "Indian English"); the accent comes from the persona.
+  dialogue_caption is the same line in Roman script only. dialogue_lang is the language of
+  the line and follows the brief's language (the accent comes from the persona).
 - Silent shots (veo_broll, static) have empty dialogue fields.
 - Every clip has 1 or 2 beats inside its duration (start_s, end_s). Each beat is one clear
   physical action plus an eye_line when a person is on screen ("looks into the lens",

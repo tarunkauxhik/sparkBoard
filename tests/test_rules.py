@@ -215,6 +215,8 @@ def test_critic_notes_must_be_clean_and_state_real_word_counts(parts):
     assert "final line has 4" in errors("The hook was slow.", "Rewrote the line (8 words).")
     rambling = "First I tried one line. Then it was rejected. So I wrote another."
     assert "plain sentences" in errors("The hook was slow.", rambling)
+    second_thoughts = "The hook now reads 'Okay, nothing yet.' Wait, that adds a filler. So the line is 'Any second now.'"
+    assert "plain sentences" in errors("The hook was slow.", second_thoughts)  # seen in a real critic reply
 
 
 def test_new_cast_must_differ_from_personas_used_for_other_brands(parts):

@@ -29,8 +29,10 @@ def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
     out += ["", "## Look"]
     out += [f"- **{name}**: {choice.value} ({choice.reason})" for name, choice in look if name != "cast"]
     out += ["", "## Cast"]
-    out += [f"- **{m.name}**, {m.age}: {m.look}. Outfit: {m.outfit}. Voice: {m.voice}; accent: {m.accent}; "
-            f"pace: {m.pace}; energy: {m.energy}. Speech habits: {'; '.join(m.speech_habits)}." for m in look.cast]
+    for m in look.cast:
+        seen = f"{m.look}. Outfit: {m.outfit}." if m.on_screen else "Narrator, heard but never seen."
+        out.append(f"- **{m.name}**, {m.age}: {seen} Voice: {m.voice}; accent: {m.accent}; pace: {m.pace}; "
+                   f"energy: {m.energy}. Speech habits: {'; '.join(m.speech_habits)}.")
     out += ["", "## Hook", f"Type: **{board.hook_type}**. {board.hook_reason}"]
     out += ["", "## Length", f"{board.counts} (counted by code). End card line: \"{board.end_card_line}\""]
     out += ["", "## Critic notes"]

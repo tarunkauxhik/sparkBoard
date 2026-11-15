@@ -115,7 +115,7 @@ def review_errors(review: StoryboardReview, brief: Brief, look: Look) -> list[st
     # Notes: clean sentences, and any word count they state must be the real one.
     for note in review.notes:
         for text in (note.issue, note.change):
-            if len(re.findall(r"[.?]\s+[A-Z\"']", text)) >= NOTE_MAX_SENTENCES:
+            if len(re.findall(r"[.?]['\"]?\s+[A-Z\"']", text)) >= NOTE_MAX_SENTENCES:
                 errors.append(f"note on {note.shot_id}: keep issue and change to at most "
                               f"{NOTE_MAX_SENTENCES} plain sentences each, without drafts or history")
         shot = shots.get(note.shot_id)
