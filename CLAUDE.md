@@ -56,6 +56,6 @@ Easy English, short clean points, answer first. Plan big work first and wait for
 ## Commands
 
 - Setup (PowerShell): `$env:UV_CACHE_DIR=".uv/cache"; $env:UV_PYTHON_INSTALL_DIR=".uv/python"`, then `uv venv --python 3.12 .venv`, then `uv pip install -r requirements.txt`, then `.venv\Scripts\activate`
-- Clean: `python -m adgen clean --older-than-days 7` (use `0` for all runs)
+- Clean: `python -m adgen clean --older-than-days 7` (use `0` for all dry runs; paid runs are kept unless `--include-paid`)
 - Dry run: `python -m adgen run briefs/skincare.json --dry-run --auto-approve`
 - Tests: `pytest -q`

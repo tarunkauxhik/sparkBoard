@@ -1,8 +1,8 @@
 """Storyboard and cast rules that are checked in code."""
 import pytest
 
-from adgen.rules import storyboard_errors
-from adgen.schemas import Brief, CastMember, Look, Shot, Storyboard, max_words
+from adgen.rules import review_errors, storyboard_errors
+from adgen.schemas import Brief, CastMember, LineCheck, Look, Shot, Storyboard, StoryboardReview, max_words
 
 
 @pytest.fixture
@@ -70,3 +70,27 @@ def test_product_must_show_by_shot_two(parts):
     shots = [{**shot.model_dump(), "product_visible": False} for shot in board.shots]
     broken = Storyboard.model_validate({"title": board.title, "plan": board.plan, "shots": shots})
     assert "visible in shot 1 or 2" in "\n".join(storyboard_errors(broken, brief, look))
+
+
+def test_ugc_needs_a_broll_shot(parts):
+    board, brief, look = parts
+    shots = [shot.model_dump() for shot in board.shots if shot.route != "veo_broll"]
+    shots.append({**shots[-1], "id": "s05"})  # keep the length in range with a fourth talking shot
+    talk_only = Storyboard.model_validate({"title": board.title, "plan": board.plan, "shots": shots})
+    assert "veo_broll" in "\n".join(storyboard_errors(talk_only, brief, look))
+
+
+def test_every_spoken_line_needs_a_claim_check_backed_by_a_product_fact(parts):
+    board, brief, look = parts
+    spoken = [shot.id for shot in board.shots if shot.dialogue_tts]
+
+    def errors(line_checks):
+        review = StoryboardReview(notes=[], line_checks=line_checks, storyboard=board)
+        return "\n".join(review_errors(review, brief, look))
+
+    backed = [LineCheck(shot_id=shot_id, claim="no fragrance", fact=0) for shot_id in spoken]
+    assert errors(backed) == ""
+    assert "no entry" in errors(backed[1:])
+    invented = [LineCheck(shot_id=shot_id, claim="full refund") for shot_id in spoken]
+    assert "not backed by product_facts" in errors(invented)
+    assert "not backed by product_facts" in errors([LineCheck(shot_id=s, claim="x", fact=99) for s in spoken])

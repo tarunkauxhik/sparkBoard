@@ -36,6 +36,9 @@ STORYBOARD_RULES = f"""Hard rules (checked by code; a storyboard that breaks one
   the limit for its duration) and gets to the point inside the first 2 seconds: no greeting,
   no warm-up.
 - In ugc and product_hero ads the product is visible (product_visible true) in shot 1 or 2.
+- A ugc ad has at least one silent veo_broll shot (the product, hands or texture).
+- Product claims come only from the brief's product_facts. Never add an ingredient, result,
+  number, price, guarantee, refund or policy that is not listed there.
 - character and speaker are cast names from the look, nothing else. Adults only, no children.
 - Every spoken shot has dialogue_tts, dialogue_caption and dialogue_lang, all non-empty.
   dialogue_tts is what the voice says: Hindi words in Devanagari, English words in Latin.
@@ -50,6 +53,8 @@ Craft rules:
 - No health or money claims that cannot be proven (no "cures", "guaranteed", "in 7 days").
 - first_frame describes the still moment the shot opens on. action describes only what
   moves after that. Keep hand actions simple: the product is held plainly or rests on a surface.
+- Every shot is a separate clip generated from its own still image. Never carry one
+  movement across a cut ("mid-application", "continues to..."): open each shot on a settled pose.
 - Reuse the same location and lighting words in every shot that shares a place."""
 
 
@@ -66,13 +71,16 @@ TASKS = {
     "insights": Task(Insights, 2000, 0.5, (
         "Build the insight bank for this brief: the audience's pains, desires and objections "
         "about this kind of product, and the proof points that would answer them. "
-        "Write each one the way a real customer would say it, 4 to 6 per list.")),
+        "Write each one the way a real customer would say it, 4 to 6 per list. "
+        "Proof points may only restate the brief's product_facts: never invent ingredients, "
+        "test results, prices, guarantees or policies.")),
     "concepts": Task(ConceptDrafts, 3000, 0.9, (
         "Propose exactly 5 ad concepts for the brief's format and platform, ids c1 to c5. "
         "Each one is built on a different insight and takes a clearly different angle. "
         "The hook is the first spoken line or first image and must earn attention in 2 seconds. "
         f"Avoid overused hooks such as: {', '.join(OVERUSED_HOOKS)}. "
-        "Keep every concept shootable with 1 or 2 adults, simple actions and one location.")),
+        "Keep every concept shootable with 1 or 2 adults, simple actions and one location. "
+        "Use only the brief's product_facts for product claims.")),
     "concept_critic": Task(ConceptReview, 2500, 0.3, (
         "You are a tough creative director. Score every concept from 1 to 10 on: hook, "
         "brief_fit, platform_fit, feasibility (can AI video models make it look real: few "
@@ -95,6 +103,11 @@ TASKS = {
         "storyboard with your fixes applied, plus one note per issue you found.\n"
         "- Rewrite any line that sounds like an ad or a script (kind: ad_like).\n"
         "- Flag and soften health or money claims that cannot be proven (kind: claim).\n"
+        "- Check every spoken line against the brief's product_facts. For each spoken shot add "
+        "one line_checks entry: `claim` is the product claim the line makes (empty if none) and "
+        "`fact` is the index, counting from 0, of the product_facts entry that backs it. If no "
+        "entry backs a claim, rewrite the line without it (kind: claim) so that no unbacked "
+        "claim is left in the storyboard you return.\n"
         "- Replace overused hooks and stock phrases (kind: overused_hook).\n"
         "- Anything else worth fixing, e.g. a hook that is slow to start (kind: other).\n"
         "Keep what already works; do not rewrite for the sake of it. If nothing needs "

@@ -14,7 +14,7 @@ from adgen.editor import render_video, stream_seconds, validate_edit_list
 from adgen.ledger import Ledger
 from adgen.prompts import keyframe_prompt, motion_prompt
 from adgen.report import write_decision_log_md, write_storyboard_md
-from adgen.rules import LENGTH_TOLERANCE_S, storyboard_errors
+from adgen.rules import LENGTH_TOLERANCE_S, review_errors, storyboard_errors
 from adgen.run import Run
 from adgen.schemas import (
     Approval, Audio, Brief, Check, Clips, Concept, Concepts, EditList, FixedClip, Insights,
@@ -104,7 +104,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         run.save("storyboard_draft.json", draft)
         review = ask("storyboard_critic", brief=b, length_s=length_s, look=look.model_dump(),
                      storyboard=draft.model_dump(),
-                     check=lambda r: storyboard_errors(r.storyboard, brief, look))
+                     check=lambda r: review_errors(r, brief, look))
         run.save("storyboard_critic.json", review)
         notes = "; ".join(f"{n.shot_id}: {n.issue}" for n in review.notes) or "the critic changed nothing"
         return review.storyboard, f"{len(review.storyboard.shots)} shots, {len(review.notes)} critic notes", notes

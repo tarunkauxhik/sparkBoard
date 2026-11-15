@@ -51,16 +51,31 @@ def run(
                    + ")")
 
 
+def _cost_real_money(run_dir: Path) -> bool:
+    """True if the run's ledger has any real (not mock) charge."""
+    ledger = run_dir / "ledger.jsonl"
+    return ledger.exists() and '"mock": false' in ledger.read_text("utf-8")
+
+
 @app.command()
-def clean(older_than_days: int = typer.Option(7, help="Delete runs older than this. 0 deletes all runs.")):
-    """Delete old run folders and temp files (pytest and Python caches)."""
+def clean(
+    older_than_days: int = typer.Option(7, help="Delete runs older than this. 0 deletes all dry runs."),
+    include_paid: bool = typer.Option(False, help="Also delete runs that cost real money."),
+):
+    """Delete old run folders and temp files (pytest and Python caches).
+
+    Runs that cost real money are kept unless --include-paid is given.
+    """
     cutoff = time.time() - older_than_days * 86400
     old_runs = [d for d in RUNS_DIR.glob("*") if d.is_dir() and d.stat().st_mtime <= cutoff]
+    kept = [d for d in old_runs if _cost_real_money(d) and not include_paid]
+    old_runs = [d for d in old_runs if d not in kept]
     caches = [d for d in Path(".").rglob("*") if d.name in ("__pycache__", ".pytest_cache")
               and d.is_dir() and not {".venv", ".uv", ".git"} & set(d.parts)]
     for folder in old_runs + caches:
         shutil.rmtree(folder)
-    typer.echo(f"Deleted {len(old_runs)} run(s) and {len(caches)} cache folder(s).")
+    typer.echo(f"Deleted {len(old_runs)} run(s) and {len(caches)} cache folder(s). "
+               f"Kept {len(kept)} paid run(s).")
 
 
 if __name__ == "__main__":

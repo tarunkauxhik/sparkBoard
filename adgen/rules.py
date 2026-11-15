@@ -4,7 +4,7 @@ Single-shot rules (durations, word rate, script) live on the Shot model in schem
 """
 import re
 
-from adgen.schemas import SPOKEN, Brief, Look, Storyboard, max_words
+from adgen.schemas import SPOKEN, Brief, Look, Storyboard, StoryboardReview, max_words
 
 LENGTH_TOLERANCE_S = 2
 HOOK_MAX_WORDS = 8  # a hook line this short gets to the point in the first seconds
@@ -51,4 +51,22 @@ def storyboard_errors(board: Storyboard, brief: Brief, look: Look) -> list[str]:
         errors.append(f"{hook.id}: the hook line must be {HOOK_MAX_WORDS} words or fewer")
     if brief.format in PRODUCT_AD_FORMATS and not any(shot.product_visible for shot in board.shots[:2]):
         errors.append("the product must be visible in shot 1 or 2")
+    if brief.format == "ugc" and not any(shot.route == "veo_broll" for shot in board.shots):
+        errors.append("a ugc ad needs at least one silent veo_broll shot (product, hands or texture)")
+    return errors
+
+
+def review_errors(review: StoryboardReview, brief: Brief, look: Look) -> list[str]:
+    """Rule breaks in the critic's reply: its storyboard, plus a claim check for every spoken line."""
+    errors = storyboard_errors(review.storyboard, brief, look)
+    checks = {check.shot_id: check for check in review.line_checks}
+    for shot in review.storyboard.shots:
+        if shot.route not in SPOKEN:
+            continue
+        check = checks.get(shot.id)
+        if check is None:
+            errors.append(f"{shot.id}: line_checks has no entry for this spoken shot")
+        elif check.claim and (check.fact is None or not 0 <= check.fact < len(brief.product_facts)):
+            errors.append(f"{shot.id}: the claim {check.claim!r} is not backed by product_facts; "
+                          "rewrite the line without it")
     return errors

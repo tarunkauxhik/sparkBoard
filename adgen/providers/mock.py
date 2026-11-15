@@ -155,7 +155,9 @@ class MockProvider:
         return {"title": ctx["concept"]["title"], "plan": plan, "shots": shots}
 
     def _storyboard_critic(self, ctx: dict) -> dict:
-        return {"notes": [], "storyboard": ctx["storyboard"]}
+        spoken = [shot["id"] for shot in ctx["storyboard"]["shots"] if shot["dialogue_tts"]]
+        return {"notes": [], "line_checks": [{"shot_id": shot_id} for shot_id in spoken],
+                "storyboard": ctx["storyboard"]}
 
     def _edit_list(self, ctx: dict) -> dict:
         return {

@@ -30,6 +30,9 @@ def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
     out += [f"- **{m.name}**, {m.age}: {m.look}. Outfit: {m.outfit}. Voice: {m.voice}." for m in look.cast]
     out += ["", "## Critic notes"]
     out += [f"- {n.shot_id} ({n.kind}): {n.issue} Change: {n.change}" for n in review.notes] or ["- none"]
+    out += ["", "## Claims check"]
+    out += [f"- {c.shot_id}: \"{c.claim}\" is backed by the fact \"{brief.product_facts[c.fact]}\""
+            if c.claim else f"- {c.shot_id}: no product claim" for c in review.line_checks]
     for shot in board.shots:
         out += ["", f"## {shot.id}: {shot.purpose}, {shot.duration_s} s, {shot.route}",
                 f"- Shot: {shot.shot_type}, {shot.angle}, {shot.framing}",

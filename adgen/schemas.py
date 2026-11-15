@@ -40,6 +40,8 @@ class Brief(BaseModel):
     goal: str
     platform: str
     language: str
+    # The only product claims an ad may make. Anything else (results, prices, refunds) is rejected.
+    product_facts: list[str] = Field(min_length=1)
     target_length_s: int  # length of the shots together, without the end card
     product_url: str | None = None
     refs: Refs | None = None
@@ -211,8 +213,16 @@ class CriticNote(BaseModel):
     change: str  # what the critic changed, or "none" if only flagged
 
 
+class LineCheck(BaseModel):
+    """The critic's claim check for one spoken line."""
+    shot_id: str
+    claim: str = ""          # the product claim the line makes; empty if it makes none
+    fact: int | None = None  # index (from 0) of the brief's product_facts entry that backs it
+
+
 class StoryboardReview(BaseModel):
     notes: list[CriticNote]
+    line_checks: list[LineCheck]  # one per spoken shot
     storyboard: Storyboard  # the full storyboard after the critic's rewrites
 
 

@@ -145,3 +145,15 @@ def test_static_ads_come_out_in_every_size(done, tmp_path):
         static_ad(keyframe, "Skin that finally calms down", "Dewline", size, out)
         with Image.open(out) as img:
             assert img.size == size
+
+
+def test_clean_keeps_runs_that_cost_real_money(tmp_path, monkeypatch):
+    from adgen.__main__ import clean
+    monkeypatch.chdir(tmp_path)
+    for name, mock in (("dry", True), ("paid", False)):
+        (tmp_path / "runs" / name).mkdir(parents=True)
+        Ledger(tmp_path / "runs" / name / "ledger.jsonl").record("openrouter", "sonnet:insights", 0.01, mock=mock)
+    clean(older_than_days=0, include_paid=False)
+    assert [d.name for d in (tmp_path / "runs").iterdir()] == ["paid"]
+    clean(older_than_days=0, include_paid=True)
+    assert list((tmp_path / "runs").iterdir()) == []

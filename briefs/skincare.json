@@ -7,5 +7,12 @@
   "goal": "first purchase from an Instagram Reels ad",
   "platform": "Instagram Reels",
   "language": "Indian English",
+  "product_facts": [
+    "fragrance-free",
+    "contains ceramides",
+    "lightweight, water-based texture",
+    "made for sensitive skin",
+    "30 ml bottle"
+  ],
   "target_length_s": 18
 }

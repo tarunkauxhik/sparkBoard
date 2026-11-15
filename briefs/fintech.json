@@ -7,5 +7,12 @@
   "goal": "app installs from an Instagram Reels ad",
   "platform": "Instagram Reels",
   "language": "Hinglish",
+  "product_facts": [
+    "splits any bill between a group inside the app",
+    "everyone in the group sees who owes what",
+    "sends payment reminders automatically",
+    "settle up by UPI from inside the app",
+    "free to download"
+  ],
   "target_length_s": 22
 }
