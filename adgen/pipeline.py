@@ -101,9 +101,12 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     def make_storyboard():
         length_s = {"min": brief.target_length_s - LENGTH_TOLERANCE_S,
                     "max": brief.target_length_s + LENGTH_TOLERANCE_S}
-        draft = ask("storyboard", brief=b, length_s=length_s, concept=winner, insights=insights.model_dump(),
-                    look=look.model_dump(), check=lambda board: storyboard_errors(board, brief, look))
-        run.save("storyboard_draft.json", draft)
+        if run.has("storyboard_draft.json"):  # a paid draft is never written twice
+            draft = run.load("storyboard_draft.json", Storyboard)
+        else:
+            draft = ask("storyboard", brief=b, length_s=length_s, concept=winner, insights=insights.model_dump(),
+                        look=look.model_dump(), check=lambda board: storyboard_errors(board, brief, look))
+            run.save("storyboard_draft.json", draft)
         review = ask("storyboard_critic", brief=b, length_s=length_s, look=look.model_dump(),
                      storyboard=draft.model_dump(),
                      check=lambda r: review_errors(r, brief, look))
