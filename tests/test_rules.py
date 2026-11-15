@@ -117,10 +117,12 @@ def test_ugc_needs_a_broll_shot_and_product_hero_needs_a_static(parts):
 
 
 def test_look_rejects_glossy_words(parts):
-    look = parts[2]
-    assert look_errors(look) == []
+    brief, look = parts[1], parts[2]
+    assert look_errors(look, brief) == []
     glossy = look.model_copy(update={"lens": look.lens.model_copy(update={"value": "8K cinematic lens"})})
-    assert "cinematic" in "\n".join(look_errors(glossy))
+    assert "cinematic" in "\n".join(look_errors(glossy, brief))
+    story = brief.model_copy(update={"format": "brand_story"})
+    assert "add a narrator" in "\n".join(look_errors(look, story))  # a narrator format with no narrator
 
 
 def test_every_claim_in_every_spoken_line_needs_a_backing_fact(parts):

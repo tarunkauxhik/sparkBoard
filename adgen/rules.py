@@ -81,11 +81,14 @@ def storyboard_errors(board: Storyboard, brief: Brief, look: Look) -> list[str]:
     return errors
 
 
-def look_errors(look: Look) -> list[str]:
-    """Rule breaks in the look: no glossy 'AI look' words in any choice."""
-    return [f"{name}: remove {word!r}; describe a real lens and one real light source"
-            for name, choice in look if name != "cast"
-            for word in GLOSSY_WORDS if word in choice.value.lower()]
+def look_errors(look: Look, brief: Brief) -> list[str]:
+    """Rule breaks in the look: glossy 'AI look' words, or a narrator format without a narrator."""
+    errors = [f"{name}: remove {word!r}; describe a real lens and one real light source"
+              for name, choice in look if name != "cast"
+              for word in GLOSSY_WORDS if word in choice.value.lower()]
+    if brief.format in VOICEOVER_FORMATS and all(member.on_screen for member in look.cast):
+        errors.append(f"a {brief.format} ad is told in voiceover: add a narrator to the cast with on_screen false")
+    return errors
 
 
 def review_errors(review: StoryboardReview, brief: Brief, look: Look) -> list[str]:

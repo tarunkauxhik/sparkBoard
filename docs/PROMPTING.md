@@ -112,6 +112,15 @@ that breaks it; "prompt" means the writer and critic are told, but code cannot c
 | Cast: fictional adults of 25 or older, never a likeness; each persona has look, outfit, 2 to 3 speech habits, pace, energy and accent | Code |
 | On-camera speaking shots are medium close-ups with a static or light handheld camera | Code |
 | Each shot has 1 or 2 timed beats inside its length, each with an action and (if a person is on screen) an eye-line | Code |
+| Code counts the words itself and sets every spoken shot's length; the model's own count and its `plan` are replaced by the real numbers, which are also sent back with every rejection | Code |
+| Each spoken shot has its own `delivery` (how that line is said), its own `setting` (only what is visible in that shot) and exactly one `lens` | Code (present, one lens); the wording is the writer's |
+| UGC selfie speaking shots use a light handheld camera | Code |
+| Hands-only shots (`face_visible` false) do not get the character sheet | Code |
+| Brand story and product hero ads are told in voiceover over b-roll, with at most one on-camera line; their cast includes an off-screen narrator | Code |
+| Static headlines and the end card line get the same claim check as spoken lines | Code |
+| Printed text other than the brand name (a date, a price) is added in code later; the keyframe leaves that label area blank | Code (prompt compiler), writer marks it in `blank_label_text` |
+| A new on-screen persona must differ from personas used for other brands: another name, at least 4 years apart in age, and at most 30% of the same look words | Code (`adgen/casting.py`) |
+| Critic notes are at most two plain sentences per field; any word count they state must equal the real one | Code |
 | Natural speech: contractions, short sentences, at most one filler or self-correction per ad | Prompt, critic |
 | No emotion-only directions; shots that depend on micro-expressions are flagged | Prompt, critic |
 | No action carried across a cut: each shot opens on a settled pose | Prompt, critic |

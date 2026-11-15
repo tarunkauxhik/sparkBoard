@@ -94,7 +94,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         # The mock's people are placeholders, so cast variety is only checked for real casts.
         used = [] if getattr(provider, "placeholder_cast", False) else used_personas(brief.brand, run.dir.parent)
         look = ask("look", brief=b, concept=winner, playbook=playbook, used_personas=used,
-                   check=lambda look: look_errors(look) + casting_errors(look, used))
+                   check=lambda look: look_errors(look, brief) + casting_errors(look, used))
         why = "; ".join(f"{name}: {choice.reason}" for name, choice in look if name != "cast")
         cast = ", ".join(member.name for member in look.cast)
         return look, f"{look.mood.value}; {look.setting.value}; cast: {cast}", why
