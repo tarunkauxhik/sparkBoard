@@ -81,6 +81,7 @@ def smoke(
     cap_kie: float = typer.Option(..., help="Hard cap in USD for Kie across the whole smoke folder."),
     cap_elevenlabs: float = typer.Option(0.0, help="Hard cap in USD for ElevenLabs across the smoke folder."),
     cap_openrouter: float = typer.Option(0.0, help="Hard cap in USD for OpenRouter (Gemini reviews) in the smoke folder."),
+    review_model: str = typer.Option(GEMINI, help="OpenRouter model that looks at images and clips."),
     folder: Path = typer.Option(None, help="Output folder. Default: runs/smoke-<today>."),
 ):
     """Run one step of the paid smoke test. Real calls: each step needs Tarun's OK first."""
@@ -96,7 +97,8 @@ def smoke(
     try:
         STEPS[step](Kie(ledger, folder / "tasks", os.environ["KIE_API_KEY"]),
                     ElevenLabs(ledger, os.environ["ELEVENLABS_API_KEY"]),
-                    OpenRouter(ledger, folder / "llm", os.environ["OPENROUTER_API_KEY"], model=GEMINI), folder)
+                    OpenRouter(ledger, folder / "llm", os.environ["OPENROUTER_API_KEY"], model=review_model),
+                    folder)
     finally:  # always say what was spent, also when a task failed
         typer.echo(f"Spent in this folder: Kie ${ledger.spent('kie'):.3f} of {cap_kie:.2f}, "
                    f"ElevenLabs ${ledger.spent('elevenlabs'):.4f} of {cap_elevenlabs:.2f}, "

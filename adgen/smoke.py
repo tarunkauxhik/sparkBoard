@@ -224,18 +224,37 @@ def _frame(clip: Path, second: float, folder: Path) -> Path:
     return out
 
 
-def step_g(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
-    """Gemini review: face checks against the character sheets (with one wrong pairing as a
-    control) and the clip rubric on both Veo clips."""
-    results = {}
+def _face_checks(eyes: OpenRouter, folder: Path) -> dict:
+    """Three true pairs and two wrong pairings as controls. A usable face check must say
+    "same person" for the true pairs and "different" for both controls."""
     pairs = [("meera_keyframe", "sheet_meera.png", folder / "keyframe_s01.png"),
              ("meera_clip_frame", "sheet_meera.png", _frame(folder / "clip_s01_take1.mp4", 3, folder)),
              ("neha_keyframe", "sheet_neha.png", folder / "keyframe_fintech_s01.png"),
-             ("control_meera_sheet_vs_neha", "sheet_meera.png", folder / "keyframe_fintech_s01.png")]
+             ("control_meera_sheet_vs_neha", "sheet_meera.png", folder / "keyframe_fintech_s01.png"),
+             ("control_neha_sheet_vs_meera", "sheet_neha.png", folder / "keyframe_s01.png")]
+    results = {}
     for name, sheet, frame in pairs:
         check = eyes.look_at(f"face_{name}", FACE_QUESTION, FaceCheck,
                              images=[_small_image(folder / sheet, folder), _small_image(frame, folder)])
         results[f"face_{name}"] = check.model_dump()
+    return results
+
+
+def step_h(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
+    """The face checks alone, to try another review model (use --review-model)."""
+    results = _face_checks(eyes, folder)
+    name = eyes.model.split("/")[-1]
+    (folder / f"step_h_{name}.json").write_text(json.dumps(results, ensure_ascii=False, indent=1), "utf-8")
+    for pair, result in results.items():
+        print(pair, json.dumps(result, ensure_ascii=False))
+    right = sum(result["same_person"] != pair.startswith("face_control") for pair, result in results.items())
+    print(f"{name}: {right} of {len(results)} pairs judged correctly")
+
+
+def step_g(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
+    """Gemini review: face checks against the character sheets (with wrong pairings as
+    controls) and the clip rubric on both Veo clips."""
+    results = _face_checks(eyes, folder)
 
     for sample, name in (("skincare", "clip_s01_take1"), ("fintech", "clip_fintech_s01_take1")):
         shot = _sample(sample)[2].shots[0]
@@ -252,4 +271,5 @@ def step_g(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
         print(name, json.dumps(result, ensure_ascii=False))
 
 
-STEPS = {"a": step_a, "b": step_b, "c": step_c, "d": step_d, "e": step_e, "f": step_f, "g": step_g}
+STEPS = {"a": step_a, "b": step_b, "c": step_c, "d": step_d, "e": step_e, "f": step_f, "g": step_g,
+         "h": step_h}
