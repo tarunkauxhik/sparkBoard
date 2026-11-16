@@ -75,7 +75,18 @@ Measured in the smoke test on 16 Nov 2026:
   turned away at the end of the skincare clip.
 - The two personas are too alike: their front views scored 0.66 against each other.
 
-Still open: Veo Lite and 8 s prices; face limits need more data than 2 personas and 3 clips.
+
+Measured on 17 Nov 2026:
+- A Veo 3.1 Lite clip costs a flat 30 credits ($0.15) for 6 s, half the price of Fast. In a
+  side-by-side of the same shot the frames were comparable (the Lite clip used the newer
+  dry-voice prompt, so the sound is not a like-for-like comparison).
+- ElevenLabs Voice Isolator kept every word of a Veo line and its timing (the last word ended
+  0.06 s later). It removes all room sound: the quiet parts fell from about -37 dB to
+  silence, so a room-tone bed has to be added back afterwards.
+- Character sheets of four different personas scored 0.08 to 0.18 against each other, far
+  under the 0.45 limit. The two personas that looked alike had scored 0.66.
+
+Still open: Veo 8 s price; face limits need more data than a few personas and clips.
 
 ## Veo video prompts (code: `motion_prompt` in `adgen/prompts.py`)
 
