@@ -40,6 +40,8 @@ def words_pass(script: str, heard: str, other_script: str = "") -> bool:
 # Provisional: re-tune when there is more data. Scores come from adgen/faces.py (-1 to 1).
 KEYFRAME_FACE_MIN = 0.58  # a keyframe against its character sheet (measured 0.64 to 0.72)
 CLIP_FACE_MIN = 0.50      # a clip frame against the shot's own keyframe, inside the spoken part
+PERSONA_FACE_MAX = 0.45   # two different personas' sheets may not score above this (two that
+                          # looked alike scored 0.66; re-make the newer sheet if they do)
 
 
 def face_passes(own: float | None, others: list[float], minimum: float) -> bool:

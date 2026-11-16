@@ -145,11 +145,14 @@ TASKS = {
         "told in voiceover, so their cast always includes a narrator with on_screen false "
         "(no look or outfit needed), plus at most one or two on-screen people. Keep the cast as small "
         "as the concept allows.\n"
-        "CONTEXT.used_personas lists people already cast in ads for other brands. Every "
-        "on-screen persona you create must be clearly different from all of them: a different "
-        "name, an age at least 4 years away, and a different gender or age group, skin tone, "
-        "hair, build, wardrobe, voice and speech habits. Describe the look in your own fresh "
-        "words; do not reuse their phrases.")),
+        "CONTEXT.used_personas lists people already cast in ads for other brands. An image "
+        "model turns similar descriptions into the same face, so every on-screen persona you "
+        "create must be visibly a different person from all of them at a glance: a different "
+        "name, and a clearly different face shape, skin tone, hair (length, texture and "
+        "style), build and one or two strong features (glasses, a beard, a gap in the teeth, "
+        "freckles, a nose ring). Keep the age right for the brief's audience. Also make the "
+        "people inside this cast clearly different from each other. Describe the look in your "
+        "own fresh words; do not reuse phrases from used_personas.")),
     "storyboard": Task(Storyboard, 5000, 0.3, (
         "Write the storyboard and script for the winning concept, shot ids s01, s02, ...\n\n"
         + HOOK_TYPES + "\n\n" + STORYBOARD_RULES), reasoning="medium"),

@@ -234,7 +234,8 @@ def test_new_cast_must_differ_from_personas_used_for_other_brands(parts):
     look = parts[2]
     used = [{"brand": "Noctave", "name": "dana", "age": 29, "look": "woman with shoulder-length dark wavy hair"}]
     problems = "\n".join(casting_errors(look, used))
-    assert "age 28 is too close" in problems and "look is too close" in problems
+    assert "look is too close" in problems
+    assert "age" not in problems  # no age rule: the brief's audience decides the age
     far = [{"brand": "Brasswick", "name": "arjun", "age": 46,
             "look": "broad-shouldered man with a grey beard, deep brown skin and a shaved head"}]
     assert casting_errors(look, far) == []

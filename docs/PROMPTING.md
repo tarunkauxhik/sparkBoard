@@ -147,7 +147,7 @@ that breaks it; "prompt" means the writer and critic are told, but code cannot c
 | Brand story and product hero ads are told in voiceover over b-roll, with at most one on-camera line; their cast includes an off-screen narrator | Code |
 | Static headlines and the end card line get the same claim check as spoken lines | Code |
 | Printed text other than the brand name (a date, a price) is added in code later; the keyframe leaves that label area blank | Code (prompt compiler), writer marks it in `blank_label_text` |
-| A new on-screen persona must differ from personas used for other brands: another name, at least 4 years apart in age, and at most 30% of the same look words | Code (`adgen/casting.py`) |
+| A new on-screen persona must differ from personas used for other brands: another name and at most 30% of the same look words. This is a first filter only; two different descriptions still produced near-identical faces. Character sheets of different personas must score under 0.45 against each other on the face check | Code (`adgen/casting.py`, `PERSONA_FACE_MAX` in `adgen/qa.py`); the sheet check is wired in at phase 5 |
 | Critic notes are at most two plain sentences per field; any word count they state must equal the real one | Code |
 | Natural speech: contractions, short sentences, at most one filler or self-correction per ad | Prompt, critic |
 | No emotion-only directions; shots that depend on micro-expressions are flagged | Prompt, critic |

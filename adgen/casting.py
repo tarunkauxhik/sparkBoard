@@ -1,4 +1,12 @@
-"""Cast variety across samples: a new persona must not look like one used for another brand."""
+"""Cast variety across samples: a new persona must not look like one used for another brand.
+
+This checks the written description only, which is a first filter. The smoke test showed it
+is not enough on its own: two personas with different wording still got near-identical
+faces (0.66 on the face check). The real test is the face check on the finished character
+sheets (adgen/faces.py, PERSONA_FACE_MAX in adgen/qa.py).
+
+There is no age rule on purpose: an age gap between brands forced a cast of 42-year-olds
+onto an ad for flatmates in their twenties. The brief's audience decides the age."""
 import json
 import re
 from pathlib import Path
@@ -7,7 +15,6 @@ from adgen.ledger import has_real_spend
 from adgen.schemas import Look
 
 MAX_LOOK_SIMILARITY = 0.30  # share of look words two personas may have in common
-MIN_AGE_GAP = 4             # years between any two on-screen personas of different brands
 FILLER = {"with", "and", "the", "her", "his", "their", "that", "from", "has", "have", "for",
           "woman", "man", "person", "face", "slightly", "light", "small", "few", "who", "wears"}
 
@@ -50,11 +57,8 @@ def casting_errors(look: Look, used: list[dict]) -> list[str]:
             who = f"{other['name']} ({other['brand']})"
             if member.name == other["name"]:
                 errors.append(f"{member.name}: the name is already used by {who}; pick another")
-            if abs(member.age - other["age"]) < MIN_AGE_GAP:
-                errors.append(f"{member.name}: age {member.age} is too close to {who}, age {other['age']}; "
-                              f"differ by at least {MIN_AGE_GAP} years")
             overlap = look_similarity(member.look, other["look"])
             if overlap > MAX_LOOK_SIMILARITY:
                 errors.append(f"{member.name}: the look is too close to {who} ({overlap:.0%} of the same "
-                              "words); change gender, age group, skin tone, hair and build")
+                              "words); change the face shape, skin tone, hair, build and features")
     return errors
