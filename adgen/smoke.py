@@ -14,7 +14,7 @@ from PIL import Image
 
 from adgen.prompts import character_sheet_prompt, keyframe_request, motion_prompt, packshot_prompt
 from adgen.providers.kie import (
-    ASSUMED_IMAGE_USD, ASSUMED_VEO_USD_PER_S, USD_PER_CREDIT, Kie, nano_banana_payload, veo_payload,
+    ASSUMED_IMAGE_USD, ASSUMED_VEO_CLIP_USD, USD_PER_CREDIT, Kie, nano_banana_payload, veo_payload,
 )
 from adgen.schemas import Brief, Look, Refs, Storyboard
 
@@ -92,7 +92,7 @@ def step_c(kie: Kie, folder: Path) -> None:
         print(f"have  {clip.name}")
         return
     payload = veo_payload(motion_prompt(shot, look, brief), kie.upload(keyframe), "veo3_fast", shot.duration_s)
-    _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_USD_PER_S * shot.duration_s, clip), clip.name)
+    _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_CLIP_USD, clip), clip.name)
 
 
 def step_d(kie: Kie, folder: Path) -> None:
@@ -112,7 +112,7 @@ def step_d(kie: Kie, folder: Path) -> None:
         print(f"have  {clip.name}")
         return
     payload = veo_payload(motion_prompt(shot, look, brief), kie.upload(keyframe), "veo3_fast", shot.duration_s)
-    _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_USD_PER_S * shot.duration_s, clip), clip.name)
+    _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_CLIP_USD, clip), clip.name)
 
 
 STEPS = {"a": step_a, "b": step_b, "c": step_c, "d": step_d}

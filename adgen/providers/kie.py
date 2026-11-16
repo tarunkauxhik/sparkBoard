@@ -24,9 +24,11 @@ from adgen.ledger import Ledger
 API = "https://api.kie.ai/api/v1"
 UPLOAD_URL = "https://kieai.redpandaai.co/api/file-stream-upload"
 USD_PER_CREDIT = 0.005
-# Prices assumed for the cap check, set high on purpose until the smoke test gives real ones.
-ASSUMED_IMAGE_USD = 0.10
-ASSUMED_VEO_USD_PER_S = 0.125     # $0.50 for a 4 s Veo Fast clip
+# Prices assumed for the cap check: the real prices measured in the smoke test (16 Nov 2026)
+# plus a margin. Measured: a 2K Nano Banana image is 6 credits ($0.03); a Veo Fast clip is a
+# flat 60 credits ($0.30) for both 4 s and 6 s. Veo Lite and Kling Avatar are not measured yet.
+ASSUMED_IMAGE_USD = 0.05
+ASSUMED_VEO_CLIP_USD = 0.40
 ASSUMED_AVATAR_USD_PER_S = 0.10
 POLL_START_S, POLL_SLOWEST_S, POLL_TIMEOUT_S = 3, 15, 20 * 60
 

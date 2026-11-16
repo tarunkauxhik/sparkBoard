@@ -44,9 +44,15 @@ own rule or common advice, not confirmed by the vendor.
 | Images and audio go in as URLs. Upload with `POST /api/file-stream-upload` (form fields `file`, `uploadPath`, `fileName`); use `data.downloadUrl` from the reply | Kie file upload | Official |
 | Failed tasks report `creditsConsumed: 0` | Kie Nano Banana, Kie Kling Avatar (callback examples) | Official |
 
-Open points to confirm in the smoke test: the upload host (the page shows both `api.kie.ai`
-and `kieai.redpandaai.co`), real credit prices per model, and Kling Avatar's frame rate
-(not stated in the docs).
+Measured in the smoke test on 16 Nov 2026:
+- Uploads go to `kieai.redpandaai.co` and come back as `tempfile.redpandaai.co` URLs.
+- A Nano Banana 2.1 image at 2K costs 6 credits ($0.03).
+- A Veo 3.1 Fast clip at 720p costs a flat 60 credits ($0.30), the same for 4 s and 6 s.
+- Veo returns 720x1280, 24 fps, H.264 with AAC 48 kHz stereo, and accepts an AI-generated
+  face as the first frame.
+- For every task, the balance drop equalled Kie's `creditsConsumed`.
+
+Still open: Veo Lite and 8 s prices, Kling Avatar's price and frame rate.
 
 ## Veo video prompts (code: `motion_prompt` in `adgen/prompts.py`)
 
