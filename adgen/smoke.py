@@ -95,4 +95,24 @@ def step_c(kie: Kie, folder: Path) -> None:
     _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_USD_PER_S * shot.duration_s, clip), clip.name)
 
 
-STEPS = {"a": step_a, "b": step_b, "c": step_c}
+def step_d(kie: Kie, folder: Path) -> None:
+    """One Veo Fast clip in Hinglish: fintech shot 1. Needs neha's character sheet and
+    the shot's keyframe first (two images, counted in this step's cost)."""
+    brief, look, board = _sample("fintech")
+    shot = board.shots[0]
+    who = next(member for member in look.cast if member.name == shot.character)
+    sheet, keyframe, clip = (folder / f"sheet_{who.name}.png", folder / f"keyframe_fintech_{shot.id}.png",
+                             folder / f"clip_fintech_{shot.id}_take1.mp4")
+    _image(kie, sheet, character_sheet_prompt(who), [], "16:9")
+    # No product reference: the product is an app, and its screen is not readable in this shot.
+    prompt, references = keyframe_request(shot, look, brief, Refs(characters={who.name: str(sheet)}))
+    if not keyframe.exists():
+        _image(kie, keyframe, prompt, [kie.upload(Path(reference)) for reference in references], "9:16")
+    if clip.exists():
+        print(f"have  {clip.name}")
+        return
+    payload = veo_payload(motion_prompt(shot, look, brief), kie.upload(keyframe), "veo3_fast", shot.duration_s)
+    _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_USD_PER_S * shot.duration_s, clip), clip.name)
+
+
+STEPS = {"a": step_a, "b": step_b, "c": step_c, "d": step_d}
