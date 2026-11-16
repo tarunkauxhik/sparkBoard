@@ -224,16 +224,31 @@ def _frame(clip: Path, second: float, folder: Path) -> Path:
     return out
 
 
+def _face_pairs(folder: Path) -> list[tuple[str, str, Path]]:
+    """Sheet and frame pairs for testing a face check: true pairs first, then wrong pairings
+    as controls. A usable check must accept the true pairs and reject every control."""
+    meera_clip, neha_clip = folder / "clip_s01_take1.mp4", folder / "clip_fintech_s01_take1.mp4"
+    return [("meera_keyframe", "sheet_meera.png", folder / "keyframe_s01.png"),
+            ("meera_keyframe_first_take", "sheet_meera.png", folder / "keyframe_s01_v1.png"),
+            ("meera_clip_at_1s", "sheet_meera.png", _frame(meera_clip, 1, folder)),
+            ("meera_clip_at_3s", "sheet_meera.png", _frame(meera_clip, 3, folder)),
+            ("meera_clip_at_5.5s_profile", "sheet_meera.png", _frame(meera_clip, 5.5, folder)),
+            ("neha_keyframe", "sheet_neha.png", folder / "keyframe_fintech_s01.png"),
+            ("neha_clip_at_2s", "sheet_neha.png", _frame(neha_clip, 2, folder)),
+            ("neha_avatar_clip_at_1s", "sheet_neha.png",
+             _frame(folder / "clip_avatar_fintech_s05_take1.mp4", 1, folder)),
+            ("control_meera_sheet_vs_neha", "sheet_meera.png", folder / "keyframe_fintech_s01.png"),
+            ("control_neha_sheet_vs_meera", "sheet_neha.png", folder / "keyframe_s01.png"),
+            ("control_meera_sheet_vs_neha_clip", "sheet_meera.png", _frame(neha_clip, 2, folder)),
+            ("control_neha_sheet_vs_meera_clip", "sheet_neha.png", _frame(meera_clip, 3, folder))]
+
+
 def _face_checks(eyes: OpenRouter, folder: Path) -> dict:
-    """Three true pairs and two wrong pairings as controls. A usable face check must say
-    "same person" for the true pairs and "different" for both controls."""
-    pairs = [("meera_keyframe", "sheet_meera.png", folder / "keyframe_s01.png"),
-             ("meera_clip_frame", "sheet_meera.png", _frame(folder / "clip_s01_take1.mp4", 3, folder)),
-             ("neha_keyframe", "sheet_neha.png", folder / "keyframe_fintech_s01.png"),
-             ("control_meera_sheet_vs_neha", "sheet_meera.png", folder / "keyframe_fintech_s01.png"),
-             ("control_neha_sheet_vs_meera", "sheet_neha.png", folder / "keyframe_s01.png")]
+    """Ask the review model about the keyframe pairs and the two keyframe controls."""
+    asked = ("meera_keyframe", "meera_clip_at_3s", "neha_keyframe",
+             "control_meera_sheet_vs_neha", "control_neha_sheet_vs_meera")
     results = {}
-    for name, sheet, frame in pairs:
+    for name, sheet, frame in [pair for pair in _face_pairs(folder) if pair[0] in asked]:
         check = eyes.look_at(f"face_{name}", FACE_QUESTION, FaceCheck,
                              images=[_small_image(folder / sheet, folder), _small_image(frame, folder)])
         results[f"face_{name}"] = check.model_dump()
@@ -271,5 +286,19 @@ def step_g(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
         print(name, json.dumps(result, ensure_ascii=False))
 
 
+def step_i(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
+    """Free: the local face check (adgen/faces.py) on every true pair and every control."""
+    from adgen.faces import FaceMatcher  # imported here so the other steps do not need the models
+    matcher, results = FaceMatcher(), {}
+    for name, sheet, frame in _face_pairs(folder):
+        score = matcher.similarity(folder / sheet, frame)
+        results[name] = None if score is None else round(score, 3)
+        print(f"{'no face found' if score is None else f'{score:6.3f}'}  {name}")
+    same = [v for k, v in results.items() if not k.startswith("control") and v is not None]
+    different = [v for k, v in results.items() if k.startswith("control") and v is not None]
+    print(f"same person: lowest {min(same):.3f}; different people: highest {max(different):.3f}")
+    (folder / "step_i.json").write_text(json.dumps(results, indent=1), "utf-8")
+
+
 STEPS = {"a": step_a, "b": step_b, "c": step_c, "d": step_d, "e": step_e, "f": step_f, "g": step_g,
-         "h": step_h}
+         "h": step_h, "i": step_i}

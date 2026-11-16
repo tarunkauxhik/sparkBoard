@@ -50,6 +50,7 @@ Easy English, short clean points, answer first. Plan big work first and wait for
 - `assets/fonts/` caption and static fonts
 - `tests/` pytest (no paid calls)
 - `runs/` outputs (gitignored)
+- `models/` local face check models (gitignored; `python -m adgen fetch-face-model`)
 - `samples/` final samples, storyboards, decision logs
 - `docs/` prompting rules and diagrams; `docs/private/` plan, brief, budget (gitignored)
 

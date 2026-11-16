@@ -64,7 +64,17 @@ Measured in the smoke test on 16 Nov 2026:
   person, 5 out of 5, and 3.8 Flash scored both wrong pairings 5 and 4. Flash Lite's clip rubric gave low scores to both clips but missed a bottle
   that vanishes; treat its notes as hints, not facts.
 
-Still open: Veo Lite and 8 s prices; a face check that tells two people apart.
+- The local face check (`adgen/faces.py`, insightface `buffalo_sc` models, 15 MB) does tell
+  the two personas apart, but only relatively. Over 14 clip frames, every frame scored
+  higher against its own persona than against the other one, for both the sheet and the
+  keyframe. A fixed limit alone does not work: a wrong pairing scored up to 0.52, while a
+  true pair in a wide shot scored 0.38.
+- Keyframes scored 0.64 to 0.72 against their own sheet. Clip frames scored 0.53 to 0.94
+  against their own keyframe while the person faced the camera, and fell to 0.35 once she
+  turned away at the end of the skincare clip.
+- The two personas are too alike: their front views scored 0.66 against each other.
+
+Still open: Veo Lite and 8 s prices; face limits need more data than 2 personas and 3 clips.
 
 ## Veo video prompts (code: `motion_prompt` in `adgen/prompts.py`)
 
@@ -150,4 +160,4 @@ that breaks it; "prompt" means the writer and critic are told, but code cannot c
 | Words | Scribe transcript against the script: word error rate above 10% fails | Function built (`adgen/qa.py`) |
 | Clip rubric | Gemini scores 1 to 5 for hands, label, lip sync, "AI look" and hook strength; any score below 3 is re-rolled | Built (`look_at` in `adgen/providers/openrouter.py`); first results were not reliable enough to act on alone |
 | Stray text | OCR on the first, middle and last frame of every clip; any unplanned text fails | Phase 5 (needs an OCR library; size to be approved first) |
-| Face | Is the person the one on the character sheet | Gemini Flash Lite failed the control test (16 Nov 2026); a stronger model or a local face model is needed |
+| Face | A keyframe scores at least 0.58 against its character sheet; a clip frame scores at least 0.50 against the shot's keyframe; and in both cases higher than against any other persona | Built (`adgen/faces.py`, rule in `adgen/qa.py`); limits are provisional. Gemini failed this check |

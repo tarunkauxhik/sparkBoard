@@ -1,7 +1,7 @@
 """Storyboard and cast rules that are checked in code."""
 import pytest
 
-from adgen.qa import ClipScores, word_error_rate, words_pass
+from adgen.qa import CLIP_FACE_MIN, KEYFRAME_FACE_MIN, ClipScores, face_passes, word_error_rate, words_pass
 from adgen.casting import casting_errors, look_similarity, used_personas
 from adgen.ledger import Ledger
 from adgen.rules import look_errors, review_errors, storyboard_errors
@@ -258,3 +258,12 @@ def test_used_personas_come_from_samples_and_paid_runs_of_other_brands(done, tmp
         Ledger(folder / "ledger.jsonl").record("openrouter", "sonnet:look", 0.01, mock=not paid)
     found = used_personas("Dewline", tmp_path / "runs", samples_dir=tmp_path / "samples")
     assert [(p["brand"], p["name"]) for p in found] == [("Other", "maya")]  # not its own brand, not dry runs
+
+
+def test_face_must_be_close_to_its_own_persona_and_closer_than_to_any_other():
+    # numbers from the smoke test: meera's keyframe against her sheet, and against neha's sheet
+    assert face_passes(0.644, [0.437], KEYFRAME_FACE_MIN)
+    assert not face_passes(0.520, [0.664], KEYFRAME_FACE_MIN)  # neha's keyframe checked as "meera"
+    assert not face_passes(0.352, [0.234], CLIP_FACE_MIN)      # meera's clip at 5.5 s: she has turned away
+    assert not face_passes(0.60, [0.61], CLIP_FACE_MIN)        # high, but another persona is closer
+    assert not face_passes(None, [], CLIP_FACE_MIN)            # no face found

@@ -1,5 +1,5 @@
-"""Quality rules for generated clips. The checks that need models (OCR, face match,
-the Gemini call itself) arrive in phase 5; these are the pass/fail rules they will use."""
+"""Quality rules for generated images and clips: the pass/fail rules the checks use.
+The face scores come from adgen/faces.py; OCR and the retry loop arrive in phase 5."""
 from pydantic import BaseModel, Field
 
 MAX_WORD_ERROR_RATE = 0.10
@@ -34,6 +34,19 @@ def word_error_rate(script: str, heard: str, other_script: str = "") -> float:
 
 def words_pass(script: str, heard: str, other_script: str = "") -> bool:
     return word_error_rate(script, heard, other_script) <= MAX_WORD_ERROR_RATE
+
+
+# Face similarity limits from the smoke test (16 Nov 2026): 2 personas, 3 clips, 26 comparisons.
+# Provisional: re-tune when there is more data. Scores come from adgen/faces.py (-1 to 1).
+KEYFRAME_FACE_MIN = 0.58  # a keyframe against its character sheet (measured 0.64 to 0.72)
+CLIP_FACE_MIN = 0.50      # a clip frame against the shot's own keyframe, inside the spoken part
+
+
+def face_passes(own: float | None, others: list[float], minimum: float) -> bool:
+    """A face passes if it is close enough to its own persona AND closer to it than to any
+    other persona. The second test matters: two similar-looking personas scored up to 0.52
+    against each other, so a fixed limit alone cannot tell them apart."""
+    return own is not None and own >= minimum and all(own > other for other in others)
 
 
 class FaceCheck(BaseModel):

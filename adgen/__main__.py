@@ -106,6 +106,14 @@ def smoke(
 
 
 @app.command()
+def fetch_face_model():
+    """Download the local face check models (15 MB) into models/. Needed once."""
+    from adgen.faces import MODEL_DIR, fetch_models
+    fetch_models()
+    typer.echo(f"Face models saved in {MODEL_DIR}: " + ", ".join(f.name for f in MODEL_DIR.iterdir()))
+
+
+@app.command()
 def save_sample(run_id: str, name: str):
     """Copy a reviewed run's JSON and markdown files into samples/<name>/, ready to commit.
 
