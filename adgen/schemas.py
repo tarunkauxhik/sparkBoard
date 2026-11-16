@@ -231,6 +231,9 @@ class Shot(BaseModel):
             raise ValueError(f"{self.id}: dialogue_caption must be Roman script with no audio tags")
         if self.dialogue_tts.count("[") > 1:
             raise ValueError(f"{self.id}: at most one audio tag per line")
+        if "hin" in self.dialogue_lang.lower() and not DEVANAGARI.search(self.dialogue_tts):
+            raise ValueError(f"{self.id}: a {self.dialogue_lang} line needs its Hindi words in Devanagari in "
+                             "dialogue_tts (a line with no Hindi words has dialogue_lang 'English')")
         if self.route != "static":
             if not self.beats:
                 raise ValueError(f"{self.id}: every clip needs 1 or 2 beats")

@@ -40,6 +40,8 @@ def test_word_limits_leave_silence_at_both_ends():
     ({"dialogue_caption": "[sighs] so tired"}, "no audio tags"),
     ({"dialogue_tts": "[sighs] so [laughs] tired"}, "one audio tag"),
     ({"dialogue_lang": ""}, "dialogue_lang"),
+    ({"dialogue_lang": "Hinglish", "dialogue_tts": "Kal de dunga, pakka.", "dialogue_caption": "Kal de dunga, pakka."},
+     "Devanagari"),
     ({"delivery": ""}, "delivery"),
     ({"dialogue_caption": "I love it so much!"}, "exclamation"),
     ({"lens": "85 mm at f/2 or a 100 mm macro"}, "exactly one lens"),
