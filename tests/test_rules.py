@@ -1,7 +1,9 @@
 """Storyboard and cast rules that are checked in code."""
 import pytest
 
-from adgen.qa import CLIP_FACE_MIN, KEYFRAME_FACE_MIN, ClipScores, face_passes, word_error_rate, words_pass
+from adgen.qa import (
+    CLIP_FACE_MIN, KEYFRAME_FACE_MIN, ClipScores, face_passes, last_word_heard, word_error_rate, words_pass,
+)
 from adgen.casting import casting_errors, look_similarity, used_personas
 from adgen.ledger import Ledger
 from adgen.rules import look_errors, review_errors, storyboard_errors
@@ -288,3 +290,33 @@ def test_a_bangle_is_not_an_impact(parts):
     gentle = with_shot(board, 1, beats=[{"start_s": 0.5, "end_s": 3, "action": "she taps the cup once, her bangle sliding down",
                                          "eye_line": "looks into the lens"}])
     assert storyboard_errors(gentle, brief, look) == []
+
+
+def test_last_word_must_be_heard_in_either_script():
+    caption, voice_line = "Case dismissed. Link neeche hai.", "Case dismissed. Link नीचे है।"
+    assert last_word_heard(caption, "Case dismissed. Link नीचे है", voice_line)
+    assert last_word_heard(caption, "case dismissed link neeche hai", voice_line)
+    assert not last_word_heard(caption, "Case dismissed. Link नीचे", voice_line)  # cut off
+    assert not last_word_heard(caption, "", voice_line)
+
+
+def test_the_chosen_take_is_one_that_passed():
+    from adgen.schemas import Clips, Take
+    def take(number, problems):
+        return Take(shot_id="s01", take=number, file=f"s01_take{number}.mp4", task_id="t", model="veo3_lite",
+                    problems=problems)
+    assert Clips(takes=[take(1, ["words: wrong"]), take(2, [])]).chosen()["s01"].take == 2
+    assert Clips(takes=[take(1, ["face: low"]), take(2, ["face: low", "words: wrong"])]).chosen()["s01"].take == 1
+
+
+def test_sheets_of_other_brands_come_from_their_newest_paid_run(tmp_path):
+    from adgen.casting import other_sheets
+    for name, brand, paid in (("a", "Other", True), ("b", "Dewline", True), ("c", "DryRun", False)):
+        folder = tmp_path / name
+        (folder / "refs").mkdir(parents=True)
+        (folder / "refs" / "maya_sheet.png").write_bytes(b"png")
+        (folder / "refs" / "product.png").write_bytes(b"png")
+        (folder / "brief.json").write_text('{"brand": "%s"}' % brand)
+        Ledger(folder / "ledger.jsonl").record("kie", "sheet", 0.03, mock=not paid)
+    found = other_sheets("Dewline", tmp_path)
+    assert [(name, path.parent.parent.name) for name, path in found] == [("maya", "a")]

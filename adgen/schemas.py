@@ -339,26 +339,53 @@ class Approval(BaseModel):
     by: Literal["auto", "human"]
 
 
+class Word(BaseModel):
+    word: str
+    start_s: float
+    end_s: float
+
+
+class KeyframeTake(BaseModel):
+    shot_id: str
+    take: int
+    file: str
+    face: float | None = None  # similarity to the character sheet; None if no face is meant to show
+    passed: bool = True
+
+
 class Keyframes(BaseModel):
-    files: dict[str, str]  # shot id -> image path
+    files: dict[str, str]           # shot id -> the chosen image
+    takes: list[KeyframeTake] = []  # every try, with its check result
 
 
 class Take(BaseModel):
+    """One generated clip and what the checks found in it. Every take is kept."""
     shot_id: str
     take: int
     file: str
     task_id: str
     model: str
+    words: list[Word] = []                # transcript word timings (spoken shots)
+    word_error_rate: float | None = None
+    face: float | None = None             # lowest similarity to the keyframe over the checked frames
+    problems: list[str] = []              # why this take failed its checks; empty = passed
+
+    @property
+    def passed(self) -> bool:
+        return not self.problems
 
 
 class Clips(BaseModel):
     takes: list[Take]
 
-
-class Word(BaseModel):
-    word: str
-    start_s: float
-    end_s: float
+    def chosen(self) -> dict[str, Take]:
+        """The take used for each shot: one that passed, else the one with the fewest problems."""
+        best = {}
+        for take in self.takes:
+            current = best.get(take.shot_id)
+            if current is None or len(take.problems) < len(current.problems):
+                best[take.shot_id] = take
+        return best
 
 
 class FixedClip(BaseModel):

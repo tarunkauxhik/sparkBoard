@@ -177,7 +177,10 @@ that breaks it; "prompt" means the writer and critic are told, but code cannot c
 
 | Check | Rule | Status |
 | --- | --- | --- |
-| Words | Scribe transcript against the script: word error rate above 10% fails | Function built (`adgen/qa.py`) |
+| Words | Scribe transcript against the script: word error rate above 10% fails, and so does a missing last word. A failed clip gets one more take, then the shot is flagged | Built (`check_clip` in `adgen/pipeline.py`) |
+| Trims | A spoken clip is cut to its words plus 0.15 s at each end, by code | Built (`build_edit_list` in `adgen/editor.py`) |
+| Voice match | A speaker's clips may differ in median pitch by at most 10% | Built (`adgen/voice.py`); a warning only, there is no automatic fix |
+| Final video | Picture and sound the same length, -14 LUFS give or take 1, no black or silent gaps before the end card | Built (`final_checks` in `adgen/editor.py`) |
 | Clip rubric | Gemini scores 1 to 5 for hands, label, lip sync, "AI look" and hook strength; any score below 3 is re-rolled | Built (`look_at` in `adgen/providers/openrouter.py`); first results were not reliable enough to act on alone |
-| Stray text | OCR on the first, middle and last frame of every clip; any unplanned text fails | Phase 5 (needs an OCR library; size to be approved first) |
+| Stray text | OCR on the first, middle and last frame of every clip; any unplanned text fails | Not built: needs an OCR library, size to be approved first |
 | Face | A keyframe scores at least 0.58 against its character sheet; a clip frame scores at least 0.50 against the shot's keyframe; and in both cases higher than against any other persona | Built (`adgen/faces.py`, rule in `adgen/qa.py`); limits are provisional. Gemini failed this check |

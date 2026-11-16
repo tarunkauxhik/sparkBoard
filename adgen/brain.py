@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from adgen.rules import GLOSSY_WORDS, HOOK_MAX_WORDS, OVERUSED_PHRASES, WARM_UP_WORDS
 from adgen.schemas import (
-    MIN_CAST_AGE, ConceptDrafts, ConceptReview, EditList, Insights, Look, Storyboard,
+    MIN_CAST_AGE, ConceptDrafts, ConceptReview, Insights, Look, Storyboard,
     StoryboardReview, max_words,
 )
 
@@ -192,10 +192,6 @@ TASKS = {
         "changing, return the storyboard unchanged with an empty notes list. "
         "The returned storyboard must still follow every rule below.\n\n"
         + HOOK_TYPES + "\n\n" + STORYBOARD_RULES), reasoning="medium"),
-    # Used from phase 5, once there are real clips and transcripts to cut.
-    "edit_list": Task(EditList, 3000, 0.3, (
-        "Write the edit list: the clips in order with in and out points and a reason for "
-        "each cut, and the end card line.")),
 }
 
 

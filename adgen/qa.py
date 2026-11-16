@@ -4,6 +4,9 @@ from pydantic import BaseModel, Field
 
 MAX_WORD_ERROR_RATE = 0.10
 MIN_RUBRIC_SCORE = 3
+KEYFRAME_TRIES = 3     # images are cheap ($0.03), so a failed face check gets two more tries
+CLIP_TRIES = 2         # clips cost more; after two failed takes the shot is flagged, not retried
+MAX_PITCH_GAP = 0.10   # a speaker's clips may differ in pitch by 10%; more sounds like another voice
 
 
 PUNCTUATION = ".,!?…\"'“”‘’()[]:;—-।"
@@ -30,6 +33,13 @@ def word_error_rate(script: str, heard: str, other_script: str = "") -> float:
         for j, actual in enumerate(got, 1):
             previous, row[j] = row[j], min(row[j] + 1, row[j - 1] + 1, previous + (actual not in expected))
     return row[-1] / max(len(want), 1)
+
+
+def last_word_heard(script: str, heard: str, other_script: str = "") -> bool:
+    """True if the transcript ends on the script's last word (Veo sometimes cuts it off)."""
+    want, other, got = _words(script), _words(other_script), _words(heard)
+    endings = {want[-1]} | ({other[-1]} if other else set()) if want else set()
+    return bool(got) and got[-1] in endings
 
 
 def words_pass(script: str, heard: str, other_script: str = "") -> bool:

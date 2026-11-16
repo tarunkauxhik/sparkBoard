@@ -62,3 +62,19 @@ def casting_errors(look: Look, used: list[dict]) -> list[str]:
                 errors.append(f"{member.name}: the look is too close to {who} ({overlap:.0%} of the same "
                               "words); change the face shape, skin tone, hair, build and features")
     return errors
+
+
+def other_sheets(brand: str, runs_root: Path) -> list[tuple[str, Path]]:
+    """Character sheets already made for other brands, as (persona name, image path): from
+    each other brand's newest paid run. New sheets are face-checked against these."""
+    newest = {}  # brand -> (time, run folder)
+    for folder in runs_root.glob("*"):
+        brief_file, refs = folder / "brief.json", folder / "refs"
+        if not (brief_file.exists() and refs.is_dir() and has_real_spend(folder)):
+            continue
+        other = json.loads(brief_file.read_text("utf-8"))["brand"]
+        when = refs.stat().st_mtime
+        if other != brand and when > newest.get(other, (0, None))[0]:
+            newest[other] = (when, folder)
+    return [(sheet.stem.removesuffix("_sheet"), sheet)
+            for _, folder in newest.values() for sheet in sorted((folder / "refs").glob("*_sheet.png"))]

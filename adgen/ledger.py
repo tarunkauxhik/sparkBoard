@@ -15,6 +15,7 @@ PRICES = {
     "veo3_lite": 0.15,   # measured: a flat 30 credits per clip
     "kling_avatar_per_s": 0.05,
     "scribe_per_s": 0.0001,
+    "isolate_per_s": 0.002,      # approx $0.12 per minute
 }
 
 

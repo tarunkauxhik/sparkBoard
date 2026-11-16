@@ -3,7 +3,6 @@
 It still charges the ledger at the estimated prices (marked mock), so a dry run
 shows what the real run would cost and exercises the budget cap.
 """
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -21,11 +20,22 @@ def _color(seed: str) -> str:
     return COLORS[sum(seed.encode()) % len(COLORS)]
 
 
+class MockFaces:
+    """Placeholder images have no faces, so the mock face check returns fixed passing scores."""
+
+    def similarity(self, sheet: Path, frame: Path) -> float:
+        return 0.90
+
+    def closest_views(self, first: Path, second: Path) -> float:
+        return 0.10
+
+
 class MockProvider:
     placeholder_cast = True  # its personas are stand-ins; the pipeline skips the cast variety check
 
     def __init__(self, ledger: Ledger):
         self.ledger = ledger
+        self.faces = MockFaces()
 
     # --- text (OpenRouter in the live provider) ---
 
@@ -34,13 +44,13 @@ class MockProvider:
         self.ledger.charge("openrouter", f"sonnet:{task}", PRICES["sonnet_call"], mock=True)
         return getattr(self, f"_{task}")(ctx)
 
-    def review(self, path: Path, rubric: str) -> dict:
-        self.ledger.charge("openrouter", f"gemini:{rubric}", PRICES["gemini_review"], mock=True)
-        return {"passed": True, "detail": "mock review, nothing was really checked"}
+    def review(self, small_video: Path, seconds: float) -> str:
+        self.ledger.charge("openrouter", "gemini:final_cut", PRICES["gemini_review"], mock=True)
+        return "mock review, nothing was really checked"
 
     # --- media (Kie in the live provider) ---
 
-    def image(self, prompt: str, refs: list[str], out: Path) -> None:
+    def image(self, prompt: str, refs: list[Path], out: Path, aspect_ratio: str = "9:16") -> None:
         """Placeholder 9:16 image with the file name written on it."""
         self.ledger.charge("kie", f"image:{out.stem}", PRICES["image"], mock=True)
         img = Image.new("RGB", (1080, 1920), _color(out.stem))
@@ -64,6 +74,11 @@ class MockProvider:
         return f"mock-task-{out.stem}"
 
     # --- audio (ElevenLabs in the live provider) ---
+
+    def isolate(self, media: Path, out: Path, duration_s: float) -> None:
+        """Placeholder for the voice isolator: the clip's own audio, unchanged."""
+        self.ledger.charge("elevenlabs", f"isolate:{out.stem}", PRICES["isolate_per_s"] * duration_s, mock=True)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(media), "-vn", str(out)], check=True)
 
     def transcribe(self, path: Path, expected: str, duration_s: int) -> list[dict]:
         """Word timings: the expected words spread evenly, with silence at both ends."""
@@ -130,7 +145,9 @@ class MockProvider:
         talk = {**place, "shot_type": "medium close-up", "angle": "eye level, front phone camera",
                 "framing": "head and shoulders, slightly off-center", "character": "maya",
                 "speaker": "maya", "camera_move": "light handheld", "route": "veo_talk",
-                "dialogue_lang": brief["language"], "delivery": "quiet and plain"}
+                "delivery": "quiet and plain",
+                # the mock lines are English, so a Hindi or Hinglish brief still gets "English" lines
+                "dialogue_lang": "English" if "hin" in brief["language"].lower() else brief["language"]}
         broll = {**place, "purpose": "product", "duration_s": 4, "shot_type": "close-up",
                  "angle": "top down", "framing": "product resting on a surface, off-center",
                  "first_frame": "the product stands on the surface",
@@ -184,9 +201,3 @@ class MockProvider:
         return {"notes": [], "line_checks": [{"shot_id": text, "claims": []} for text in texts] + statics,
                 "storyboard": ctx["storyboard"]}
 
-    def _edit_list(self, ctx: dict) -> dict:
-        return {
-            "cuts": [{"shot_id": c["shot_id"], "file": c["file"], "in_s": 0.0, "out_s": c["duration_s"],
-                      "reason": "storyboard order, full take (mock)"} for c in ctx["clips"]],
-            "end_card": {"line": f"Try {ctx['brief']['brand']}", "duration_s": 2.0},
-        }

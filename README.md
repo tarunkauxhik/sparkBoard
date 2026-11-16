@@ -17,4 +17,7 @@ pytest -q
 ```
 
 A dry run uses mock providers and costs $0. Outputs go to `runs/<run_id>/`.
+A live run makes paid calls and needs a hard cost cap per service:
+`python -m adgen run briefs/skincare.json --live --auto-approve --cap-kie 2 --cap-elevenlabs 0.3 --cap-openrouter 0.5`.
+Add `--stop-after keyframes` (or `refs`, `clips`) to look at the results before the next paid stage.
 `python -m adgen clean` deletes old runs.

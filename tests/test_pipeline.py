@@ -10,10 +10,12 @@ from adgen.editor import caption_events, stream_seconds, validate_edit_list
 from adgen.ledger import BudgetExceeded, Ledger
 from adgen.prompts import character_sheet_prompt, keyframe_request, motion_prompt, packshot_prompt
 from adgen.providers.kie import kling_avatar_payload, nano_banana_payload, veo_payload
+from adgen.pipeline import run_pipeline
 from adgen.providers.mock import MockProvider
+from adgen.run import Run
 from adgen.schemas import Audio, Brief, EditList, Look, Refs, Storyboard
 from adgen.statics import STATIC_SIZES, static_ad
-from conftest import dry_run
+from conftest import BRIEF, dry_run
 
 STEP_FILES = [
     "brief.json", "insights.json", "concepts.json", "look.json", "storyboard_draft.json",
@@ -47,7 +49,7 @@ def test_dry_run_creates_every_file_within_the_caps(done):
     run, ledger, finished = done
     assert finished
     assert [name for name in STEP_FILES if not run.has(name)] == []
-    for name in ("refs/maya_sheet.png", "keyframes/s01.png", "clips/raw/s01_take1.mp4", "clips/fixed/s01.mp4"):
+    for name in ("refs/maya_sheet.png", "keyframes/s01_take1.png", "clips/raw/s01_take1.mp4", "clips/fixed/s01.mp4"):
         assert run.has(name), name
     assert all(entry["mock"] for entry in ledger.entries)
     assert 0 < ledger.spent("kie") <= ledger.caps["kie"]
@@ -57,9 +59,10 @@ def test_dry_run_creates_every_file_within_the_caps(done):
 def test_final_video_has_the_right_length(done):
     run = done[0]
     final = run.dir / "final/ad_9x16.mp4"
-    # shots of 4 + 6 + 4 + 4 s, plus a 2 s end card
-    assert stream_seconds(final, "v:0") == pytest.approx(20.0, abs=0.05)
-    assert stream_seconds(final, "a:0") == pytest.approx(20.0, abs=0.03)
+    # Spoken shots are trimmed to their words plus 0.15 s each side: 3.3 + 5.3 + 4 (silent) + 3.3 s,
+    # rounded to whole frames, plus a 2 s end card.
+    assert stream_seconds(final, "v:0") == pytest.approx(17.875, abs=0.05)
+    assert stream_seconds(final, "a:0") == pytest.approx(17.875, abs=0.03)
     assert not run.has("work")  # temp folder is removed after the render
 
 
@@ -186,13 +189,13 @@ def test_captions_are_short_and_follow_the_timeline(done):
     events = caption_events(run.load("edit_list.json", EditList), run.load("audio.json", Audio))
     assert all(len(text.split()) <= 4 for _, _, text in events)
     assert [start for start, _, _ in events] == sorted(start for start, _, _ in events)
-    # shot 3 is silent b-roll at 10-14 s; shot 4 starts at 14 s and speaks after 0.5 s of silence
-    assert not any(10 < start < 14 for start, _, _ in events)
-    assert any(start == pytest.approx(14.5) for start, _, _ in events)
+    # shot 3 is silent b-roll at about 8.6-12.6 s; shot 4's first word comes 0.15 s into its cut
+    assert not any(8.6 < start < 12.58 for start, _, _ in events)
+    assert any(start == pytest.approx(12.733, abs=0.01) for start, _, _ in events)
 
 
 def test_static_ads_come_out_in_every_size(done, tmp_path):
-    keyframe = done[0].dir / "keyframes/s01.png"
+    keyframe = done[0].dir / "keyframes/s01_take1.png"
     for name, size in STATIC_SIZES.items():
         out = tmp_path / f"{name}.png"
         static_ad(keyframe, "Skin that finally calms down", "Dewline", size, out)
@@ -283,3 +286,92 @@ def test_an_app_screen_is_drawn_in_code_and_named_as_a_screen_not_a_label(done, 
     prompt, _ = keyframe_request(board.shots[0], look, app, done[0].load("refs.json", Refs))
     assert "the Chukta app screen: show it on the phone display" in prompt
     assert "keep its shape, color and label" not in prompt and "apart from the app screen on the phone" in prompt
+
+
+# ---------------- phase 5: retry loops, trims, final checks ----------------
+
+def test_a_keyframe_that_fails_the_face_check_is_made_again(tmp_path):
+    class FirstFaceIsWrong(MockProvider):
+        def __init__(self, ledger):
+            super().__init__(ledger)
+            scores = iter([0.30, 0.80] + [0.90] * 50)  # s01 take 1 fails, take 2 passes
+            self.faces.similarity = lambda sheet, frame: next(scores)
+
+    run, _, finished = dry_run(tmp_path, provider_cls=FirstFaceIsWrong)
+    keyframes = json.loads(run.path("keyframes.json").read_text("utf-8"))
+    s01 = [(t["take"], t["passed"]) for t in keyframes["takes"] if t["shot_id"] == "s01"]
+    assert s01 == [(1, False), (2, True)] and keyframes["files"]["s01"] == "keyframes/s01_take2.png"
+    assert run.has("keyframes/s01_take1.png")  # the failed take is kept, never overwritten
+    assert finished and json.loads(run.path("qa_report.json").read_text("utf-8"))["passed"]
+
+
+def test_a_clip_with_wrong_words_gets_one_more_take_and_is_then_flagged(tmp_path):
+    class NeverSaysTheLastWord(MockProvider):
+        def transcribe(self, path, expected, duration_s):
+            words = super().transcribe(path, expected, duration_s)
+            return words[:-1] if path.stem.startswith("s01") else words
+
+    run, ledger, finished = dry_run(tmp_path, provider_cls=NeverSaysTheLastWord)
+    takes = [t for t in json.loads(run.path("clips.json").read_text("utf-8"))["takes"] if t["shot_id"] == "s01"]
+    assert [t["take"] for t in takes] == [1, 2]            # two tries, never a third
+    assert "words:" in takes[1]["problems"][0]
+    report = json.loads(run.path("qa_report.json").read_text("utf-8"))
+    flagged = [c for c in report["checks"] if c["name"] == "clip s01 passed its checks"]
+    assert finished and not report["passed"] and flagged and "words:" in flagged[0]["detail"]
+
+
+def test_a_live_run_can_stop_after_a_stage_and_continue_later(tmp_path):
+    run = Run("test", root=tmp_path)
+    ledger = Ledger(run.path("ledger.jsonl"))
+    provider = MockProvider(ledger)
+    assert not run_pipeline(BRIEF, run, provider, ledger, True, stop_after="keyframes")
+    assert run.has("keyframes.json") and not run.has("clips.json")
+    assert run_pipeline(BRIEF, run, provider, ledger, True)
+    assert run.has("qa_report.json")
+
+
+def test_the_voice_isolator_is_only_used_when_asked(tmp_path):
+    run = Run("test", root=tmp_path)
+    ledger = Ledger(run.path("ledger.jsonl"))
+    assert run_pipeline(BRIEF, run, MockProvider(ledger), ledger, True, isolate_voice=True)
+    assert run.has("clips/fixed/s01_voice.mp3") and not run.has("clips/fixed/s03_voice.mp3")  # s03 is silent
+    assert sum("isolate" in entry["item"] for entry in ledger.entries) == 3
+    assert json.loads(run.path("qa_report.json").read_text("utf-8"))["passed"]
+
+
+def test_edit_list_trims_spoken_clips_to_their_words(done):
+    run = done[0]
+    cuts = {cut.shot_id: cut for cut in run.load("edit_list.json", EditList).cuts}
+    assert (cuts["s01"].in_s, cuts["s01"].out_s) == (0.35, 3.65)   # words run 0.5 to 3.5 s
+    assert (cuts["s03"].in_s, cuts["s03"].out_s) == (0.0, 4.0)     # silent: the full take
+    assert run.load("edit_list.json", EditList).end_card.line == run.load("storyboard.json", Storyboard).end_card_line
+
+
+def test_pitch_of_a_known_tone(done):
+    from adgen.voice import median_pitch_hz
+    pitch = median_pitch_hz(done[0].dir / "clips/raw/s01_take1.mp4", 0.5, 3.5)  # the mock clip is a 220 Hz tone
+    assert pitch == pytest.approx(220, abs=5)
+
+
+def test_live_provider_uploads_each_reference_once(tmp_path):
+    from adgen.providers.live import LiveProvider
+
+    class FakeKie:
+        uploads, tasks = [], []
+
+        def upload(self, path):
+            self.uploads.append(path.name)
+            return f"https://files.example/{path.name}"
+
+        def run_task(self, name, payload, assumed_usd, out):
+            self.tasks.append((name, payload["input"].get("image_input")))
+            return {"task_id": "t1"}
+
+    provider = LiveProvider.__new__(LiveProvider)  # no keys, no network: only the Kie part is exercised
+    provider.kie, provider.uploaded, provider.run = FakeKie(), {}, Run("r", root=tmp_path)
+    sheet = tmp_path / "r" / "refs" / "maya_sheet.png"
+    provider.image("first", [sheet], tmp_path / "r" / "keyframes" / "s01_take1.png")
+    provider.image("second", [sheet], tmp_path / "r" / "keyframes" / "s02_take1.png")
+    assert provider.kie.uploads == ["maya_sheet.png"]
+    assert [name for name, _ in provider.kie.tasks] == ["keyframes_s01_take1", "keyframes_s02_take1"]
+    assert provider.kie.tasks[0][1] == ["https://files.example/maya_sheet.png"]

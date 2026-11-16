@@ -1,29 +1,39 @@
 """The 13 pipeline steps, brief to final QA.
 
 Each step writes one JSON file in the run folder and is skipped on a re-run if
-that file exists, so a run can be stopped and resumed at any point.
+that file exists, so a run can be stopped and resumed at any point. Inside the
+generation steps every image and clip that already exists is kept too, so a step
+that stopped halfway (for example at the budget cap) does not pay twice.
 """
 import shutil
+import subprocess
 from pathlib import Path
 
 import yaml
 from pydantic import ValidationError
 
 from adgen.brain import TASKS
-from adgen.casting import casting_errors, used_personas
-from adgen.editor import render_video, stream_seconds, validate_edit_list
+from adgen.casting import casting_errors, other_sheets, used_personas
+from adgen.editor import (
+    build_edit_list, clean_voice, final_checks, grab_frame, render_video, stream_seconds, validate_edit_list,
+)
 from adgen.ledger import Ledger
 from adgen.prompts import (
-    character_sheet_prompt, keyframe_request, location_prompt, motion_prompt, packshot_prompt,
+    AUDIO_TAG, character_sheet_prompt, keyframe_request, location_prompt, motion_prompt, packshot_prompt,
+)
+from adgen.qa import (
+    CLIP_FACE_MIN, CLIP_TRIES, KEYFRAME_FACE_MIN, KEYFRAME_TRIES, MAX_PITCH_GAP, MAX_WORD_ERROR_RATE,
+    PERSONA_FACE_MAX, face_passes, last_word_heard, word_error_rate,
 )
 from adgen.report import write_decision_log_md, write_storyboard_md
 from adgen.rules import LENGTH_TOLERANCE_S, look_errors, review_errors, storyboard_errors
 from adgen.run import Run
 from adgen.schemas import (
     Approval, Audio, Brief, Check, Clips, Concept, Concepts, EditList, FixedClip, Insights,
-    Keyframes, Look, QAReport, Refs, Render, Storyboard, StoryboardReview, Take,
+    Keyframes, KeyframeTake, Look, QAReport, Refs, Render, Shot, Storyboard, StoryboardReview, Take, Word,
 )
 from adgen.statics import STATIC_SIZES, app_screen, static_ad
+from adgen.voice import median_pitch_hz
 
 PLAYBOOKS = Path(__file__).parent.parent / "playbooks"
 # Which video model each storyboard route uses. "static" shots have no clip.
@@ -32,10 +42,41 @@ PLAYBOOKS = Path(__file__).parent.parent / "playbooks"
 ROUTE_MODEL = {"veo_talk": "veo3_lite", "veo_broll": "veo3_lite",
                "vo_only": "veo3_lite", "avatar_talk": "kling_avatar"}
 SCHEMA_TRIES = 2  # one try, plus one more with the errors sent back. Never a loop.
+STAGES = ("refs", "keyframes", "clips")  # a live run can stop after any of these for a look
 
 
-def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_approve: bool) -> bool:
-    """Runs every step that is not done yet. Returns False if it stopped for approval."""
+def check_clip(provider, run: Run, shot: Shot, take: Take, keyframe: Path, other_sheets_: list[Path]) -> Take:
+    """Fill in a take's check results: the words (spoken shots) and the face (if one shows)."""
+    clip = run.dir / take.file
+    if shot.route == "veo_talk":
+        take.words = [Word(**word) for word in provider.transcribe(clip, shot.dialogue_caption, shot.duration_s)]
+        heard, voice_line = " ".join(w.word for w in take.words), AUDIO_TAG.sub(" ", shot.dialogue_tts)
+        take.word_error_rate = round(word_error_rate(shot.dialogue_caption, heard, voice_line), 2)
+        if take.word_error_rate > MAX_WORD_ERROR_RATE:
+            take.problems.append(f"words: heard {heard!r} ({take.word_error_rate:.0%} wrong)")
+        elif not last_word_heard(shot.dialogue_caption, heard, voice_line):
+            take.problems.append(f"words: the last word was cut off (heard {heard!r})")
+    if shot.character and shot.face_visible:
+        # Check the face where it matters: across the spoken part, or across the middle of a silent shot.
+        start, end = ((take.words[0].start_s, take.words[-1].end_s) if take.words
+                      else (shot.duration_s * 0.25, shot.duration_s * 0.75))
+        scores = []
+        for second in (start, (start + end) / 2, end):
+            frame = grab_frame(clip, second, run.path(f"clips/frames/{clip.stem}_{second:.1f}s.png"))
+            own = provider.faces.similarity(keyframe, frame)
+            others = [provider.faces.similarity(sheet, frame) or 0.0 for sheet in other_sheets_]
+            scores.append(own)
+            if not face_passes(own, others, CLIP_FACE_MIN):
+                take.problems.append(f"face: {'not found' if own is None else f'{own:.2f}'} at {second:.1f} s "
+                                     f"(needs {CLIP_FACE_MIN} and closer than any other persona)")
+        take.face = None if None in scores else round(min(scores), 3)
+    return take
+
+
+def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_approve: bool,
+                 stop_after: str | None = None, isolate_voice: bool = False) -> bool:
+    """Runs every step that is not done yet. Returns False if it stopped early: for
+    storyboard approval, or after the stage named in `stop_after`."""
 
     def step(name: str, cls, make):
         """Run one step, or load its saved output. `make` returns (result, choice, reason)."""
@@ -64,6 +105,11 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                 return result
             feedback = "\n".join(errors)
         raise ValueError(f"{task}: still not valid after {SCHEMA_TRIES} tries:\n{feedback}")
+
+    def stop_here(stage: str) -> bool:
+        if stop_after == stage:
+            print(f"\nStopped after {stage}, as asked. Continue with: --run-id {run.id}")
+        return stop_after == stage
 
     # 1 Brief
     brief = step("brief.json", Brief, lambda: (
@@ -94,7 +140,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     def make_look():
         playbook = yaml.safe_load((PLAYBOOKS / f"{brief.category}.yaml").read_text("utf-8"))
         # The mock's people are placeholders, so cast variety is only checked for real casts.
-        used = [] if getattr(provider, "placeholder_cast", False) else used_personas(brief.brand, run.dir.parent)
+        used = [] if provider.placeholder_cast else used_personas(brief.brand, run.dir.parent)
         look = ask("look", brief=b, concept=winner, playbook=playbook, used_personas=used,
                    check=lambda look: look_errors(look, brief) + casting_errors(look, used))
         why = "; ".join(f"{name}: {choice.reason}" for name, choice in look.choices())
@@ -126,6 +172,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     if errors:
         raise ValueError("storyboard.json breaks the rules:\n" + "\n".join(errors))
     write_storyboard_md(run, brief, concepts, look, board, run.load("storyboard_critic.json", StoryboardReview))
+    shots = {shot.id: shot for shot in board.shots}
 
     # 7 Approve
     if not run.has("approval.json") and not auto_approve:
@@ -135,77 +182,127 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     step("approval.json", Approval, lambda: (
         Approval(approved=True, by="auto"), "approved", "--auto-approve was set"))
 
-    # 5 References: use the brief's, or generate a character sheet per on-screen cast member,
-    #   a clean packshot and a location plate
+    # 5 References: use the brief's, or make a character sheet per on-screen cast member,
+    #   a clean packshot (or the app screen, drawn in code) and a location plate.
     def make_refs():
         if brief.refs:
             return brief.refs, "user references", "provided in the brief"
-        refs = Refs()
+        refs, notes = Refs(), []
         on_screen = {shot.character for shot in board.shots if shot.character}
         for who in look.cast:
-            if who.name in on_screen:
-                out = run.path(f"refs/{who.name}_sheet.png")
-                provider.image(character_sheet_prompt(who), [], out)
-                refs.characters[who.name] = run.rel(out)
-        out = run.path("refs/product.png")
+            if who.name not in on_screen:
+                continue
+            sheet = run.path(f"refs/{who.name}_sheet.png")
+            if not sheet.exists():
+                provider.image(character_sheet_prompt(who), [], sheet, "16:9")
+            # Different personas must look different: against this cast and other brands' sheets.
+            known = [(name, run.dir / path) for name, path in refs.characters.items()]
+            for other, other_sheet in known + other_sheets(brief.brand, run.dir.parent):
+                alike = provider.faces.closest_views(sheet, other_sheet)
+                if alike is not None and alike >= PERSONA_FACE_MAX:
+                    raise ValueError(f"{who.name}'s character sheet looks too much like {other}'s "
+                                     f"({alike:.2f}, the limit is {PERSONA_FACE_MAX}). Re-cast {who.name}: "
+                                     "delete look.json and the storyboard files, then run again.")
+                notes.append(f"{who.name} vs {other}: {'no face' if alike is None else f'{alike:.2f}'}")
+            refs.characters[who.name] = run.rel(sheet)
+        product = run.path("refs/product.png")
         if brief.app_screen:  # an app: its screen is drawn in code, so every word on it is exact
-            app_screen(brief, out)
-        else:
-            provider.image(packshot_prompt(brief), [], out)
-        refs.product.append(run.rel(out))
-        out = run.path("refs/location.png")
-        provider.image(location_prompt(look, brief), [], out)
-        refs.location = run.rel(out)
-        return refs, "generated references", "none were provided in the brief"
+            app_screen(brief, product)
+        elif not product.exists():
+            provider.image(packshot_prompt(brief), [], product, "1:1")
+        refs.product.append(run.rel(product))
+        location = run.path("refs/location.png")
+        if not location.exists():
+            provider.image(location_prompt(look, brief), [], location)
+        refs.location = run.rel(location)
+        return refs, "generated references", "; ".join(notes) or "no faces to compare"
     refs = step("refs.json", Refs, make_refs)
+    if stop_here("refs"):
+        return False
 
-    # 8 Keyframes: one still per shot, with the same references every time
+    def sheets_of_others(shot: Shot) -> list[Path]:
+        return [run.dir / path for name, path in refs.characters.items() if name != shot.character]
+
+    # 8 Keyframes: one still per shot from the same references. A shot that shows a face is
+    #   checked against the character sheet and re-made up to KEYFRAME_TRIES times.
     def make_keyframes():
-        files = {}
+        files, takes = {}, []
         for shot in board.shots:
             prompt, shot_refs = keyframe_request(shot, look, brief, refs)
-            out = run.path(f"keyframes/{shot.id}.png")
-            provider.image(prompt, shot_refs, out)
-            files[shot.id] = run.rel(out)
-        return Keyframes(files=files), f"{len(files)} keyframes", "keyframe first, then video"
+            shows_face = bool(shot.character and shot.face_visible)
+            best = None
+            for number in range(1, KEYFRAME_TRIES + 1):
+                out = run.path(f"keyframes/{shot.id}_take{number}.png")
+                if not out.exists():
+                    provider.image(prompt, [run.dir / ref for ref in shot_refs], out)
+                take = KeyframeTake(shot_id=shot.id, take=number, file=run.rel(out))
+                if shows_face:
+                    take.face = provider.faces.similarity(run.dir / refs.characters[shot.character], out)
+                    others = [provider.faces.similarity(sheet, out) or 0.0 for sheet in sheets_of_others(shot)]
+                    take.passed = face_passes(take.face, others, KEYFRAME_FACE_MIN)
+                    take.face = None if take.face is None else round(take.face, 3)
+                takes.append(take)
+                if best is None or take.passed or (take.face or 0) > (best.face or 0):
+                    best = take
+                if take.passed:
+                    break
+            files[shot.id] = best.file
+        failed = sorted({t.shot_id for t in takes} - {t.shot_id for t in takes if t.passed})
+        return (Keyframes(files=files, takes=takes), f"{len(files)} keyframes from {len(takes)} tries",
+                f"face check failed on every try for: {', '.join(failed)}" if failed else "every keyframe passed")
     keyframes = step("keyframes.json", Keyframes, make_keyframes)
+    if stop_here("keyframes"):
+        return False
 
-    # 9 Clips: every take is kept in clips/raw/ and never overwritten
+    # 9 Clips: every take is kept in clips/raw/ and never overwritten. Each take is checked
+    #   (words, face); a failed take gets one more try, then the shot is flagged.
     def make_clips():
         takes = []
         for shot in board.shots:
             if shot.route == "static":
                 continue
-            model = ROUTE_MODEL[shot.route]
-            out = run.path(f"clips/raw/{shot.id}_take1.mp4")
-            task_id = provider.video(motion_prompt(shot, look, brief), run.dir / keyframes.files[shot.id],
-                                     out, model, shot.duration_s)
-            takes.append(Take(shot_id=shot.id, take=1, file=run.rel(out), task_id=task_id, model=model))
-        return Clips(takes=takes), f"{len(takes)} clips", "model picked by each shot's route"
+            keyframe = run.dir / keyframes.files[shot.id]
+            for number in range(1, CLIP_TRIES + 1):
+                out = run.path(f"clips/raw/{shot.id}_take{number}.mp4")
+                task_id = "made in an earlier run"
+                if not out.exists():
+                    task_id = provider.video(motion_prompt(shot, look, brief), keyframe, out,
+                                             ROUTE_MODEL[shot.route], shot.duration_s)
+                take = Take(shot_id=shot.id, take=number, file=run.rel(out), task_id=task_id,
+                            model=ROUTE_MODEL[shot.route])
+                takes.append(check_clip(provider, run, shot, take, keyframe, sheets_of_others(shot)))
+                if take.passed:
+                    break
+        clips = Clips(takes=takes)
+        flagged = [f"{t.shot_id}: {'; '.join(t.problems)}" for t in clips.chosen().values() if not t.passed]
+        return (clips, f"{len(clips.chosen())} clips from {len(takes)} takes",
+                "flagged: " + " | ".join(flagged) if flagged else "every clip passed its checks")
     clips = step("clips.json", Clips, make_clips)
-    shots = {shot.id: shot for shot in board.shots}
+    if stop_here("clips"):
+        return False
 
-    # 10 Audio: keep Veo's own voice and get word timings for trims and captions.
-    #   (The voice changer was dropped after the smoke test: it added clicks and garbled a name.)
+    # 10 Audio: Veo's own voice is kept. Optionally the voice isolator removes room echo first.
     def make_audio():
         fixed = []
-        for take in clips.takes:
-            shot = shots[take.shot_id]
-            out = run.path(f"clips/fixed/{shot.id}.mp4")
-            shutil.copyfile(run.dir / take.file, out)
-            words = (provider.transcribe(out, shot.dialogue_caption, shot.duration_s)
-                     if shot.route == "veo_talk" else [])
-            fixed.append(FixedClip(shot_id=shot.id, file=run.rel(out), words=words))
-        return Audio(clips=fixed), "Veo's own voice, transcribed", "word timings drive the trims and captions"
+        for take in clips.chosen().values():
+            source, out = run.dir / take.file, run.path(f"clips/fixed/{take.shot_id}.mp4")
+            if isolate_voice and take.words:
+                voice = run.path(f"clips/fixed/{take.shot_id}_voice.mp3")
+                if not voice.exists():
+                    provider.isolate(source, voice, shots[take.shot_id].duration_s)
+                clean_voice(source, voice, out)
+            else:
+                shutil.copyfile(source, out)
+            fixed.append(FixedClip(shot_id=take.shot_id, file=run.rel(out), words=take.words))
+        return (Audio(clips=fixed), "isolated voice over a room-tone bed" if isolate_voice else "Veo's own audio",
+                "word timings from the clip checks drive the trims and captions")
     audio = step("audio.json", Audio, make_audio)
 
-    # 11 Edit list
+    # 11 Edit list: built by code. Straight cuts, spoken clips trimmed to their words.
     def make_edit_list():
-        clip_info = [{"shot_id": c.shot_id, "file": c.file, "duration_s": shots[c.shot_id].duration_s}
-                     for c in audio.clips]
-        edit = ask("edit_list", brief=b, clips=clip_info)
-        edit.end_card.line = board.end_card_line  # the claim-checked line from the storyboard
-        return edit, f"{len(edit.cuts)} cuts + end card", "; ".join(c.reason for c in edit.cuts)
+        durations = {clip.shot_id: stream_seconds(run.dir / clip.file, "v:0") for clip in audio.clips}
+        edit = build_edit_list(audio, durations, board.end_card_line)
+        return edit, f"{len(edit.cuts)} cuts + end card", "; ".join(f"{c.shot_id}: {c.reason}" for c in edit.cuts)
     edit = step("edit_list.json", EditList, make_edit_list)
 
     # 12 Render: code checks the edit list, then ffmpeg builds the video; static shots become static ads
@@ -223,15 +320,33 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         return Render(files=files), f"{len(files)} file(s)", "edit list passed validation"
     render = step("render.json", Render, make_render)
 
-    # 13 Final QA
+    # 13 Final QA: code checks on the finished video, everything the retry loops flagged,
+    #   the voice match between a speaker's clips, and a Gemini review as hints only.
     def make_qa():
         final = run.dir / render.files[0]
-        review = provider.review(final, "final_cut")
-        gap = abs(stream_seconds(final, "v:0") - stream_seconds(final, "a:0"))
-        checks = [
-            Check(name="picture and sound are the same length", passed=gap < 0.1, detail=f"{gap:.3f} s apart"),
-            Check(name="final cut review", passed=review["passed"], detail=review["detail"]),
-        ]
+        checks = final_checks(final, edit.end_card.duration_s)
+        failed_frames = sorted({t.shot_id for t in keyframes.takes} - {t.shot_id for t in keyframes.takes if t.passed})
+        checks.append(Check(name="keyframe faces match their character sheets", passed=not failed_frames,
+                            detail=f"failed: {', '.join(failed_frames)}" if failed_frames else ""))
+        for take in clips.chosen().values():
+            if not take.passed:
+                checks.append(Check(name=f"clip {take.shot_id} passed its checks", passed=False,
+                                    detail="; ".join(take.problems)))
+        pitches = {}  # speaker -> the pitch of each of their clips
+        for clip in audio.clips:
+            if clip.words:
+                pitch = median_pitch_hz(run.dir / clip.file, clip.words[0].start_s, clip.words[-1].end_s)
+                if pitch:
+                    pitches.setdefault(shots[clip.shot_id].speaker, {})[clip.shot_id] = round(pitch)
+        for speaker, by_shot in pitches.items():
+            gap = max(by_shot.values()) / min(by_shot.values()) - 1
+            checks.append(Check(name=f"{speaker}'s voice has the same pitch in every clip",
+                                passed=gap <= MAX_PITCH_GAP, detail=f"{by_shot} Hz, {gap:.0%} apart"))
+        small = run.path("final/review_480p.mp4")
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(final), "-vf", "scale=-2:480",
+                        "-c:a", "aac", str(small)], check=True)
+        notes = provider.review(small, stream_seconds(small, "v:0"))
+        checks.append(Check(name="Gemini review (hints only, never a fail)", passed=True, detail=notes))
         report = QAReport(passed=all(c.passed for c in checks), checks=checks)
         return report, "pass" if report.passed else "fail", "; ".join(c.name for c in checks if not c.passed)
     step("qa_report.json", QAReport, make_qa)

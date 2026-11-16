@@ -5,16 +5,19 @@ How the render avoids audio drift:
 - each cut's length is a whole number of frames, and its sound is cut to that exact length;
 - the sound is joined into one master track and muxed once (never `-shortest`).
 """
+import re
 import shutil
 import subprocess
 from pathlib import Path
 
 from adgen.run import Run
-from adgen.schemas import Audio, Cut, EditList
+from adgen.schemas import Audio, Check, Cut, EditList, EndCard
 from adgen.statics import FONT, end_card
 
 WIDTH, HEIGHT, FPS, SAMPLE_RATE = 1080, 1920, 24, 48000
 MAX_AD_SECONDS = 60
+TRIM_PAD_S = 0.15  # kept before the first word and after the last
+END_CARD_S = 2.0
 CAPTION_WORDS = 4      # max words per caption chunk
 CAPTION_BOTTOM = 0.72  # captions end at 72% of the height, clear of faces and app buttons
 NORMALIZE = (f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase:flags=lanczos,"
@@ -62,6 +65,62 @@ def _exact_length(seconds: float) -> str:
     """
     samples = round(seconds * SAMPLE_RATE)
     return f"aresample={SAMPLE_RATE},asetpts=PTS-STARTPTS,apad,atrim=end_sample={samples}"
+
+
+def grab_frame(clip: Path, second: float, out: Path) -> Path:
+    """Save one frame of a clip as an image (used by the face check)."""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{second:.2f}", "-i", str(clip),
+                    "-frames:v", "1", str(out)], check=True)
+    return out
+
+
+def build_edit_list(audio: Audio, durations: dict[str, float], end_card_line: str) -> EditList:
+    """Straight cuts in storyboard order. A spoken clip is trimmed to its words plus a short
+    pad, which also removes the warped or drifting frames Veo often ends a clip on."""
+    cuts = []
+    for clip in audio.clips:
+        length = durations[clip.shot_id]
+        if clip.words:
+            start = max(0.0, clip.words[0].start_s - TRIM_PAD_S)
+            end = min(length, clip.words[-1].end_s + TRIM_PAD_S)
+            reason = f"trimmed to the spoken words plus {TRIM_PAD_S} s at each end"
+        else:
+            start, end, reason = 0.0, length, "silent shot, full take"
+        cuts.append(Cut(shot_id=clip.shot_id, file=clip.file, in_s=round(start, 2), out_s=round(end, 2),
+                        reason=reason))
+    return EditList(cuts=cuts, end_card=EndCard(line=end_card_line, duration_s=END_CARD_S))
+
+
+def clean_voice(video: Path, voice: Path, out: Path) -> None:
+    """Put an isolated voice back on its clip, over a very quiet room-tone bed (the isolator
+    leaves dead silence between words, which sounds unnatural)."""
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-i", str(video), "-i", str(voice),
+         "-f", "lavfi", "-i", f"anoisesrc=color=pink:amplitude=0.002:sample_rate={SAMPLE_RATE}",
+         "-filter_complex", "[1:a][2:a]amix=inputs=2:duration=first:normalize=0[a]",
+         "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-ar", str(SAMPLE_RATE), str(out)],
+        check=True)
+
+
+def final_checks(final: Path, end_card_s: float) -> list[Check]:
+    """Code checks on the finished video: lengths, loudness, and black or silent gaps
+    (measured before the end card, which is dark and silent on purpose)."""
+    video, sound = stream_seconds(final, "v:0"), stream_seconds(final, "a:0")
+    body = f"{video - end_card_s:.2f}"
+    log = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-nostats", "-t", body, "-i", str(final),
+         "-vf", "blackdetect=d=0.5", "-af", "silencedetect=n=-50dB:d=1.0,ebur128", "-f", "null", "-"],
+        capture_output=True, text=True).stderr
+    loudness = float(re.findall(r"I:\s+(-?[\d.]+) LUFS", log)[-1])
+    black, silent = len(re.findall("black_start", log)), len(re.findall("silence_start", log))
+    return [
+        Check(name="picture and sound are the same length", passed=abs(video - sound) < 0.1,
+              detail=f"{abs(video - sound):.3f} s apart"),
+        Check(name="loudness is -14 LUFS, give or take 1", passed=abs(loudness + 14) <= 1, detail=f"{loudness} LUFS"),
+        Check(name="no black gaps", passed=black == 0, detail=f"{black} found"),
+        Check(name="no silent gaps", passed=silent == 0, detail=f"{silent} found"),
+    ]
 
 
 def validate_edit_list(edit: EditList, audio: Audio, run: Run) -> list[str]:
