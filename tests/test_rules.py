@@ -156,6 +156,8 @@ def test_word_error_rate_and_rubric():
     assert word_error_rate(script, "watch my face when I put this on.") == 0
     assert word_error_rate(script, "watch my face when I put this") == pytest.approx(1 / 8)  # last word cut off
     assert words_pass(script, script) and not words_pass(script, "watch my face when I put this")
+    assert word_error_rate("कल दे दूँगा, पक्का।", "कल दे दूँगा पक्का") == 0      # Hindi words stay whole
+    assert word_error_rate("कल दे दूँगा, पक्का।", "कल दे दूँगा") == pytest.approx(1 / 4)
     good = ClipScores(hands=4, label=5, lip_sync=3, ai_look=4, hook_strength=3)
     assert not good.needs_reroll()
     assert good.model_copy(update={"hands": 2}).needs_reroll()

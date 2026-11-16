@@ -1,15 +1,18 @@
 """Quality rules for generated clips. The checks that need models (OCR, face match,
 the Gemini call itself) arrive in phase 5; these are the pass/fail rules they will use."""
-import re
-
 from pydantic import BaseModel, Field
 
 MAX_WORD_ERROR_RATE = 0.10
 MIN_RUBRIC_SCORE = 3
 
 
+PUNCTUATION = ".,!?…\"'“”‘’()[]:;—-।"
+
+
 def _words(text: str) -> list[str]:
-    return re.findall(r"[\w']+", text.lower())
+    """Lowercase words without punctuation. Split on spaces, so it also works for Devanagari
+    (a regex word match would break Hindi words at their vowel signs)."""
+    return [word for word in (raw.strip(PUNCTUATION) for raw in text.lower().split()) if word]
 
 
 def word_error_rate(script: str, heard: str) -> float:

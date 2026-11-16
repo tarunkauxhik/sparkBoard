@@ -6,17 +6,21 @@ A step that already has its output file skips that task, so steps can be run aga
 """
 import json
 import os
-import time
+import subprocess
 from pathlib import Path
 
 import httpx
 from PIL import Image
 
+from adgen.editor import stream_seconds
+
 from adgen.prompts import character_sheet_prompt, keyframe_request, motion_prompt, packshot_prompt
+from adgen.providers.elevenlabs import ElevenLabs, ElevenLabsError
 from adgen.providers.kie import (
     ASSUMED_IMAGE_USD, ASSUMED_VEO_CLIP_USD, USD_PER_CREDIT, Kie, nano_banana_payload, veo_payload,
 )
-from adgen.schemas import Brief, Look, Refs, Storyboard
+from adgen.qa import word_error_rate
+from adgen.schemas import Brief, Look, Refs, Shot, Storyboard
 
 SAMPLES = Path("samples")  # the reviewed storyboards the smoke test draws from
 
@@ -42,7 +46,7 @@ def _image(kie: Kie, out: Path, prompt: str, reference_urls: list[str], aspect_r
                          ASSUMED_IMAGE_USD, out), out.name)
 
 
-def step_a(kie: Kie, folder: Path) -> None:
+def step_a(kie: Kie, voice: ElevenLabs, folder: Path) -> None:
     """Free checks: Kie balance, one upload, ElevenLabs usage."""
     credits = kie.credits()
     print(f"Kie balance: {credits:g} credits (about ${credits * USD_PER_CREDIT:.2f} at ${USD_PER_CREDIT}/credit)")
@@ -53,19 +57,14 @@ def step_a(kie: Kie, folder: Path) -> None:
     reachable = httpx.get(url, timeout=60).status_code
     print(f"Kie upload: OK, host {httpx.URL(url).host}, file reachable: HTTP {reachable}")
 
-    now = int(time.time() * 1000)
-    usage = httpx.get("https://api.elevenlabs.io/v1/usage/character-stats", timeout=60,
-                      headers={"xi-api-key": os.environ["ELEVENLABS_API_KEY"]},
-                      params={"start_unix": now - 30 * 86400 * 1000, "end_unix": now,
-                              "breakdown_type": "product_type"}).json()
-    used = {product: round(sum(values)) for product, values in usage.get("usage", {}).items()}
+    used = voice.credits_used()
     print(f"ElevenLabs credits used in the last 30 days: {used}")
     (folder / "step_a.json").write_text(json.dumps(
         {"kie_credits": credits, "upload_host": httpx.URL(url).host, "upload_reachable": reachable,
          "elevenlabs_credits_used_30d": used}, indent=1), "utf-8")
 
 
-def step_b(kie: Kie, folder: Path) -> None:
+def step_b(kie: Kie, voice: ElevenLabs, folder: Path) -> None:
     """Three images: meera's character sheet, the product packshot, and the keyframe of shot 1."""
     brief, look, board = _sample("skincare")
     shot = board.shots[0]
@@ -83,7 +82,7 @@ def step_b(kie: Kie, folder: Path) -> None:
         _image(kie, keyframe, prompt, urls, "9:16")
 
 
-def step_c(kie: Kie, folder: Path) -> None:
+def step_c(kie: Kie, voice: ElevenLabs, folder: Path) -> None:
     """One Veo Fast clip in English: skincare shot 1, starting from its keyframe."""
     brief, look, board = _sample("skincare")
     shot = board.shots[0]
@@ -95,7 +94,7 @@ def step_c(kie: Kie, folder: Path) -> None:
     _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_CLIP_USD, clip), clip.name)
 
 
-def step_d(kie: Kie, folder: Path) -> None:
+def step_d(kie: Kie, voice: ElevenLabs, folder: Path) -> None:
     """One Veo Fast clip in Hinglish: fintech shot 1. Needs neha's character sheet and
     the shot's keyframe first (two images, counted in this step's cost)."""
     brief, look, board = _sample("fintech")
@@ -115,4 +114,65 @@ def step_d(kie: Kie, folder: Path) -> None:
     _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_CLIP_USD, clip), clip.name)
 
 
-STEPS = {"a": step_a, "b": step_b, "c": step_c, "d": step_d}
+def _transcript(voice: ElevenLabs, audio: Path) -> dict:
+    """Scribe transcript of an audio file, kept next to it so it is only paid for once."""
+    saved = audio.with_suffix(".transcript.json")
+    if not saved.exists():
+        result = voice.transcribe(audio, stream_seconds(audio, "a:0"))
+        saved.write_text(json.dumps(result, ensure_ascii=False, indent=1), "utf-8")
+    return json.loads(saved.read_text("utf-8"))
+
+
+def _heard(shot: Shot, transcript: dict) -> dict:
+    """How a transcript compares with the script. Scribe may write Hindi in Devanagari or in
+    Roman letters, so the line is compared in both forms and the better match counts."""
+    words = transcript["words"]
+    rate = min(word_error_rate(shot.dialogue_caption, transcript["text"]),
+               word_error_rate(shot.dialogue_tts, transcript["text"]))
+    return {"heard": transcript["text"], "language": transcript["language_code"],
+            "word_error_rate": round(rate, 2),
+            "speech_s": [words[0]["start_s"], words[-1]["end_s"]] if words else None}
+
+
+def step_e(kie: Kie, voice: ElevenLabs, folder: Path) -> None:
+    """ElevenLabs: what was really said in both Veo clips, the voice changer on both,
+    and TTS v3 against v4 with a library voice and the existing cloned voice."""
+    library, clone = os.environ["ELEVENLABS_VOICE_LIBRARY"], os.environ["ELEVENLABS_VOICE_CLONE"]
+    before, results = voice.credits_used(), {}
+
+    for sample, name in (("skincare", "clip_s01_take1"), ("fintech", "clip_fintech_s01_take1")):
+        shot = _sample(sample)[2].shots[0]
+        video, audio, changed = folder / f"{name}.mp4", folder / f"{name}.wav", folder / f"{name}_voice.mp3"
+        if not audio.exists():
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(video), "-vn", "-ac", "1", str(audio)], check=True)
+        results[name] = {"script": shot.dialogue_caption, **_heard(shot, _transcript(voice, audio))}
+        if not changed.exists():
+            voice.voice_change(audio, changed, library, stream_seconds(audio, "a:0"))
+        results[changed.stem] = {"script": shot.dialogue_caption, **_heard(shot, _transcript(voice, changed))}
+        muxed = folder / f"{name}_voice.mp4"  # the swapped voice back on the picture, to judge lip-sync
+        if not muxed.exists():
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(video), "-i", str(changed), "-map", "0:v",
+                            "-map", "1:a", "-c:v", "copy", "-c:a", "aac", str(muxed)], check=True)
+
+    line = _sample("fintech")[2].shots[-1]  # a mixed-script Hinglish line
+    for voice_name, voice_id in (("library", library), ("clone", clone)):
+        for model in ("eleven_v3", "eleven_v4"):
+            out = folder / f"tts_{voice_name}_{model}.mp3"
+            try:
+                if not out.exists():
+                    voice.speak(line.dialogue_tts, out, voice_id, model)
+                results[out.stem] = {"script": line.dialogue_caption, **_heard(line, _transcript(voice, out))}
+            except ElevenLabsError as error:  # e.g. the key may not be allowed to use TTS
+                results[out.stem] = {"error": str(error)[:200]}
+
+    after = voice.credits_used()
+    account = {product: after[product] - before.get(product, 0) for product in after
+               if after[product] != before.get(product, 0)}
+    (folder / "step_e.json").write_text(json.dumps(
+        {"results": results, "account_credits_used_during_step": account}, ensure_ascii=False, indent=1), "utf-8")
+    for name, result in results.items():
+        print(name, json.dumps(result, ensure_ascii=False))
+    print("Account credits used during this step (the account is shared):", account)
+
+
+STEPS = {"a": step_a, "b": step_b, "c": step_c, "d": step_d, "e": step_e}
