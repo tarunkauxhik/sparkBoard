@@ -22,6 +22,9 @@ MINORS = re.compile(r"\b(child|children|kid|kids|baby|toddler|teen|teens|teenage
 SECOND_LIGHT = re.compile(r"\b(fill|plus|mixed|second|two|both)\b| and | \+ ", re.IGNORECASE)
 BRANDS = re.compile(r"\b(iphone|samsung|galaxy|pixel|oneplus|xiaomi|huawei|sony|canon|nikon|fuji|fujifilm|"
                     r"leica|arri|gopro|zeiss|sigma|panasonic|lumix|dji|blackmagic|aputure|laowa|godox|nanlite)\b", re.IGNORECASE)
+# Fast hand-on-object hits come out warped or with objects vanishing ("bangle" is not a hit).
+IMPACTS = re.compile(r"\b(bang|slamm?|smash|pound|thump|whack|strike?|hitt?|punch|smack)(s|es|ed|ing)?\b",
+                     re.IGNORECASE)
 WORD_COUNT_CLAIM = re.compile(r"(\d+)[ -]words?\b")
 NOTE_MAX_SENTENCES = 2
 
@@ -47,6 +50,12 @@ def storyboard_errors(board: Storyboard, brief: Brief, look: Look) -> list[str]:
         for word in GLOSSY_WORDS:
             if word in seen.lower():
                 errors.append(f"{shot.id}: remove {word!r}; describe a real lens and one real light source")
+        if shot.route == "avatar_talk":
+            errors.append(f"{shot.id}: avatar_talk is a fallback that code may switch to; write veo_talk")
+        hits = IMPACTS.search(" ".join(beat.action for beat in shot.beats))
+        if hits:
+            errors.append(f"{shot.id}: no fast hand-on-object impacts ({hits.group()!r}); "
+                          "use a gentle tap, a point, or set the object down")
         if SECOND_LIGHT.search(shot.lighting):
             errors.append(f"{shot.id}: lighting must name one light source only, got {shot.lighting!r}")
         if BRANDS.search(seen):
@@ -54,6 +63,12 @@ def storyboard_errors(board: Storyboard, brief: Brief, look: Look) -> list[str]:
                           "for phone shots write 'smartphone front camera, 24 mm equivalent'")
         if brief.format == "ugc" and shot.route in ON_CAMERA and shot.camera_move.lower() != "light handheld":
             errors.append(f"{shot.id}: selfie speaking shots in a ugc ad use camera_move 'light handheld'")
+
+    used = {name for shot in board.shots for name in (shot.character, shot.speaker) if name}
+    for member in look.cast:
+        if member.name not in used:
+            errors.append(f"cast member {member.name!r} appears in no shot: every cast member must be "
+                          "seen or heard")
 
     low, high = brief.target_length_s - LENGTH_TOLERANCE_S, brief.target_length_s + LENGTH_TOLERANCE_S
     if not low <= board.length_s <= high:
@@ -92,11 +107,11 @@ def storyboard_errors(board: Storyboard, brief: Brief, look: Look) -> list[str]:
 def look_errors(look: Look, brief: Brief) -> list[str]:
     """Rule breaks in the look: glossy 'AI look' words, or a narrator format without a narrator."""
     errors = [f"{name}: remove {word!r}; describe a real lens and one real light source"
-              for name, choice in look if name != "cast"
+              for name, choice in look.choices()
               for word in GLOSSY_WORDS if word in choice.value.lower()]
     errors += [f"{name}: never name a real phone, camera or lens brand; for a phone write "
                "'smartphone front camera, 24 mm equivalent'"
-               for name, choice in look if name != "cast" and BRANDS.search(choice.value)]
+               for name, choice in look.choices() if BRANDS.search(choice.value)]
     if brief.format in VOICEOVER_FORMATS and all(member.on_screen for member in look.cast):
         errors.append(f"a {brief.format} ad is told in voiceover: add a narrator to the cast with on_screen false")
     return errors

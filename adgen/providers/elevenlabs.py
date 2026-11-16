@@ -23,6 +23,8 @@ TTS_CREDITS_PER_CHAR = 1
 SAFETY = 2                                 # the cap check assumes a call costs twice the estimate
 VOICE_CHANGER_MODEL = "eleven_multilingual_sts_v2"
 SCRIBE_MODEL = "scribe_v3"
+TTS_MODEL = "eleven_v4"  # the default since the smoke test: no word errors, and v3 sounded bad on a library voice
+ISOLATOR_CREDITS_PER_S = 1000 / 60         # assumed the same rate as the voice changer
 VOICE_SETTINGS = {"stability": 0.5, "similarity_boost": 0.85, "style": 0.0, "use_speaker_boost": True}
 SEED = 42
 
@@ -73,7 +75,10 @@ class ElevenLabs:
         return {"text": reply["text"], "language_code": reply["language_code"], "words": words}
 
     def voice_change(self, audio: Path, out: Path, voice_id: str, seconds: float) -> None:
-        """Re-voice the audio in another voice. Timing is kept, so lip-sync holds."""
+        """Re-voice the audio in another voice. Timing is kept, so lip-sync holds.
+
+        NOT USED by the pipeline since 17 Nov 2026. In the smoke test the result sounded bad,
+        added a loud click and turned "Rohan" into "Roman". Kept for reference only."""
         if out.exists():
             raise FileExistsError(f"refusing to overwrite {out}")
 
@@ -87,7 +92,18 @@ class ElevenLabs:
                     files={"audio": (audio.name, file)})
         out.write_bytes(self._paid(f"voice_change:{out.stem}", seconds * VOICE_CHANGER_CREDITS_PER_S, send).content)
 
-    def speak(self, text: str, out: Path, voice_id: str, model_id: str) -> None:
+    def isolate(self, audio: Path, out: Path, seconds: float) -> None:
+        """Voice Isolator: keep the voice, remove room sound and background noise."""
+        if out.exists():
+            raise FileExistsError(f"refusing to overwrite {out}")
+
+        def send():
+            with audio.open("rb") as file:
+                return self.client.post(f"{API}/audio-isolation", headers=self.headers,
+                                        files={"audio": (audio.name, file)})
+        out.write_bytes(self._paid(f"isolate:{out.stem}", seconds * ISOLATOR_CREDITS_PER_S, send).content)
+
+    def speak(self, text: str, out: Path, voice_id: str, model_id: str = TTS_MODEL) -> None:
         """Text to speech. The text may hold audio tags like [sighs] and mixed-script Hinglish."""
         if out.exists():
             raise FileExistsError(f"refusing to overwrite {out}")

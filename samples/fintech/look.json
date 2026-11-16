@@ -1,66 +1,69 @@
 {
   "mood": {
-    "value": "playful mock-seriousness that turns into easy relief: a pretend courtroom that ends with a shared laugh and a settled debt",
-    "reason": "The playbook says light, cheeky, relief at the end. The fake court gives the cheek, and the instant UPI settle-up gives the relief."
+    "value": "playful mock-seriousness that melts into relief: a fake courtroom with real friends laughing underneath",
+    "reason": "The concept runs on a straight-faced joke. The awkwardness of asking for money has to turn into a light release when the app settles it."
   },
   "tone": {
-    "value": "two flatmates teasing each other in everyday Hinglish, with the judge acting pompous and the accused acting innocent. Never a bank or an app voice.",
-    "reason": "The playbook says friends teasing, never a bank talking. The humour only works if the 'court' is clearly a bit between friends, so the product is shown as the thing that ends the awkwardness."
+    "value": "flatmates teasing each other in Hinglish, a mock-solemn judge against a cheeky accused. It never sounds like a bank or a lecture.",
+    "reason": "The audience trusts friends, not fintech. The teasing lets the ad name an awkward problem without shaming anyone."
   },
   "setting": {
-    "value": "a lived-in Indian flat living room with a sagging sofa, a low center table, a drying rack in the corner, a steel tumbler and chai cups on the table, and a window with evening light",
-    "reason": "The playbook asks for a lived-in shared flat. The steel tumbler gavel and chai cups make it feel Indian and real, and one room keeps the AI video simple and consistent."
+    "value": "a lived-in Indian flat living room with a sagging sofa, a plastic-covered side table, a drying rack in the corner, and a steel tumbler and a half-eaten snack plate on the table",
+    "reason": "It looks like the places where rent and food get split. The steel tumbler gavel is a familiar household prop and the scene needs no extra set."
   },
   "camera": {
-    "value": "handheld phone camera, shot and reverse shot between judge and accused, with one close insert of the phone screen and a final two-shot",
-    "reason": "The playbook calls for a phone camera and shot/reverse shot. It matches the Reels look, suits the back-and-forth banter, and makes the phone insert the clear product moment."
+    "value": "handheld smartphone front camera look, shot and reverse shot between judge and accused, with one short over-the-shoulder shot on the phone screen",
+    "reason": "It feels like a Reel a friend filmed. Reverse shots keep the back-and-forth quick and make the app screen readable once."
   },
   "lens": {
-    "value": "smartphone main camera, 24 mm equivalent, f/1.8, held at arm's length",
-    "reason": "The playbook asks for the phone main lens at arm's length. A real 24mm f/1.78 gives the slightly wide, casual selfie-adjacent look of a friend filming, and it keeps both faces and the room in frame."
+    "value": "smartphone front camera, 24 mm equivalent, f/1.9, at arm's length",
+    "reason": "It is the lens people already use for Reels and gives a slightly wide, intimate frame. Two people in a small room fit without looking staged."
   },
   "light": {
-    "value": "low evening sun coming through the living room window",
-    "reason": "The playbook says mixed daylight and warm indoor lamps. A single window sun source with a lamp feels like a real flat at 6pm, and it keeps the phone screen readable."
+    "value": "late-afternoon daylight from a window on the left, with a warm tube-light bounce from the ceiling",
+    "reason": "One real window source keeps skin tones natural and the room looks lived-in. Warm indoor bounce adds the Indian flat feel and keeps the phone screen bright by contrast."
   },
   "palette": {
-    "value": "everyday muted tones (faded teal sofa, beige walls, grey and navy clothes, steel tumbler) with one bright Chukta green on the phone screen and end card",
-    "reason": "The playbook asks for everyday colors with one bright brand accent on the phone screen. The only saturated color sits on the app, so the eye goes straight to the product."
+    "value": "muted everyday tones of faded sofa teal, wood brown, steel grey and cream walls",
+    "reason": "A plain room makes the app the brightest thing in frame, so the eye lands on the product at the moment of the group view and UPI settle-up."
   },
   "pacing": {
-    "value": "fast back-and-forth with a cut every 3 to 4 seconds: hook in the first 3 seconds, accusation and excuses, phone reveal, UPI settle-up, gavel bang, end card in the last 2 seconds, about 22 seconds total",
-    "reason": "The playbook says quick back-and-forth with cuts every 3-5 seconds. It suits Reels, puts the hook up front, and leaves room for each product fact in a 22-second ad."
+    "value": "cuts every 3-4 seconds: hook in the first 3s, two quick 'kal de dunga' exchanges, the phone reveal around 10s, UPI settle and 'Case dismissed' by 19s, end card for the last 3s",
+    "reason": "This fits the 22s target and the Reels scroll. Each beat gets one clear shot and the payoff lands before attention drops."
   },
   "cast": [
     {
-      "name": "neha",
+      "name": "kabir",
       "age": 27,
-      "look": "South Asian woman with a medium build, shoulder-length black hair tied in a loose clip, a small stud earring, and a straight, mock-serious face that cracks into a smile",
-      "outfit": "oversized grey hoodie over black track pants, and a navy dupatta draped over one shoulder as a judge's robe",
-      "voice": "clear, slightly husky, carries well",
-      "accent": "urban Hinglish, Delhi-Mumbai mix",
-      "pace": "measured and deliberate while in judge mode, quicker when she drops the act",
-      "energy": "medium-high, with theatrical authority and a dry edge",
+      "on_screen": true,
+      "look": "Indian man with a lean, tall frame, light wheatish skin, a long narrow face, thick black eyebrows, a neatly trimmed short beard and short, tightly curled hair. He wears round wire glasses and has a sly, raised-eyebrow look.",
+      "outfit": "mustard-yellow half-sleeve cotton shirt worn open over a plain white vest, and dark grey shorts",
+      "voice": "clear mid-range, theatrical when playing judge, dropping to a dry flat tone when he is annoyed",
+      "accent": "Delhi-flavoured Hinglish",
+      "pace": "measured and deliberate in judge mode, then quicker when he laughs",
+      "energy": "medium-high, committed to the bit",
       "speech_habits": [
-        "starts with 'Order order!' and says it again if ignored",
-        "uses dry understatement like 'Bahut interesting excuse hai'",
-        "sighs 'Hey bhagwan' when she's tired of the excuses"
+        "opens with a loud 'Order order!' and then waits a beat",
+        "says 'Arre bhai...' with a long sigh when he is let down",
+        "dry understatement like 'Interesting. Bahut interesting.'"
       ]
     },
     {
       "name": "rohan",
-      "age": 28,
-      "look": "South Asian man with a lean build, short messy hair, light stubble, and an innocent wide-eyed face that is clearly pretending",
-      "outfit": "faded mustard t-shirt with a small print and olive cargo shorts, barefoot on the sofa",
-      "voice": "warm, a bit nasal, easygoing",
-      "accent": "casual Hinglish with a slight Pune lilt",
-      "pace": "relaxed and drawling, speeding up when he's caught out",
-      "energy": "medium, lazy charm that perks up when the app shows up",
+      "age": 26,
+      "on_screen": true,
+      "look": "Indian man with a stocky, broad-shouldered build, deep brown skin, a round face, a shaved head with light stubble, a small gap between his front teeth, and a wide, easy grin",
+      "outfit": "faded maroon hoodie with the sleeves pushed up, and light blue jeans",
+      "voice": "warm and a little nasal, easygoing and slightly pleading",
+      "accent": "Mumbai-flavoured Hinglish",
+      "pace": "fast and tumbling when making excuses, slow when caught",
+      "energy": "high, loose and goofy",
       "speech_habits": [
-        "says 'kal de dunga, pakka' with total confidence",
-        "trails off with 'bhai, woh toh...' when cornered",
-        "says 'arre yaar' when he gives in"
+        "says 'Kal de dunga, pakka' too fast and too often",
+        "trails off with 'bas ek hafte mein...' when he knows it is weak",
+        "says 'Objection!' at the wrong moment"
       ]
     }
-  ]
+  ],
+  "brand_accent": "one bright brand-green accent on the Chukta phone screen"
 }

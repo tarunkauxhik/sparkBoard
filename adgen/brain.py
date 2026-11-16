@@ -92,7 +92,10 @@ Craft rules:
   self-correction in the whole ad, no more. No slogans, no feature lists, no superlatives.
 - No testimonial set-up to camera ("so I've been using...") and no forced enthusiasm.
 - first_frame describes the still moment the shot opens on. Keep hand actions simple: the
-  product is held plainly or rests on a surface.
+  product is held plainly or rests on a surface. At most one object-in-hand action per shot,
+  and never a fast hand-on-object impact (no banging, slamming or hitting): a point, a
+  gentle tap, or setting the object down.
+- Every cast member appears in at least one shot, seen or heard. Speaking shots are veo_talk.
 - Every shot is a separate clip generated from its own still image. Never carry one
   movement across a cut ("mid-application", "continues to..."): open each shot on a settled pose.
 - Avoid shots that only work if a tiny facial expression lands exactly; show it with an action.
@@ -137,6 +140,9 @@ TASKS = {
         "Decide the look of the ad for the winning concept. Start from the category playbook "
         "and adapt each field to this brand and concept; give the reason for every choice. "
         "lens names a lens by focal length and f-stop; light names one real light source. "
+        "palette describes the colours of the scene itself and never mentions the product or "
+        "its colour; brand_accent names the brand colour and where it shows on the product "
+        "(it is used only in shots that show the product). "
         "Never name a real phone, camera or lens brand or model (for a phone write "
         f"'smartphone front camera, 24 mm equivalent'). Never write these words: {', '.join(GLOSSY_WORDS)}.\n"
         "Then define the cast as personas: fictional people with a short first name in "
@@ -145,7 +151,9 @@ TASKS = {
         "pace, an energy level and 2 or 3 speech habits (how this person actually talks: a "
         "pet phrase, trailing off, dry understatement). brand_story and product_hero ads are "
         "told in voiceover, so their cast always includes a narrator with on_screen false "
-        "(no look or outfit needed), plus at most one or two on-screen people. Keep the cast as small "
+        "(no look or outfit needed), plus at most one or two on-screen people. Other formats "
+        "have no narrator. Cast only people the storyboard will use: every cast member must "
+        "be seen or heard in a shot. Keep the cast as small "
         "as the concept allows.\n"
         "CONTEXT.used_personas lists people already cast in ads for other brands. An image "
         "model turns similar descriptions into the same face, so every on-screen persona you "
@@ -177,6 +185,8 @@ TASKS = {
         "- Flag shots that depend on a micro-expression landing exactly, and replace the "
         "direction with a physical action (kind: micro_expression).\n"
         "- Check the last spoken line is a soft, natural call to action tied to the goal.\n"
+        "- Check each shot has at most one object-in-hand action and no fast impacts; simplify "
+        "any shot that asks for more (kind: other).\n"
         "- Anything else worth fixing (kind: other).\n"
         "Keep what already works; do not rewrite for the sake of it. If nothing needs "
         "changing, return the storyboard unchanged with an empty notes list. "

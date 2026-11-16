@@ -18,10 +18,16 @@ CLEAN_FRAME = "The frame is clean, without captions, on-screen text or graphics"
 AUDIO_TAG = re.compile(r"\s*\[[^\]]*\]\s*")  # ElevenLabs tags like [sighs]; Veo must not read them aloud
 
 
-def _style(look: Look, brief: Brief) -> str:
+# Veo's speech came out with room echo in the smoke test; this asks for a close, dry voice.
+DRY_VOICE = "Recorded close to the phone mic, dry intimate voice, small furnished room, no echo or reverb."
+
+
+def _style(look: Look, brief: Brief, shot: Shot) -> str:
     if brief.format == "ugc":
         return UGC_LOOK
-    return f"{look.palette.value.rstrip('.')}, natural skin texture, real materials, unretouched"
+    # The brand colour is only named where the product is on screen, so it cannot leak into other shots.
+    accent = f", {look.brand_accent.rstrip('.')}" if shot.product_visible and look.brand_accent else ""
+    return f"{look.palette.value.rstrip('.')}{accent}, natural skin texture, real materials, unretouched"
 
 
 def _sentence(text: str) -> str:
@@ -79,7 +85,11 @@ def keyframe_request(shot: Shot, look: Look, brief: Brief, refs: Refs) -> tuple[
         use(refs.characters[who.name], f"the character sheet of {who.name}: keep the face, hair and outfit exactly")
     if shot.product_visible:
         for path in refs.product:
-            use(path, f"the product, {brief.product}: keep its shape, color and label exactly")
+            if brief.app_screen:
+                use(path, f"the {brief.product} screen: show it on the phone display with the same "
+                          "layout, words and colours")
+            else:
+                use(path, f"the product, {brief.product}: keep its shape, color and label exactly")
     if refs.location:
         use(refs.location, "the location: keep the room, its objects and its light")
 
@@ -92,8 +102,9 @@ def keyframe_request(shot: Shot, look: Look, brief: Brief, refs: Refs) -> tuple[
         f"Framing: {shot.shot_type}, {shot.angle}, {shot.framing.rstrip('.')}.",
         f"Setting: {shot.setting.rstrip('.')}.",
         f"Lens: {shot.lens.rstrip('.')}. Light: {shot.lighting.rstrip('.')}.",
-        f"Look: {_style(look, brief)}.",
-        CLEAN_FRAME + (", apart from the product's own label." if shot.product_visible else "."),
+        f"Look: {_style(look, brief, shot)}.",
+        CLEAN_FRAME + ((", apart from the app screen on the phone." if brief.app_screen else
+                        ", apart from the product's own label.") if shot.product_visible else "."),
     ]
     if shot.blank_label_text:  # dates and prices are printed by code later, never by the image model
         parts.append("One label area on the product is left blank and plain, with nothing printed on it.")
@@ -116,20 +127,22 @@ def motion_prompt(shot: Shot, look: Look, brief: Brief) -> str:
     who = _member(look, shot.character) if shot.character else None
     parts = [_sentence(f"{shot.shot_type}, {shot.angle}, {shot.camera_move or 'static'} camera")]  # cinematography
     if who:                                                                             # subject
-        facing = ", turned toward the camera" if shot.route in ON_CAMERA else ""
+        to_lens = any("lens" in beat.eye_line or "camera" in beat.eye_line for beat in shot.beats)
+        facing = ", turned toward the camera" if shot.route in ON_CAMERA and to_lens else ""
         parts.append(f"{who.name.capitalize()}, {who.persona}, the same person as in the reference image{facing}.")
     for beat in shot.beats:                                                             # action
         eyes = f", {beat.eye_line.rstrip('.')}" if beat.eye_line else ""
         parts.append(f"[{_stamp(beat.start_s)}-{_stamp(beat.end_s)}] {_sentence(beat.action + eyes)}")
     parts += [_sentence(shot.setting), _sentence(shot.lighting)]                       # context
-    parts.append(_sentence(_style(look, brief)))                                        # style
+    parts.append(_sentence(_style(look, brief, shot)))                                  # style
     if shot.route == "veo_talk":
         speaker = _member(look, shot.speaker)
         line = AUDIO_TAG.sub(" ", shot.dialogue_tts).strip()
         parts.append(f'{speaker.name.capitalize()} says, in {shot.dialogue_lang}, {speaker.accent}: "{line}"')
         parts.append(f"The delivery is {shot.delivery.rstrip('.')}.")
+        # No "Ambient noise" line on speaking shots: naming a room tone made the voice echo.
+        parts += [DRY_VOICE, "Clean frame without captions or on-screen text, no background music."]
     else:  # b-roll, and routes whose voice is added later from TTS
-        parts.append("The scene plays without speech.")
-    parts.append(f"Ambient noise: {shot.audio_notes.rstrip('.')}.")
-    parts.append("Clean frame without captions or on-screen text, no background music, only room tone.")
+        parts += ["The scene plays without speech.", f"Ambient noise: {shot.audio_notes.rstrip('.')}.",
+                  "Clean frame without captions or on-screen text, no background music, only room tone."]
     return " ".join(parts)

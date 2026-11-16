@@ -22,7 +22,7 @@ from adgen.providers.kie import (
     kling_avatar_payload, nano_banana_payload, veo_payload,
 )
 from adgen.providers.openrouter import OpenRouter
-from adgen.qa import ClipScores, FaceCheck, word_error_rate
+from adgen.qa import PERSONA_FACE_MAX, ClipScores, FaceCheck, word_error_rate
 from adgen.schemas import Brief, Look, Refs, Shot, Storyboard
 
 SAMPLES = Path("samples")  # the reviewed storyboards the smoke test draws from
@@ -300,5 +300,57 @@ def step_i(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
     (folder / "step_i.json").write_text(json.dumps(results, indent=1), "utf-8")
 
 
+def step_j(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
+    """Voice Isolator on the skincare clip's audio: does it remove the room echo, and does it
+    keep the words and their timing?"""
+    shot = _sample("skincare")[2].shots[0]
+    name = "clip_s01_take1"
+    audio, clean = folder / f"{name}.wav", folder / f"{name}_isolated.mp3"
+    if not clean.exists():
+        voice.isolate(audio, clean, stream_seconds(audio, "a:0"))
+    results = {"before": _heard(shot, _transcript(voice, audio)), "after": _heard(shot, _transcript(voice, clean))}
+    muxed = folder / f"{name}_isolated.mp4"  # the cleaned voice back on the picture, to listen to
+    if not muxed.exists():
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(folder / f"{name}.mp4"), "-i", str(clean),
+                        "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", str(muxed)], check=True)
+    (folder / "step_j.json").write_text(json.dumps(results, ensure_ascii=False, indent=1), "utf-8")
+    for when, result in results.items():
+        print(when, json.dumps(result, ensure_ascii=False))
+
+
+def step_k(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
+    """Veo Lite on skincare shot 1 (same keyframe as the Fast clip), and frames of both side by side."""
+    brief, look, board = _sample("skincare")
+    shot = board.shots[0]
+    fast, lite = folder / f"clip_{shot.id}_take1.mp4", folder / f"clip_{shot.id}_lite_take1.mp4"
+    if not lite.exists():
+        payload = veo_payload(motion_prompt(shot, look, brief), kie.upload(folder / f"keyframe_{shot.id}.png"),
+                              "veo3_lite", shot.duration_s)
+        _report(kie.run_task(lite.stem, payload, ASSUMED_VEO_CLIP_USD, lite), lite.name)
+    # Two rows of six frames, one per second: Fast on top, Lite below.
+    row = "fps=1,scale=300:-1,tile=6x1"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(fast), "-i", str(lite), "-filter_complex",
+                    f"[0:v]{row}[top];[1:v]{row}[bottom];[top][bottom]vstack", "-frames:v", "1",
+                    str(folder / f"lite_vs_fast_{shot.id}.png")], check=True)
+    print(f"lite: video {stream_seconds(lite, 'v:0'):.2f} s, audio {stream_seconds(lite, 'a:0'):.2f} s")
+
+
+def step_l(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
+    """Character sheets for kabir, marcus and dana, then every pair of sheets on the face check.
+    Sheets of different personas must score under PERSONA_FACE_MAX."""
+    from adgen.faces import FaceMatcher
+    for sample, name in (("fintech", "kabir"), ("earbuds", "marcus"), ("coffee", "dana")):
+        who = next(member for member in _sample(sample)[1].cast if member.name == name)
+        _image(kie, folder / f"sheet_{name}.png", character_sheet_prompt(who), [], "16:9")
+    matcher, names, results = FaceMatcher(), ("meera", "kabir", "marcus", "dana"), {}
+    for i, first in enumerate(names):
+        for second in names[i + 1:]:
+            score = matcher.closest_views(folder / f"sheet_{first}.png", folder / f"sheet_{second}.png")
+            results[f"{first}_vs_{second}"] = None if score is None else round(score, 3)
+            verdict = "no face found" if score is None else ("ok" if score < PERSONA_FACE_MAX else "TOO ALIKE")
+            print(f"{'  n/a' if score is None else f'{score:6.3f}'}  {first} vs {second}: {verdict}")
+    (folder / "step_l.json").write_text(json.dumps(results, indent=1), "utf-8")
+
+
 STEPS = {"a": step_a, "b": step_b, "c": step_c, "d": step_d, "e": step_e, "f": step_f, "g": step_g,
-         "h": step_h, "i": step_i}
+         "h": step_h, "i": step_i, "j": step_j, "k": step_k, "l": step_l}

@@ -107,6 +107,9 @@ def test_cast_must_be_adult_not_a_likeness_and_have_speech_habits(parts):
     (1, {"lens": "iPhone 15 main camera, 24mm equivalent, f/1.78"}, "real phone, camera or lens brand"),
     (1, {"first_frame": "a flawless cinematic portrait"}, "cinematic"),
     (3, {"purpose": "payoff"}, "call to action"),
+    (1, {"route": "avatar_talk"}, "avatar_talk is a fallback"),
+    (1, {"beats": [{"start_s": 0.5, "end_s": 3, "action": "he bangs the tumbler on the table",
+                    "eye_line": "looks into the lens"}]}, "no fast hand-on-object impacts"),
 ])
 def test_storyboard_rules(parts, index, changes, message):
     board, brief, look = parts
@@ -185,9 +188,10 @@ def test_narrator_formats_use_voiceover_with_at_most_one_on_camera_line(parts):
     cast = look.model_copy(update={"cast": [*look.cast, narrator]})
     assert "told by a narrator" in "\n".join(storyboard_errors(board, story, cast))
     assert "at most one on-camera" in "\n".join(storyboard_errors(board, story, cast))
-    assert storyboard_errors(voiceover_board(board), story, cast) == []
+    only_narrator = look.model_copy(update={"cast": [narrator]})  # nobody is on screen in the voiceover board
+    assert storyboard_errors(voiceover_board(board), story, only_narrator) == []
     on_screen_narrator = with_shot(voiceover_board(board), 0, character="narrator")
-    assert "not an on-screen cast member" in "\n".join(storyboard_errors(on_screen_narrator, story, cast))
+    assert "not an on-screen cast member" in "\n".join(storyboard_errors(on_screen_narrator, story, only_narrator))
 
 
 def test_ugc_selfie_shots_are_light_handheld(parts):
@@ -270,3 +274,17 @@ def test_face_must_be_close_to_its_own_persona_and_closer_than_to_any_other():
     assert not face_passes(0.352, [0.234], CLIP_FACE_MIN)      # meera's clip at 5.5 s: she has turned away
     assert not face_passes(0.60, [0.61], CLIP_FACE_MIN)        # high, but another persona is closer
     assert not face_passes(None, [], CLIP_FACE_MIN)            # no face found
+
+
+def test_every_cast_member_must_appear_in_a_shot(parts):
+    board, brief, look = parts
+    extra = look.cast[0].model_copy(update={"name": "nisha", "on_screen": False})
+    crowded = look.model_copy(update={"cast": [*look.cast, extra]})
+    assert "cast member 'nisha' appears in no shot" in "\n".join(storyboard_errors(board, brief, crowded))
+
+
+def test_a_bangle_is_not_an_impact(parts):
+    board, brief, look = parts
+    gentle = with_shot(board, 1, beats=[{"start_s": 0.5, "end_s": 3, "action": "she taps the cup once, her bangle sliding down",
+                                         "eye_line": "looks into the lens"}])
+    assert storyboard_errors(gentle, brief, look) == []

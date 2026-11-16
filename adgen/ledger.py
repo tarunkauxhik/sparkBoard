@@ -11,10 +11,9 @@ PRICES = {
     "sonnet_call": 0.05,
     "gemini_review": 0.01,
     "image": 0.025,
-    "veo3_fast": 0.30,
-    "veo3_lite": 0.15,
+    "veo3_fast": 0.30,   # measured: a flat 60 credits per clip
+    "veo3_lite": 0.15,   # measured: a flat 30 credits per clip
     "kling_avatar_per_s": 0.05,
-    "voice_change_per_s": 0.002,  # approx $0.12 per minute
     "scribe_per_s": 0.0001,
 }
 

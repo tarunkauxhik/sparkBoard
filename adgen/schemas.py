@@ -34,6 +34,20 @@ class Refs(BaseModel):
     location: str = ""
 
 
+class AppRow(BaseModel):
+    name: str
+    amount: str  # as shown on screen, e.g. "Rs 800"
+
+
+class AppScreen(BaseModel):
+    """For app products: the one screen shown in the ad. Code draws it (statics.app_screen),
+    so its text is exact, and the drawing is the product reference instead of a packshot."""
+    title: str            # e.g. "Flat 4B"
+    rows: list[AppRow]    # e.g. who owes what
+    button: str           # e.g. "Pay now"
+    color: str            # the brand colour as hex, e.g. "#16c172"
+
+
 class Brief(BaseModel):
     brand: str
     product: str
@@ -47,6 +61,7 @@ class Brief(BaseModel):
     product_facts: list[str] = Field(min_length=1)
     target_length_s: int  # length of the shots together, without the end card
     product_url: str | None = None
+    app_screen: AppScreen | None = None  # set when the product is an app
     refs: Refs | None = None
 
 
@@ -149,9 +164,14 @@ class Look(BaseModel):
     camera: Choice
     lens: Choice
     light: Choice
-    palette: Choice
+    palette: Choice  # the colours of the scene itself, without the product
     pacing: Choice
+    brand_accent: str = ""  # the brand colour and where it shows; only used in shots with the product
     cast: list[CastMember]
+
+    def choices(self) -> list[tuple[str, Choice]]:
+        """The look fields that are a choice with a reason (not the cast, not the accent)."""
+        return [(name, value) for name, value in self if isinstance(value, Choice)]
 
 
 class Beat(BaseModel):

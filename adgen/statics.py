@@ -53,3 +53,24 @@ def static_ad(image: Path, headline: str, brand: str, size: tuple[int, int], out
                         fill="white", font=big, anchor="ld", spacing=12)
     draw.text((MARGIN, height - MARGIN), brand.upper(), fill="white", font=_font(44), anchor="ls")
     img.save(out)
+
+
+def app_screen(brief, out: Path) -> None:
+    """A simple phone screenshot of the brief's app screen: brand bar, title, rows and one button.
+    Drawn in code so that every name and amount is exact; image models garble screen text."""
+    screen = brief.app_screen
+    width, height = 1080, 2340
+    img = Image.new("RGB", (width, height), "#f6f7f9")
+    draw = ImageDraw.Draw(img)
+    draw.rectangle((0, 0, width, 260), fill=screen.color)
+    draw.text((MARGIN, 150), brief.brand, fill="white", font=_font(84), anchor="lm")
+    draw.text((MARGIN, 380), screen.title, fill="#141414", font=_font(72), anchor="lm")
+    top = 520
+    for row in screen.rows:
+        draw.rounded_rectangle((MARGIN, top, width - MARGIN, top + 200), radius=36, fill="white")
+        draw.text((MARGIN + 50, top + 100), row.name, fill="#141414", font=_font(60, "Regular"), anchor="lm")
+        draw.text((width - MARGIN - 50, top + 100), row.amount, fill="#141414", font=_font(60), anchor="rm")
+        top += 240
+    draw.rounded_rectangle((MARGIN, height - 420, width - MARGIN, height - 220), radius=100, fill=screen.color)
+    draw.text((width / 2, height - 320), screen.button, fill="white", font=_font(68), anchor="mm")
+    img.save(out)

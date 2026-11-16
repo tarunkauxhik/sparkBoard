@@ -120,6 +120,14 @@ class FaceMatcher:
         image = Image.open(path).convert("RGB")
         return [self._embed(image, landmarks) for _, landmarks in self._detect(image)]
 
+    def closest_views(self, first: Path, second: Path) -> float | None:
+        """Highest similarity between any face in one image and any face in the other. Used on
+        two character sheets: different personas must stay under PERSONA_FACE_MAX (adgen/qa.py)."""
+        first_faces, second_faces = self.faces(first), self.faces(second)
+        if not first_faces or not second_faces:
+            return None
+        return float(max(a @ b for a in first_faces for b in second_faces))
+
     def similarity(self, sheet: Path, frame: Path) -> float | None:
         """Cosine similarity (-1 to 1) between the largest face in the frame and the closest
         view on the character sheet. None if either image has no face."""

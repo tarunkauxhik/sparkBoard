@@ -15,6 +15,23 @@
     "free to download"
   ],
   "target_length_s": 22,
-  "product_url": null,
-  "refs": null
+  "app_screen": {
+    "title": "Flat 4B",
+    "color": "#16c172",
+    "button": "Pay now",
+    "rows": [
+      {
+        "name": "Rohan",
+        "amount": "Rs 800"
+      },
+      {
+        "name": "Kabir",
+        "amount": "Settled"
+      },
+      {
+        "name": "Meenal",
+        "amount": "Rs 240"
+      }
+    ]
+  }
 }

@@ -27,7 +27,9 @@ def write_storyboard_md(run: Run, brief: Brief, concepts: Concepts, look: Look,
         out.append(f"| {c.title} | {s.hook} | {s.brief_fit} | {s.platform_fit} | {s.feasibility} | "
                    f"{s.distinctiveness} | {s.total} |")
     out += ["", "## Look"]
-    out += [f"- **{name}**: {choice.value} ({choice.reason})" for name, choice in look if name != "cast"]
+    out += [f"- **{name}**: {choice.value} ({choice.reason})" for name, choice in look.choices()]
+    if look.brand_accent:
+        out.append(f"- **brand accent** (only in shots that show the product): {look.brand_accent}")
     out += ["", "## Cast"]
     for m in look.cast:
         seen = f"{m.look}. Outfit: {m.outfit}." if m.on_screen else "Narrator, heard but never seen."

@@ -130,12 +130,14 @@ def test_motion_prompt_follows_the_veo_order(story):
     prompt = motion_prompt(board.shots[0], look, brief)
     parts = ["Medium close-up", "the same person as in the reference image", "[00:00-00:04]",
              'Maya says, in Indian English, neutral urban accent: "I almost returned this."',
-             "Ambient noise:", "Clean frame without captions"]
+             "Recorded close to the phone mic, dry intimate voice", "Clean frame without captions"]
     positions = [prompt.index(part) for part in parts]
     assert positions == sorted(positions)
     assert PERSONA in prompt
     assert "The delivery is quiet and plain." in prompt  # this shot's delivery, not the persona's pace
-    assert "The scene plays without speech." in motion_prompt(board.shots[2], look, brief)
+    assert "Ambient noise" not in prompt  # naming a room tone on a speaking shot made the voice echo
+    silent = motion_prompt(board.shots[2], look, brief)
+    assert "The scene plays without speech." in silent and "Ambient noise: quiet room tone." in silent
 
 
 def test_audio_tags_are_not_read_aloud_by_veo(story):
@@ -247,3 +249,37 @@ def test_avatar_prompt_describes_movement_and_never_the_words(story):
     prompt = avatar_prompt(story[0].shots[0])
     assert prompt.startswith("Maya speaks the line naturally, quiet and plain.")
     assert "I almost returned this" not in prompt  # the words come from the audio file
+
+
+def test_speaker_is_only_turned_to_the_camera_when_the_eye_line_says_so(story):
+    board, look, brief = story
+    assert "turned toward the camera" in motion_prompt(board.shots[0], look, brief)  # looks into the lens
+    away = board.shots[0].model_copy(deep=True)
+    away.beats[0].eye_line = "looks at rohan off-right"
+    assert "turned toward the camera" not in motion_prompt(away, look, brief)
+
+
+def test_brand_accent_is_only_named_in_shots_that_show_the_product(done, story):
+    board, look, brief = story
+    refs = done[0].load("refs.json", Refs)
+    story_brief = brief.model_copy(update={"format": "role_play"})
+    accented = look.model_copy(update={"brand_accent": "one bright green on the phone screen"})
+    with_product, without = board.shots[0], board.shots[1]
+    assert "bright green on the phone screen" in keyframe_request(with_product, accented, story_brief, refs)[0]
+    assert "bright green" not in keyframe_request(without, accented, story_brief, refs)[0]
+    assert "bright green" not in motion_prompt(without, accented, story_brief)
+
+
+def test_an_app_screen_is_drawn_in_code_and_named_as_a_screen_not_a_label(done, story, tmp_path):
+    from adgen.schemas import AppRow, AppScreen
+    from adgen.statics import app_screen
+    board, look, brief = story
+    app = brief.model_copy(update={"brand": "Chukta", "product": "Chukta app", "app_screen": AppScreen(
+        title="Flat 4B", rows=[AppRow(name="Rohan", amount="Rs 800")], button="Pay now", color="#16c172")})
+    out = tmp_path / "screen.png"
+    app_screen(app, out)
+    with Image.open(out) as img:
+        assert img.size == (1080, 2340) and img.getpixel((10, 10)) == (0x16, 0xc1, 0x72)  # the brand bar
+    prompt, _ = keyframe_request(board.shots[0], look, app, done[0].load("refs.json", Refs))
+    assert "the Chukta app screen: show it on the phone display" in prompt
+    assert "keep its shape, color and label" not in prompt and "apart from the app screen on the phone" in prompt

@@ -17,8 +17,8 @@ Owner: Tarun. Build plan: docs/private/04_BUILD_PLAN.md (wins over docs/private/
 - Dry-run / mock providers are the default. Real calls need `--live` and a cost cap.
 - Every paid call goes through `ledger.py`, which records cost and refuses to run past the cap. Test on one item first, then scale.
 - Keys only in `.env` (gitignored). Never print, log, commit or paste them anywhere.
-- Never commit `docs/private/` (senior's emails, account details).
-- Don't use any Google, VARWENT or Anuj-related plugins, MCP servers or connectors unless Tarun permits it. Never control his computer outside this folder.
+- Never commit `docs/private/`.
+- Follow the extra private rules in `docs/private/05_PRIVATE_RULES.md`. Never control Tarun's computer outside this folder.
 - Any text Tarun will send (emails, messages): run it through the humanizer skill first.
 
 ## Storage rules

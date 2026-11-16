@@ -37,6 +37,7 @@ own rule or common advice, not confirmed by the vendor.
 | We do not send `watermark` (we want none) or `callBackUrl` (we poll and have no public URL) | our choice | Practitioner |
 | Nano Banana: `model` is `nano-banana-2-1`; `input` has `prompt` (max 20,000 characters), `image_input` (max 10 URLs, jpeg/png/webp, 30 MB each), `aspect_ratio` (includes `9:16`, `4:5`, `1:1`), `resolution` (`1K`, `2K`, `4K`), `output_format` (`png`, `jpg`) | Kie Nano Banana | Official |
 | Nano Banana has **no seed field** | Kie Nano Banana (field not documented) | Official |
+| Kling Avatar is a documented fallback only; no sample uses it (in the smoke test its speaker turned away and the lip-sync was off) | our choice | Practitioner |
 | Kling Avatar: `model` is `kling/ai-avatar-standard`; `input` has `image_url` (jpeg/png, 10 MB), `audio_url` (max 100 MB, 5 minutes) and a required non-empty `prompt` (max 5,000 characters). Output is 720p and as long as the audio | Kie Kling Avatar | Official |
 | Poll `GET /api/v1/jobs/recordInfo?taskId=...`. States: `waiting`, `queuing`, `generating`, `success`, `fail`. `resultJson` is a JSON string holding `resultUrls`. On `fail` read `failCode` and `failMsg` | Kie task details | Official |
 | Start polling every 2 to 3 seconds and slow down. Video can take over 10 minutes. Save the task ID first and never resubmit on a timeout | Kie task details (polling), our rule (no resubmit) | Official + practitioner |
@@ -88,7 +89,10 @@ Still open: Veo Lite and 8 s prices; face limits need more data than 2 personas 
 | Say what you want instead of listing what you don't ("a clean frame without captions", not a "no ..." list) | Veo guide | Official |
 | Reuse the same reference images and the same persona words in every shot of a scene | Veo guide | Official |
 | The subject line ends with "the same person as in the reference image" | our rule | Practitioner |
-| One speaker per clip; the speaker is turned toward the camera; speaking shots use a static or light handheld camera | our rule (lip-sync and voice swap work best this way) | Practitioner |
+| One speaker per clip; speaking shots use a static or light handheld camera. The speaker is "turned toward the camera" only when a beat's eye-line is the lens | our rule | Practitioner |
+| Speaking shots ask for a close, dry voice ("recorded close to the phone mic, dry intimate voice, small furnished room, no echo or reverb") and carry no "Ambient noise" line; naming a room tone made the voice echo | our rule, from reviewing the smoke test clips (17 Nov 2026) | Practitioner |
+| The brand colour is named only in shots that show the product | our rule | Practitioner |
+| Veo 3.1 Lite is the default tier for every clip | our choice (cost) | Practitioner |
 | Each shot has 1 or 2 beats, each one physical action plus an eye-line; no emotion-only directions | our rule | Practitioner |
 | Clips are 4, 6 or 8 s, 720p or 1080p, 16:9 or 9:16 | Veo guide, Kie Veo | Official |
 
@@ -117,7 +121,8 @@ Still open: Veo Lite and 8 s prices; face limits need more data than 2 personas 
 | Ellipses add a pause; capitals add emphasis; SSML `<break>` is not supported in v3 | ElevenLabs v3 | Official |
 | Tags that clash with the voice, or that the voice was not trained on, are unreliable | ElevenLabs v3 | Official |
 | At most one tag per line, and only on lines voiced by TTS. Tags are removed from lines that Veo speaks | our rule | Practitioner |
-| Eleven v4 (`eleven_v4`) is recommended over v3 for Voice Library voices and professional clones. The smoke test compares v3 and v4 on a library voice and a cloned voice | ElevenLabs v3 | Official (v4 advice), practitioner (the A/B) |
+| `eleven_v4` is our TTS default. ElevenLabs recommends it over v3 for Voice Library voices and professional clones, and in our test v3 sounded bad on a library voice | ElevenLabs v3 (advice), our smoke test | Official + practitioner |
+| The voice changer is not used. In the smoke test its result sounded bad, added a loud click and garbled a name; the code is kept but marked unused | our smoke test (17 Nov 2026) | Practitioner |
 | Hinglish: the TTS text is mixed script (Hindi in Devanagari, English in Latin); captions are Roman only | our rule, from the voice-fix task | Practitioner |
 | Voice Changer settings that worked: `eleven_multilingual_sts_v2`, stability 0.5, similarity 0.85, pitch-matched input | our voice-fix task (15 Nov 2026) | Practitioner |
 
@@ -149,6 +154,10 @@ that breaks it; "prompt" means the writer and critic are told, but code cannot c
 | Printed text other than the brand name (a date, a price) is added in code later; the keyframe leaves that label area blank | Code (prompt compiler), writer marks it in `blank_label_text` |
 | A new on-screen persona must differ from personas used for other brands: another name and at most 30% of the same look words. This is a first filter only; two different descriptions still produced near-identical faces. Character sheets of different personas must score under 0.45 against each other on the face check | Code (`adgen/casting.py`, `PERSONA_FACE_MAX` in `adgen/qa.py`); the sheet check is wired in at phase 5 |
 | Critic notes are at most two plain sentences per field; any word count they state must equal the real one | Code |
+| Every cast member is seen or heard in at least one shot | Code |
+| No fast hand-on-object impacts (banging, slamming, hitting) in any beat | Code |
+| At most one object-in-hand action per shot | Prompt, critic |
+| For app products the screen is drawn in code from the brief (`app_screen`) and used as the product reference, described as a screen and not as a label | Code |
 | Natural speech: contractions, short sentences, at most one filler or self-correction per ad | Prompt, critic |
 | No emotion-only directions; shots that depend on micro-expressions are flagged | Prompt, critic |
 | No action carried across a cut: each shot opens on a settled pose | Prompt, critic |

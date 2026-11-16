@@ -1,9 +1,4 @@
-{"key": "openrouter", "item": "sonnet:insights", "cost": 0.007934, "mock": false}
-{"key": "openrouter", "item": "sonnet:concepts", "cost": 0.016776, "mock": false}
-{"key": "openrouter", "item": "sonnet:concept_critic", "cost": 0.01225, "mock": false}
-{"key": "openrouter", "item": "sonnet:look", "cost": 0.019264, "mock": false}
-{"key": "openrouter", "item": "sonnet:storyboard", "cost": 0.041756, "mock": false}
-{"key": "openrouter", "item": "sonnet:storyboard", "cost": 0.059996, "mock": false}
-{"key": "openrouter", "item": "sonnet:storyboard", "cost": 0.052074, "mock": false}
-{"key": "openrouter", "item": "sonnet:storyboard", "cost": 0.060938, "mock": false}
-{"key": "openrouter", "item": "sonnet:storyboard_critic", "cost": 0.06792, "mock": false}
+{"key": "openrouter", "item": "claude-sonnet-5.5:look", "cost": 0.02244, "mock": false}
+{"key": "openrouter", "item": "claude-sonnet-5.5:storyboard", "cost": 0.04478, "mock": false}
+{"key": "openrouter", "item": "claude-sonnet-5.5:storyboard", "cost": 0.061514, "mock": false}
+{"key": "openrouter", "item": "claude-sonnet-5.5:storyboard_critic", "cost": 0.062748, "mock": false}

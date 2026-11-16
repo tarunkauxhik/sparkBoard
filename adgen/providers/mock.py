@@ -65,11 +65,6 @@ class MockProvider:
 
     # --- audio (ElevenLabs in the live provider) ---
 
-    def voice_change(self, src: Path, out: Path, voice: str, duration_s: int) -> None:
-        self.ledger.charge("elevenlabs", f"voice_change:{out.stem}",
-                           PRICES["voice_change_per_s"] * duration_s, mock=True)
-        shutil.copyfile(src, out)
-
     def transcribe(self, path: Path, expected: str, duration_s: int) -> list[dict]:
         """Word timings: the expected words spread evenly, with silence at both ends."""
         self.ledger.charge("elevenlabs", f"scribe:{path.stem}",

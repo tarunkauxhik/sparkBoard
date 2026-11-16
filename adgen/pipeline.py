@@ -23,11 +23,13 @@ from adgen.schemas import (
     Approval, Audio, Brief, Check, Clips, Concept, Concepts, EditList, FixedClip, Insights,
     Keyframes, Look, QAReport, Refs, Render, Storyboard, StoryboardReview, Take,
 )
-from adgen.statics import STATIC_SIZES, static_ad
+from adgen.statics import STATIC_SIZES, app_screen, static_ad
 
 PLAYBOOKS = Path(__file__).parent.parent / "playbooks"
 # Which video model each storyboard route uses. "static" shots have no clip.
-ROUTE_MODEL = {"veo_talk": "veo3_fast", "veo_broll": "veo3_lite",
+# Veo 3.1 Lite is the default for every clip (half the price of Fast). Kling Avatar is only a
+# documented fallback: in the smoke test its speaker turned away and the lip-sync was off.
+ROUTE_MODEL = {"veo_talk": "veo3_lite", "veo_broll": "veo3_lite",
                "vo_only": "veo3_lite", "avatar_talk": "kling_avatar"}
 SCHEMA_TRIES = 2  # one try, plus one more with the errors sent back. Never a loop.
 
@@ -95,7 +97,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         used = [] if getattr(provider, "placeholder_cast", False) else used_personas(brief.brand, run.dir.parent)
         look = ask("look", brief=b, concept=winner, playbook=playbook, used_personas=used,
                    check=lambda look: look_errors(look, brief) + casting_errors(look, used))
-        why = "; ".join(f"{name}: {choice.reason}" for name, choice in look if name != "cast")
+        why = "; ".join(f"{name}: {choice.reason}" for name, choice in look.choices())
         cast = ", ".join(member.name for member in look.cast)
         return look, f"{look.mood.value}; {look.setting.value}; cast: {cast}", why
     look = step("look.json", Look, make_look)
@@ -146,7 +148,10 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                 provider.image(character_sheet_prompt(who), [], out)
                 refs.characters[who.name] = run.rel(out)
         out = run.path("refs/product.png")
-        provider.image(packshot_prompt(brief), [], out)
+        if brief.app_screen:  # an app: its screen is drawn in code, so every word on it is exact
+            app_screen(brief, out)
+        else:
+            provider.image(packshot_prompt(brief), [], out)
         refs.product.append(run.rel(out))
         out = run.path("refs/location.png")
         provider.image(location_prompt(look, brief), [], out)
@@ -180,22 +185,18 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     clips = step("clips.json", Clips, make_clips)
     shots = {shot.id: shot for shot in board.shots}
 
-    # 10 Audio: swap talking clips to the speaker's fixed voice, then get word timings
+    # 10 Audio: keep Veo's own voice and get word timings for trims and captions.
+    #   (The voice changer was dropped after the smoke test: it added clicks and garbled a name.)
     def make_audio():
         fixed = []
         for take in clips.takes:
             shot = shots[take.shot_id]
-            src = run.dir / take.file
             out = run.path(f"clips/fixed/{shot.id}.mp4")
-            words = []
-            if shot.route == "veo_talk":
-                voice = next(member.voice for member in look.cast if member.name == shot.speaker)
-                provider.voice_change(src, out, voice, shot.duration_s)
-                words = provider.transcribe(out, shot.dialogue_caption, shot.duration_s)
-            else:
-                shutil.copyfile(src, out)
+            shutil.copyfile(run.dir / take.file, out)
+            words = (provider.transcribe(out, shot.dialogue_caption, shot.duration_s)
+                     if shot.route == "veo_talk" else [])
             fixed.append(FixedClip(shot_id=shot.id, file=run.rel(out), words=words))
-        return Audio(clips=fixed), "one voice per cast member", "voice changer keeps timing, so lip-sync holds"
+        return Audio(clips=fixed), "Veo's own voice, transcribed", "word timings drive the trims and captions"
     audio = step("audio.json", Audio, make_audio)
 
     # 11 Edit list
