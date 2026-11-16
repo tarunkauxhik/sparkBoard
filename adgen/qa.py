@@ -36,6 +36,13 @@ def words_pass(script: str, heard: str, other_script: str = "") -> bool:
     return word_error_rate(script, heard, other_script) <= MAX_WORD_ERROR_RATE
 
 
+class FaceCheck(BaseModel):
+    """Gemini's answer to: is the person in this frame the person on the character sheet?"""
+    same_person: bool
+    score: int = Field(ge=1, le=5)  # 5 = clearly the same person, 3 = similar with differences, 1 = different
+    judgement: str                  # what matches and what differs, in one or two sentences
+
+
 class ClipScores(BaseModel):
     """Gemini's rubric for one clip: 1 (unusable) to 5 (looks real)."""
     hands: int = Field(ge=1, le=5)

@@ -240,3 +240,10 @@ def test_packshot_prompt_spells_out_the_whole_label(story):
     assert 'exactly this text and nothing else: "Dewline" and "Barrier Repair Serum".' in prompt
     earbuds = brief.model_copy(update={"brand": "Noctave", "product": "Noctave Air wireless earbuds"})
     assert 'nothing else: "Noctave".' in packshot_prompt(earbuds)  # the brand is not repeated
+
+
+def test_avatar_prompt_describes_movement_and_never_the_words(story):
+    from adgen.prompts import avatar_prompt
+    prompt = avatar_prompt(story[0].shots[0])
+    assert prompt.startswith("Maya speaks the line naturally, quiet and plain.")
+    assert "I almost returned this" not in prompt  # the words come from the audio file

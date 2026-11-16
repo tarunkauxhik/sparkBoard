@@ -100,6 +100,13 @@ def keyframe_request(shot: Shot, look: Look, brief: Brief, refs: Refs) -> tuple[
     return " ".join(parts), images
 
 
+def avatar_prompt(shot: Shot) -> str:
+    """Kling Avatar prompt: expression and movement only. The words come from the audio file."""
+    beats = " ".join(_sentence(beat.action + (f", {beat.eye_line}" if beat.eye_line else "")) for beat in shot.beats)
+    return (f"{shot.speaker.capitalize()} speaks the line naturally, {shot.delivery.rstrip('.')}. {beats} "
+            f"Small natural head and shoulder movement, {shot.camera_move or 'static'} camera.")
+
+
 def _stamp(seconds: float) -> str:
     return f"00:{round(seconds):02d}"
 

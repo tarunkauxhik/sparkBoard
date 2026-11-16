@@ -8,20 +8,32 @@ Cost safety, in order:
 4. A call that times out is recorded at its worst case, because it may have been billed.
 5. HTTP retries are only for 429 and 5xx (not billed), at most 2, with a pause between.
 """
+import base64
 import json
 import time
 from pathlib import Path
 
 import httpx
+from pydantic import BaseModel
 
 from adgen.brain import TASKS, build_messages
 from adgen.ledger import Ledger
 
 API = "https://openrouter.ai/api/v1"
 SONNET = "anthropic/claude-sonnet-5.5"
+GEMINI = "google/gemini-3.1-flash-lite"  # the cheapest current Flash with video input (16 Nov 2026)
 SEED = 7
 HTTP_RETRIES = 2
 BACKOFF_S = (2, 6)
+
+
+# Upper bounds for the cap check on media. Gemini bills roughly 258 tokens per image tile and
+# about 300 tokens per second of video; these are set well above that.
+IMAGE_TOKENS_MAX, VIDEO_TOKENS_PER_S_MAX = 3000, 1000
+
+
+def _data_url(path: Path, mime: str) -> str:
+    return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode()}"
 
 
 class LLMError(RuntimeError):
@@ -63,21 +75,46 @@ class OpenRouter:
         log = {"task": task, "model": self.model, "temperature": spec.temperature, "seed": SEED,
                "sampling_params_supported": self.sampling_supported, "max_tokens": spec.max_tokens,
                "worst_cost": round(worst_cost, 5), "request": body}
+        return self._send(task, body, worst_cost, log)
+
+    def look_at(self, name: str, instructions: str, schema: type[BaseModel], images: list[Path] = (),
+                video: Path | None = None, video_seconds: float = 0, max_tokens: int = 1000) -> BaseModel:
+        """Show the model images and/or one video and get back a validated review.
+        Send small copies (about 1024 px images, a 480p clip): reviews do not need full size."""
+        text = (f"{instructions}\n\nReply with one JSON object only, no markdown fences, matching this "
+                f"schema:\n{json.dumps(schema.model_json_schema())}")
+        media = [{"type": "image_url", "image_url": {"url": _data_url(image, "image/jpeg")}} for image in images]
+        if video:
+            media.append({"type": "video_url", "video_url": {"url": _data_url(video, "video/mp4")}})
+        body = {"model": self.model, "max_tokens": max_tokens, "temperature": 0.2, "usage": {"include": True},
+                "messages": [{"role": "user", "content": [{"type": "text", "text": text}, *media]}]}
+        input_tokens = len(text.encode()) + IMAGE_TOKENS_MAX * len(images) + VIDEO_TOKENS_PER_S_MAX * video_seconds
+        worst_cost = input_tokens * self.price_in + max_tokens * self.price_out
+        self.ledger.check("openrouter", worst_cost)
+        # The log names the files instead of holding megabytes of base64.
+        log = {"task": name, "model": self.model, "max_tokens": max_tokens, "worst_cost": round(worst_cost, 5),
+               "request": {"text": text, "images": [image.name for image in images],
+                           "video": video.name if video else None}}
+        return schema.model_validate(self._send(name, body, worst_cost, log))
+
+    def _send(self, task: str, body: dict, worst_cost: float, log: dict) -> dict:
+        """Send one request, record its real cost, save its log and return the reply as a dict."""
+        label = f"{self.model.split('/')[-1]}:{task}"
         try:
             reply = self._post(body)
         except httpx.HTTPError as error:  # timeout or dropped connection: we cannot know if it was billed
-            self.ledger.record("openrouter", f"sonnet:{task} (no reply, worst case)", worst_cost)
+            self.ledger.record("openrouter", f"{label} (no reply, worst case)", worst_cost)
             self._save_log(task, {**log, "error": repr(error), "cost": worst_cost})
             raise LLMError(f"{task}: no reply from OpenRouter ({error!r}); counted as ${worst_cost:.3f}")
         cost = self._cost(reply)
-        self.ledger.record("openrouter", f"sonnet:{task}", cost)
+        self.ledger.record("openrouter", label, cost)
         self._save_log(task, {**log, "cost": cost, "response": reply})
 
         if "error" in reply:
             raise LLMError(f"{task}: OpenRouter error: {reply['error']}")
         choice = reply["choices"][0]
         if choice.get("finish_reason") == "length":
-            raise LLMError(f"{task}: the reply hit max_tokens ({spec.max_tokens}) and was cut off")
+            raise LLMError(f"{task}: the reply hit max_tokens ({body['max_tokens']}) and was cut off")
         text = choice["message"]["content"] or ""
         try:
             # strict=False: models sometimes put a raw line break inside a string

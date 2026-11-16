@@ -13,7 +13,7 @@ from adgen.pipeline import run_pipeline
 from adgen.providers.elevenlabs import ElevenLabs
 from adgen.providers.kie import Kie
 from adgen.providers.mock import MockProvider
-from adgen.providers.openrouter import OpenRouter
+from adgen.providers.openrouter import GEMINI, OpenRouter
 from adgen.run import RUNS_DIR, Run
 from adgen.smoke import STEPS
 
@@ -80,6 +80,7 @@ def smoke(
     step: str = typer.Argument(..., help="Which step to run: " + ", ".join(STEPS)),
     cap_kie: float = typer.Option(..., help="Hard cap in USD for Kie across the whole smoke folder."),
     cap_elevenlabs: float = typer.Option(0.0, help="Hard cap in USD for ElevenLabs across the smoke folder."),
+    cap_openrouter: float = typer.Option(0.0, help="Hard cap in USD for OpenRouter (Gemini reviews) in the smoke folder."),
     folder: Path = typer.Option(None, help="Output folder. Default: runs/smoke-<today>."),
 ):
     """Run one step of the paid smoke test. Real calls: each step needs Tarun's OK first."""
@@ -89,14 +90,17 @@ def smoke(
     load_dotenv()
     folder = folder or RUNS_DIR / f"smoke-{datetime.now():%Y%m%d}"
     folder.mkdir(parents=True, exist_ok=True)
-    ledger = Ledger(folder / "ledger.jsonl", {**CAPS, "kie": cap_kie, "elevenlabs": cap_elevenlabs})
+    ledger = Ledger(folder / "ledger.jsonl", {"kie": cap_kie, "elevenlabs": cap_elevenlabs,
+                                              "openrouter": cap_openrouter})
     typer.echo(f"Smoke step {step} in {folder} (LIVE)")
     try:
         STEPS[step](Kie(ledger, folder / "tasks", os.environ["KIE_API_KEY"]),
-                    ElevenLabs(ledger, os.environ["ELEVENLABS_API_KEY"]), folder)
+                    ElevenLabs(ledger, os.environ["ELEVENLABS_API_KEY"]),
+                    OpenRouter(ledger, folder / "llm", os.environ["OPENROUTER_API_KEY"], model=GEMINI), folder)
     finally:  # always say what was spent, also when a task failed
         typer.echo(f"Spent in this folder: Kie ${ledger.spent('kie'):.3f} of {cap_kie:.2f}, "
-                   f"ElevenLabs ${ledger.spent('elevenlabs'):.4f} of {cap_elevenlabs:.2f}")
+                   f"ElevenLabs ${ledger.spent('elevenlabs'):.4f} of {cap_elevenlabs:.2f}, "
+                   f"OpenRouter ${ledger.spent('openrouter'):.4f} of {cap_openrouter:.2f}")
 
 
 @app.command()

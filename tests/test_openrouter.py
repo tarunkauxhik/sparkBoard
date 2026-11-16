@@ -80,3 +80,30 @@ def test_a_reply_that_is_not_json_can_be_retried_by_the_pipeline(tmp_path):
     provider, ledger, posts = make(tmp_path, lambda n: reply(content="Sure! Here you go."))
     with pytest.raises(ValueError, match="not valid JSON"):
         provider.chat_json("insights", CTX)
+
+
+def test_look_at_sends_media_checks_the_cap_and_keeps_base64_out_of_the_log(tmp_path):
+    from adgen.qa import FaceCheck
+    answer = '{"same_person": true, "score": 4, "judgement": "Same face shape and hair."}'
+    provider, ledger, posts = make(tmp_path, lambda n: reply(content=answer, cost=0.002))
+    sheet, frame = tmp_path / "sheet.jpg", tmp_path / "frame.jpg"
+    sheet.write_bytes(b"JPEG-ONE")
+    frame.write_bytes(b"JPEG-TWO")
+    check = provider.look_at("face_meera", "Same person?", FaceCheck, images=[sheet, frame])
+    assert (check.same_person, check.score) == (True, 4)
+    assert ledger.spent("openrouter") == 0.002
+    parts = __import__("json").loads(posts[0].content)["messages"][0]["content"]
+    assert [part["type"] for part in parts] == ["text", "image_url", "image_url"]
+    assert parts[1]["image_url"]["url"].startswith("data:image/jpeg;base64,")
+    log = (tmp_path / "llm/01_face_meera.json").read_text("utf-8")
+    assert "sheet.jpg" in log and "base64" not in log
+
+
+def test_look_at_refuses_when_a_long_video_could_pass_the_cap(tmp_path):
+    from adgen.qa import ClipScores
+    provider, ledger, posts = make(tmp_path, lambda n: reply(), cap=0.01)
+    clip = tmp_path / "clip.mp4"
+    clip.write_bytes(b"MP4")
+    with pytest.raises(BudgetExceeded):  # 600 s at up to 1000 tokens per second is far over one cent
+        provider.look_at("rubric", "Score it.", ClipScores, video=clip, video_seconds=600)
+    assert posts == []
