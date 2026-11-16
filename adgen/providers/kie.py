@@ -27,8 +27,8 @@ USD_PER_CREDIT = 0.005
 # Prices assumed for the cap check: the real prices measured in the smoke test (16 Nov 2026)
 # plus a margin. Measured: a 2K Nano Banana image is 6 credits ($0.03); a Veo Fast clip is a
 # flat 60 credits ($0.30) for both 4 s and 6 s. Veo Lite and Kling Avatar are not measured yet.
-ASSUMED_IMAGE_USD = 0.05
-ASSUMED_VEO_CLIP_USD = 0.40
+ASSUMED_IMAGE_USD = 0.03          # measured on 10 images, always 6 credits
+ASSUMED_VEO_CLIP_USD = {"veo3_fast": 0.40, "veo3_lite": 0.20}  # Fast measured at 0.30; Lite listed at 0.15
 ASSUMED_AVATAR_USD_PER_S = 0.10
 POLL_START_S, POLL_SLOWEST_S, POLL_TIMEOUT_S = 3, 15, 20 * 60
 

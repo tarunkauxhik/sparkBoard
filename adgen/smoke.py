@@ -94,7 +94,7 @@ def step_c(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
         print(f"have  {clip.name}")
         return
     payload = veo_payload(motion_prompt(shot, look, brief), kie.upload(keyframe), "veo3_fast", shot.duration_s)
-    _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_CLIP_USD, clip), clip.name)
+    _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_CLIP_USD["veo3_fast"], clip), clip.name)
 
 
 def step_d(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
@@ -114,7 +114,7 @@ def step_d(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
         print(f"have  {clip.name}")
         return
     payload = veo_payload(motion_prompt(shot, look, brief), kie.upload(keyframe), "veo3_fast", shot.duration_s)
-    _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_CLIP_USD, clip), clip.name)
+    _report(kie.run_task(clip.stem, payload, ASSUMED_VEO_CLIP_USD["veo3_fast"], clip), clip.name)
 
 
 def _transcript(voice: ElevenLabs, audio: Path) -> dict:
@@ -326,7 +326,7 @@ def step_k(kie: Kie, voice: ElevenLabs, eyes: OpenRouter, folder: Path) -> None:
     if not lite.exists():
         payload = veo_payload(motion_prompt(shot, look, brief), kie.upload(folder / f"keyframe_{shot.id}.png"),
                               "veo3_lite", shot.duration_s)
-        _report(kie.run_task(lite.stem, payload, ASSUMED_VEO_CLIP_USD, lite), lite.name)
+        _report(kie.run_task(lite.stem, payload, ASSUMED_VEO_CLIP_USD["veo3_lite"], lite), lite.name)
     # Two rows of six frames, one per second: Fast on top, Lite below.
     row = "fps=1,scale=300:-1,tile=6x1"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(fast), "-i", str(lite), "-filter_complex",
