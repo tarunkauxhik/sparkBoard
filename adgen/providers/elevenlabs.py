@@ -18,7 +18,7 @@ from adgen.ledger import Ledger
 API = "https://api.elevenlabs.io/v1"
 USD_PER_CREDIT = 0.00012                   # 4,157 credits were about $0.50 in the voice-fix task
 VOICE_CHANGER_CREDITS_PER_S = 1000 / 60    # measured: 3,896 credits for 3.9 minutes
-SCRIBE_CREDITS_PER_S = 3                   # not measured yet; set on the high side
+SCRIBE_CREDITS_PER_S = 1                   # measured about 0.45 in the smoke test; kept on the high side
 TTS_CREDITS_PER_CHAR = 1
 SAFETY = 2                                 # the cap check assumes a call costs twice the estimate
 VOICE_CHANGER_MODEL = "eleven_multilingual_sts_v2"

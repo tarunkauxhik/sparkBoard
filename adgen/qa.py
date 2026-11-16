@@ -15,22 +15,25 @@ def _words(text: str) -> list[str]:
     return [word for word in (raw.strip(PUNCTUATION) for raw in text.lower().split()) if word]
 
 
-def word_error_rate(script: str, heard: str) -> float:
+def word_error_rate(script: str, heard: str, other_script: str = "") -> float:
     """Share of script words the transcript got wrong (substituted, dropped or added).
 
-    Compare like with like: both in Roman script, or both in mixed script."""
-    want, got = _words(script), _words(heard)
+    `other_script` is the same line in its other writing (the Roman caption and the
+    mixed-script voice line). A transcript writes each Hindi word in either script, so a
+    heard word is right if it matches the word at that place in either writing."""
+    want, other, got = _words(script), _words(other_script), _words(heard)
+    accepted = [{word, other[i]} if len(other) == len(want) else {word} for i, word in enumerate(want)]
     # Word-level edit distance, one row at a time.
     row = list(range(len(got) + 1))
-    for i, expected in enumerate(want, 1):
+    for i, expected in enumerate(accepted, 1):
         previous, row[0] = row[0], i
         for j, actual in enumerate(got, 1):
-            previous, row[j] = row[j], min(row[j] + 1, row[j - 1] + 1, previous + (expected != actual))
+            previous, row[j] = row[j], min(row[j] + 1, row[j - 1] + 1, previous + (actual not in expected))
     return row[-1] / max(len(want), 1)
 
 
-def words_pass(script: str, heard: str) -> bool:
-    return word_error_rate(script, heard) <= MAX_WORD_ERROR_RATE
+def words_pass(script: str, heard: str, other_script: str = "") -> bool:
+    return word_error_rate(script, heard, other_script) <= MAX_WORD_ERROR_RATE
 
 
 class ClipScores(BaseModel):

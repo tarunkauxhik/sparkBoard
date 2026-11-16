@@ -30,7 +30,7 @@ def test_transcribe_returns_word_timings_and_records_an_estimate(tmp_path):
     result = voice.transcribe(audio, seconds=6)
     assert result["words"] == [{"word": "Waiting", "start_s": 1.2, "end_s": 1.6},
                                {"word": "sting.", "start_s": 2.0, "end_s": 2.4}]  # spacing items are dropped
-    assert ledger.spent("elevenlabs") == pytest.approx(6 * 3 * 0.00012)
+    assert ledger.spent("elevenlabs") == pytest.approx(6 * 1 * 0.00012)
     assert b"scribe_v3" in requests[0].content
 
 

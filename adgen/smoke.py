@@ -14,7 +14,9 @@ from PIL import Image
 
 from adgen.editor import stream_seconds
 
-from adgen.prompts import character_sheet_prompt, keyframe_request, motion_prompt, packshot_prompt
+from adgen.prompts import (
+    AUDIO_TAG, character_sheet_prompt, keyframe_request, motion_prompt, packshot_prompt,
+)
 from adgen.providers.elevenlabs import ElevenLabs, ElevenLabsError
 from adgen.providers.kie import (
     ASSUMED_IMAGE_USD, ASSUMED_VEO_CLIP_USD, USD_PER_CREDIT, Kie, nano_banana_payload, veo_payload,
@@ -126,9 +128,9 @@ def _transcript(voice: ElevenLabs, audio: Path) -> dict:
 def _heard(shot: Shot, transcript: dict) -> dict:
     """How a transcript compares with the script. Scribe may write Hindi in Devanagari or in
     Roman letters, so the line is compared in both forms and the better match counts."""
-    words = transcript["words"]
-    rate = min(word_error_rate(shot.dialogue_caption, transcript["text"]),
-               word_error_rate(shot.dialogue_tts, transcript["text"]))
+    words = transcript["words"]  # spoken words only: sound tags like [tongue clicking] are left out
+    spoken = " ".join(word["word"] for word in words)
+    rate = word_error_rate(shot.dialogue_caption, spoken, AUDIO_TAG.sub(" ", shot.dialogue_tts))
     return {"heard": transcript["text"], "language": transcript["language_code"],
             "word_error_rate": round(rate, 2),
             "speech_s": [words[0]["start_s"], words[-1]["end_s"]] if words else None}

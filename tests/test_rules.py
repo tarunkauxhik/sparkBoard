@@ -158,6 +158,10 @@ def test_word_error_rate_and_rubric():
     assert words_pass(script, script) and not words_pass(script, "watch my face when I put this")
     assert word_error_rate("कल दे दूँगा, पक्का।", "कल दे दूँगा पक्का") == 0      # Hindi words stay whole
     assert word_error_rate("कल दे दूँगा, पक्का।", "कल दे दूँगा") == pytest.approx(1 / 4)
+    # A real Scribe transcript: some Hindi words in Devanagari, the name in Roman letters.
+    caption, voice_line = "Order order. Rohan, 800 rupaye pending.", "Order order. रोहन, 800 रुपये pending."
+    assert word_error_rate(caption, "Order, order. Rohan, 800 रुपये pending.", voice_line) == 0
+    assert word_error_rate(caption, "Order, order. Roman, 800 रुपये pending.", voice_line) == pytest.approx(1 / 6)
     good = ClipScores(hands=4, label=5, lip_sync=3, ai_look=4, hook_strength=3)
     assert not good.needs_reroll()
     assert good.model_copy(update={"hands": 2}).needs_reroll()
