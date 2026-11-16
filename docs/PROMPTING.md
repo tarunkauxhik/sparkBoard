@@ -52,7 +52,18 @@ Measured in the smoke test on 16 Nov 2026:
   face as the first frame.
 - For every task, the balance drop equalled Kie's `creditsConsumed`.
 
-Still open: Veo Lite and 8 s prices, Kling Avatar's price and frame rate.
+- Kling AI Avatar Standard costs about 10.2 credits ($0.051) per second of audio and returns
+  720x1280 at 30 fps with 44.1 kHz audio, so it must be normalized to 24 fps and 48 kHz.
+- ElevenLabs: the voice changer keeps word timing within 0.04 s; it can garble a name
+  ("Rohan" became "Roman"). On one Hinglish line, `eleven_v4` made no word errors with a
+  library voice or a cloned voice; `eleven_v3` made one with the library voice. v4 speaks
+  about 20% slower. Scribe writes Hindi words in Devanagari and names in Roman letters.
+- Gemini (`google/gemini-3.1-flash-lite`) is **not usable as a face check**: it scored a
+  wrong pairing (one persona's sheet against another persona's keyframe) as the same
+  person, 5 out of 5. Its clip rubric gave low scores to both clips but missed a bottle
+  that vanishes; treat its notes as hints, not facts.
+
+Still open: Veo Lite and 8 s prices; a face check that tells two people apart.
 
 ## Veo video prompts (code: `motion_prompt` in `adgen/prompts.py`)
 
@@ -136,6 +147,6 @@ that breaks it; "prompt" means the writer and critic are told, but code cannot c
 | Check | Rule | Status |
 | --- | --- | --- |
 | Words | Scribe transcript against the script: word error rate above 10% fails | Function built (`adgen/qa.py`) |
-| Clip rubric | Gemini scores 1 to 5 for hands, label, lip sync, "AI look" and hook strength; any score below 3 is re-rolled | Rule built (`adgen/qa.py`); the Gemini call is phase 5 |
+| Clip rubric | Gemini scores 1 to 5 for hands, label, lip sync, "AI look" and hook strength; any score below 3 is re-rolled | Built (`look_at` in `adgen/providers/openrouter.py`); first results were not reliable enough to act on alone |
 | Stray text | OCR on the first, middle and last frame of every clip; any unplanned text fails | Phase 5 (needs an OCR library; size to be approved first) |
-| Face | Similarity to the character sheet; threshold tuned in the smoke test | Phase 5 |
+| Face | Is the person the one on the character sheet | Gemini Flash Lite failed the control test (16 Nov 2026); a stronger model or a local face model is needed |

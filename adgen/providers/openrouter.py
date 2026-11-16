@@ -81,12 +81,16 @@ class OpenRouter:
                 video: Path | None = None, video_seconds: float = 0, max_tokens: int = 1000) -> BaseModel:
         """Show the model images and/or one video and get back a validated review.
         Send small copies (about 1024 px images, a 480p clip): reviews do not need full size."""
-        text = (f"{instructions}\n\nReply with one JSON object only, no markdown fences, matching this "
-                f"schema:\n{json.dumps(schema.model_json_schema())}")
+        # A small model shown a raw JSON schema tends to echo the schema back. So the fields are
+        # named in plain words, and the schema goes in response_format (structured output).
+        fields = ", ".join(schema.model_fields)
+        text = f"{instructions}\n\nReply with one JSON object only, with exactly these fields: {fields}."
         media = [{"type": "image_url", "image_url": {"url": _data_url(image, "image/jpeg")}} for image in images]
         if video:
             media.append({"type": "video_url", "video_url": {"url": _data_url(video, "video/mp4")}})
         body = {"model": self.model, "max_tokens": max_tokens, "temperature": 0.2, "usage": {"include": True},
+                "response_format": {"type": "json_schema", "json_schema": {
+                    "name": schema.__name__, "strict": True, "schema": schema.model_json_schema()}},
                 "messages": [{"role": "user", "content": [{"type": "text", "text": text}, *media]}]}
         input_tokens = len(text.encode()) + IMAGE_TOKENS_MAX * len(images) + VIDEO_TOKENS_PER_S_MAX * video_seconds
         worst_cost = input_tokens * self.price_in + max_tokens * self.price_out
