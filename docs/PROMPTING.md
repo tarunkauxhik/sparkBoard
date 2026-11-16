@@ -58,9 +58,10 @@ Measured in the smoke test on 16 Nov 2026:
   ("Rohan" became "Roman"). On one Hinglish line, `eleven_v4` made no word errors with a
   library voice or a cloned voice; `eleven_v3` made one with the library voice. v4 speaks
   about 20% slower. Scribe writes Hindi words in Devanagari and names in Roman letters.
-- Gemini (`google/gemini-3.1-flash-lite`) is **not usable as a face check**: it scored a
+- Gemini is **not usable as a face check**. Both `google/gemini-3.1-flash-lite` and the
+  stronger `google/gemini-3.8-flash` failed the control: Flash Lite scored a
   wrong pairing (one persona's sheet against another persona's keyframe) as the same
-  person, 5 out of 5. Its clip rubric gave low scores to both clips but missed a bottle
+  person, 5 out of 5, and 3.8 Flash scored both wrong pairings 5 and 4. Flash Lite's clip rubric gave low scores to both clips but missed a bottle
   that vanishes; treat its notes as hints, not facts.
 
 Still open: Veo Lite and 8 s prices; a face check that tells two people apart.
