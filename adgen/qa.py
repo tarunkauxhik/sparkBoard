@@ -50,7 +50,10 @@ def words_pass(script: str, heard: str, other_script: str = "") -> bool:
 
 # Face similarity limits from the smoke test (16 Nov 2026): 2 personas, 3 clips, 26 comparisons.
 # Provisional: re-tune when there is more data. Scores come from adgen/faces.py (-1 to 1).
-KEYFRAME_FACE_MIN = 0.58  # a keyframe against its character sheet (measured 0.64 to 0.72)
+KEYFRAME_FACE_MIN = 0.45  # a keyframe against its character sheet. Measured 0.62 to 0.75 in soft daylight,
+                          # but 0.49 to 0.52 for the right person under one hard light looking down; sheets
+                          # of different people score 0.08 to 0.21, and face_passes also needs the face to
+                          # be closer to its own person than to anyone else in the cast
 CLIP_FACE_MIN = 0.50      # a clip frame against the shot's own keyframe, inside the spoken part
 PERSONA_FACE_MAX = 0.45   # two different personas' sheets may not score above this (two that
                           # looked alike scored 0.66; re-make the newer sheet if they do)

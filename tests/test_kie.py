@@ -105,3 +105,19 @@ def test_upload_returns_the_file_url_and_outputs_are_never_overwritten(tmp_path)
     assert kie.upload(source) == "https://files.example/in.png"
     with pytest.raises(FileExistsError):
         kie.run_task("in", PAYLOAD, 0.10, source)
+
+
+def test_the_cost_is_kies_own_figure_when_someone_else_uses_the_shared_account(tmp_path):
+    fake = FakeKie()
+
+    class Busy(FakeKie):
+        def __call__(self, request):
+            response = fake(request)
+            if request.url.path.endswith("/recordInfo"):
+                fake.credits -= 36  # another person's task finishes on the same account meanwhile
+            return response
+
+    kie, ledger = make(tmp_path, Busy())
+    log = kie.run_task("sheet", PAYLOAD, 0.10, tmp_path / "sheet.png")
+    assert log["credits_used"] > 6 and log["credits_consumed"] == 6
+    assert ledger.spent("kie") == pytest.approx(0.03)  # 6 credits, not the balance change

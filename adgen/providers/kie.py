@@ -10,8 +10,9 @@ Cost safety:
 1. Before a task, an assumed high price is checked against the cap.
 2. The task ID is saved to disk before polling. A task with a saved ID is never submitted
    again: running the step again just keeps waiting for it.
-3. The credit balance is read before and after every task. The ledger records the real
-   difference; the log also keeps Kie's own `creditsConsumed` so the two can be compared.
+3. The credit balance is read before and after every task. The ledger records Kie's own
+   `creditsConsumed` for the task (the balance change is used only if Kie gives none), because
+   the account is shared and its balance also moves for other people's tasks. Both go in the log.
 """
 import json
 import time
@@ -137,8 +138,12 @@ class Kie:
             detail = self._wait(log["task_id"])
             after = self.credits()
             used = round(log["credits_before"] - after, 4)
+            # The account is shared: the balance can also drop for other people's tasks, so Kie's
+            # own figure for this task is the cost; the balance change is kept in the log to compare.
+            consumed = detail.get("creditsConsumed")
+            credits = float(consumed) if consumed is not None else used
             log.update(state=detail["state"], credits_after=after, credits_used=used,
-                       credits_consumed=detail.get("creditsConsumed"), cost_usd=round(used * USD_PER_CREDIT, 5),
+                       credits_consumed=consumed, cost_usd=round(credits * USD_PER_CREDIT, 5),
                        fail=f"{detail.get('failCode')}: {detail.get('failMsg')}" if detail["state"] == "fail" else "",
                        result_urls=json.loads(detail.get("resultJson") or "{}").get("resultUrls", []))
             self.ledger.record("kie", name, log["cost_usd"])
