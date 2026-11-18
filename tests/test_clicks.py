@@ -57,3 +57,9 @@ def test_the_ringing_end_of_a_word_is_not_a_click(tmp_path):
     # seen live: "sting" was marked as ending at 1.52 s but rang on to about 1.78 s
     clip = speech_with(2.55, tmp_path)  # 0.25 s after "there" ends at 2.3 s: still the word's tail
     assert find_clicks(clip, WORDS) == []
+
+
+def test_only_clicks_inside_the_kept_part_count(tmp_path):
+    clip = speech_with(2.7, tmp_path)               # a tap after the line
+    assert find_clicks(clip, WORDS, within=(0.6, 2.5)) == []      # the edit cuts before it
+    assert len(find_clicks(clip, WORDS, within=(0.6, 2.9))) == 1

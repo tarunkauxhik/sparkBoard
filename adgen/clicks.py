@@ -33,8 +33,9 @@ def _samples(media: Path) -> np.ndarray:
     return np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768
 
 
-def find_clicks(media: Path, words: list[Word]) -> list[tuple[float, float]]:
-    """(start, end) in seconds of every click or tap outside the spoken words."""
+def find_clicks(media: Path, words: list[Word], within: tuple[float, float] | None = None) -> list[tuple[float, float]]:
+    """(start, end) in seconds of every click or tap outside the spoken words; with `within`,
+    only those that overlap that part of the clip (the part the edit keeps)."""
     samples = _samples(media)
     size = int(WINDOW_S * RATE)
     windows = samples[: len(samples) // size * size].reshape(-1, size)
@@ -74,6 +75,8 @@ def find_clicks(media: Path, words: list[Word]) -> list[tuple[float, float]]:
             merged[-1] = (merged[-1][0], max(merged[-1][1], end))
         else:
             merged.append((begin, end))
+    if within:
+        merged = [(begin, end) for begin, end in merged if end > within[0] and begin < within[1]]
     return merged
 
 

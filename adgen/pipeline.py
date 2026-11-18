@@ -354,6 +354,13 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                     provider.isolate(source, voice, shots[take.shot_id].duration_s)
                 clicks = find_clicks(voice, take.words)
                 clean_voice(source, voice, out, clicks)
+                # A second pass over the finished mix: the quiet bed changes what stands out.
+                if more := find_clicks(out, take.words):
+                    mixed = out.with_name(f"{out.stem}_first_pass.mp4")
+                    out.rename(mixed)
+                    duck_clicks(mixed, out, more)
+                    mixed.unlink()
+                    clicks += more
             elif take.words and (clicks := find_clicks(source, take.words)):
                 duck_clicks(source, out, clicks)
             else:
@@ -398,9 +405,10 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             if not take.passed:
                 checks.append(Check(name=f"clip {take.shot_id} passed its checks", passed=False,
                                     detail="; ".join(take.problems)))
-        for clip in audio.clips:  # after removal, no click may be left between the words
+        kept = {cut.shot_id: (cut.in_s, cut.out_s) for cut in edit.cuts}
+        for clip in audio.clips:  # after removal, no click may be left between the words the ad keeps
             if clip.words:
-                left = find_clicks(run.dir / clip.file, clip.words)
+                left = find_clicks(run.dir / clip.file, clip.words, within=kept[clip.shot_id])
                 checks.append(Check(name=f"no clicks or taps between the words in {clip.shot_id}", passed=not left,
                                     detail=(f"left at {', '.join(f'{s:.2f} s' for s, _ in left)}" if left else
                                             f"removed {len(clip.clicks_removed)}")))
