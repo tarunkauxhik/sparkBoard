@@ -14,8 +14,10 @@ PUNCTUATION = ".,!?…\"'“”‘’()[]:;—-।"
 
 def _words(text: str) -> list[str]:
     """Lowercase words without punctuation. Split on spaces, so it also works for Devanagari
-    (a regex word match would break Hindi words at their vowel signs)."""
-    return [word for word in (raw.strip(PUNCTUATION) for raw in text.lower().split()) if word]
+    (a regex word match would break Hindi words at their vowel signs). Apostrophes inside a word
+    are dropped: "link's" and "links" sound the same, and a transcript may write either."""
+    text = text.lower().replace("'", "").replace("’", "")
+    return [word for word in (raw.strip(PUNCTUATION) for raw in text.split()) if word]
 
 
 def word_error_rate(script: str, heard: str, other_script: str = "") -> float:

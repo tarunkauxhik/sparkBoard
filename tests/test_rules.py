@@ -320,3 +320,9 @@ def test_sheets_of_other_brands_come_from_their_newest_paid_run(tmp_path):
         Ledger(folder / "ledger.jsonl").record("kie", "sheet", 0.03, mock=not paid)
     found = other_sheets("Dewline", tmp_path)
     assert [(name, path.parent.parent.name) for name, path in found] == [("maya", "a")]
+
+
+def test_an_apostrophe_is_not_a_wrong_word():
+    # seen live: the script said "Link's below." and the transcript wrote "Links below."
+    assert word_error_rate("Patch test it yourself. Link's below.", "patch, test it yourself. Links below.") == 0
+    assert last_word_heard("Patch test it yourself. Link's below.", "Patch test it yourself. Links below.")
