@@ -22,6 +22,7 @@ from pathlib import Path
 import httpx
 
 from adgen.ledger import Ledger
+from adgen.providers import GenerationError
 
 API = "https://api.kie.ai/api/v1"
 UPLOAD_URL = "https://kieai.redpandaai.co/api/file-stream-upload"
@@ -85,7 +86,7 @@ def kling_avatar_payload(prompt: str, image_url: str, audio_url: str) -> dict:
     }
 
 
-class KieError(RuntimeError):
+class KieError(GenerationError):
     pass
 
 

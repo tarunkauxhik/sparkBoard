@@ -376,14 +376,21 @@ class Take(BaseModel):
     def passed(self) -> bool:
         return not self.problems
 
+    @property
+    def made(self) -> bool:
+        """False when the video service failed to make this take: there is no clip."""
+        return not any(problem.startswith("generation failed") for problem in self.problems)
+
 
 class Clips(BaseModel):
     takes: list[Take]
 
     def chosen(self) -> dict[str, Take]:
-        """The take used for each shot: one that passed, else the one with the fewest problems."""
+        """The take used for each shot: one that passed, else the made one with the fewest problems."""
         best = {}
         for take in self.takes:
+            if not take.made:
+                continue
             current = best.get(take.shot_id)
             if current is None or len(take.problems) < len(current.problems):
                 best[take.shot_id] = take

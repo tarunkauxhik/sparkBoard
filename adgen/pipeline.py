@@ -20,6 +20,7 @@ from adgen.editor import (
     stream_seconds, time_stretch, validate_edit_list,
 )
 from adgen.ledger import Ledger
+from adgen.providers import GenerationError
 from adgen.prompts import (
     AUDIO_TAG, character_sheet_prompt, keyframe_request, location_prompt, motion_prompt, packshot_prompt,
 )
@@ -329,12 +330,17 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             for number in range(1, CLIP_TRIES + 1):
                 out = run.path(f"clips/raw/{shot.id}_take{number}.mp4")
                 task_id = "made in an earlier run"
-                if not out.exists():
-                    task_id = provider.video(motion_prompt(shot, look, brief), keyframe, out,
-                                             ROUTE_MODEL[shot.route], shot.duration_s)
                 take = Take(shot_id=shot.id, take=number, file=run.rel(out), task_id=task_id,
                             model=ROUTE_MODEL[shot.route], voice_file=voice_file, voice_start_s=voice_start,
                             words=voice_words)
+                if not out.exists():
+                    try:
+                        take.task_id = provider.video(motion_prompt(shot, look, brief), keyframe, out,
+                                                      ROUTE_MODEL[shot.route], shot.duration_s)
+                    except GenerationError as error:  # the service failed (free); try the next take
+                        take.problems.append(f"generation failed: {error}")
+                        takes.append(take)
+                        continue
                 takes.append(check_clip(provider, run, shot, take, keyframe, sheets_of_others(shot)))
                 take.problems = voice_problems + take.problems
                 # A new clip fixes what Veo did; it cannot fix the narrator's line (TTS), so in a
@@ -347,6 +353,9 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         return (clips, f"{len(clips.chosen())} clips from {len(takes)} takes",
                 "flagged: " + " | ".join(flagged) if flagged else "every clip passed its checks")
     clips = step("clips.json", Clips, make_clips)
+    unmade = sorted({t.shot_id for t in clips.takes} - set(clips.chosen()))
+    if unmade:  # not one take could be made: there is nothing to edit
+        raise RuntimeError(f"the video service failed every take for {', '.join(unmade)}; run again later")
     failed_clips = [f"{t.shot_id} ({'; '.join(t.problems)})" for t in clips.chosen().values() if not t.passed]
     if stop_on_failure and failed_clips:
         print(f"\nStopped: every take failed its checks for {' | '.join(failed_clips)}. "

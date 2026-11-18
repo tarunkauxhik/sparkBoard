@@ -13,7 +13,7 @@ from adgen.providers.kie import kling_avatar_payload, nano_banana_payload, veo_p
 from adgen.pipeline import run_pipeline
 from adgen.providers.mock import MockProvider
 from adgen.run import Run
-from adgen.schemas import Audio, Brief, EditList, Look, Refs, Storyboard
+from adgen.schemas import Audio, Brief, Clips, EditList, Look, Refs, Storyboard
 from adgen.statics import STATIC_SIZES, static_ad
 from conftest import BRIEF, dry_run
 
@@ -520,3 +520,25 @@ def test_a_long_narrator_line_is_spoken_faster(tmp_path):
     for take in takes:  # the last word now lands inside the shot
         assert take["words"][-1]["end_s"] <= 3.9 and not take["problems"]
         assert stream_seconds(run.dir / take["voice_file"], "a:0") < 4.5  # really shorter than the 4.6 s line
+
+
+def test_a_take_the_service_fails_to_make_is_recorded_and_never_chosen(tmp_path):
+    from adgen.providers import GenerationError
+
+    class SecondTakeFails(MockProvider):
+        def video(self, prompt, image, out, model, duration_s):
+            if out.stem == "s01_take2":
+                raise GenerationError("500: Internal Error, Please try again later.")
+            return super().video(prompt, image, out, model, duration_s)
+
+        def transcribe(self, path, expected, duration_s):  # take 1 of s01 says the wrong thing
+            words = super().transcribe(path, expected, duration_s)
+            return words[:-1] if path.stem.startswith("s01") else words
+
+    run = Run("gen", root=tmp_path)
+    ledger = Ledger(run.path("ledger.jsonl"))
+    assert run_pipeline(BRIEF, run, SecondTakeFails(ledger), ledger, True)
+    clips = run.load("clips.json", Clips)
+    s01 = [t for t in clips.takes if t.shot_id == "s01"]
+    assert [t.made for t in s01] == [True, False]
+    assert clips.chosen()["s01"].take == 1  # the made take, though it has a problem
