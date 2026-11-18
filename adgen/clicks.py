@@ -20,7 +20,8 @@ MIN_BRIGHT_SHARE = 0.6    # share of a window's energy above 2 kHz
 MIN_RISE_DB = 12          # how far above the quiet between words a click must be
 MIN_LEVEL_DB = -55        # quieter than this is inaudible under any bed
 MAX_CLICK_S = 0.12        # longer bright sounds are not clicks (breaths, hiss)
-SPEECH_BEFORE_S, SPEECH_AFTER_S = 0.12, 0.05  # word timings start late (an "s" begins before them)
+SPEECH_BEFORE_S, SPEECH_AFTER_S = 0.12, 0.20  # transcripts start words late and end them early
+                                              # (an "s" begins before; a word like "sting" rings on after)
 MIN_GAP_S = 0.25          # pauses shorter than this inside a line count as speech
 PAD_BEFORE_S, PAD_AFTER_S = 0.03, 0.06  # muted around each click: its quiet start and its ring-out
 FADE_S = 0.005             # fades in and out of each mute, so the mute itself makes no click
@@ -67,7 +68,13 @@ def find_clicks(media: Path, words: list[Word]) -> list[tuple[float, float]]:
             if end - begin <= MAX_CLICK_S:
                 clicks.append((round(float(max(0.0, begin - PAD_BEFORE_S)), 3), round(float(end + PAD_AFTER_S), 3)))
             start = None
-    return clicks
+    merged = []  # padding can make neighbouring clicks overlap: join them
+    for begin, end in clicks:
+        if merged and begin <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((begin, end))
+    return merged
 
 
 def turn_down(media: Path, clicks: list[tuple[float, float]], level: float, out: Path) -> None:
