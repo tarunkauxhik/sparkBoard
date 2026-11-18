@@ -38,6 +38,7 @@ class LiveProvider:
         self.faces = FaceMatcher()
         self.run = run
         self.uploaded: dict[Path, str] = {}  # Kie keeps uploads for 24 hours: one upload per file per run
+        self.voices: dict[str, tuple[str, str]] = {}  # narrator name -> (voice id, voice name)
 
     def chat_json(self, task: str, ctx: dict, feedback: str = "") -> dict:
         return self.writer.chat_json(task, ctx, feedback)
@@ -66,6 +67,15 @@ class LiveProvider:
 
     def isolate(self, media: Path, out: Path, duration_s: float) -> None:
         self.voice.isolate(media, out, duration_s)
+
+    def narrator_voice(self, member) -> tuple[str, str]:
+        """The ElevenLabs voice for an off-screen narrator, chosen once per run."""
+        if member.name not in self.voices:
+            self.voices[member.name] = self.voice.pick_voice(member.accent, member.voice)
+        return self.voices[member.name]
+
+    def speak(self, text: str, out: Path, voice_id: str) -> None:
+        self.voice.speak(text, out, voice_id)
 
     def find_label_area(self, image: Path) -> tuple[float, float, float, float] | None:
         """Ask Gemini where the blank label area on the product is (a box, not a judgement)."""

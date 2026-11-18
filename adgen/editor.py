@@ -20,6 +20,7 @@ MAX_AD_SECONDS = 60
 TRIM_PAD_S = 0.4   # default time kept before the first word and after the last (--trim-pad)
 END_CARD_S = 2.0
 DUCK_LEVEL = 0.15  # a ducked click keeps 15% of its level (about -16 dB)
+VO_BED_LEVEL = 0.3  # Veo's own sound under a narrator, about -10 dB
 CAPTION_WORDS = 4      # max words per caption chunk
 CAPTION_BOTTOM = 0.72  # captions end at 72% of the height, clear of faces and app buttons
 NORMALIZE = (f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase:flags=lanczos,"
@@ -107,6 +108,19 @@ def clean_voice(video: Path, voice: Path, out: Path, clicks: list[tuple[float, f
          "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-ar", str(SAMPLE_RATE), str(out)],
         check=True)
     muted.unlink()
+
+
+def lay_voiceover(video: Path, voice: Path, out: Path, start_s: float) -> None:
+    """Put a narrator's line over a silent b-roll clip: Veo's own sound stays as a low bed and
+    the voice starts at `start_s`. The clip keeps its length."""
+    seconds = stream_seconds(video, "v:0")
+    delay = int(start_s * 1000)
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-i", str(video), "-i", str(voice), "-filter_complex",
+         f"[0:a]volume={VO_BED_LEVEL}[bed];[1:a]aresample={SAMPLE_RATE},adelay={delay}|{delay}[vo];"
+         f"[bed][vo]amix=inputs=2:duration=first:normalize=0[a]",
+         "-map", "0:v", "-map", "[a]", "-t", f"{seconds:.3f}", "-c:v", "copy", "-c:a", "aac",
+         "-ar", str(SAMPLE_RATE), str(out)], check=True)
 
 
 def duck_clicks(video: Path, out: Path, clicks: list[tuple[float, float]]) -> None:

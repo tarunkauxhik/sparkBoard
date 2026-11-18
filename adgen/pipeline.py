@@ -16,8 +16,8 @@ from adgen.brain import TASKS
 from adgen.casting import casting_errors, other_sheets, used_personas
 from adgen.clicks import find_clicks
 from adgen.editor import (
-    TRIM_PAD_S, build_edit_list, clean_voice, duck_clicks, final_checks, grab_frame, render_video, stream_seconds,
-    validate_edit_list,
+    TRIM_PAD_S, build_edit_list, clean_voice, duck_clicks, final_checks, grab_frame, lay_voiceover, render_video,
+    stream_seconds, validate_edit_list,
 )
 from adgen.ledger import Ledger
 from adgen.prompts import (
@@ -31,7 +31,7 @@ from adgen.report import write_decision_log_md, write_storyboard_md
 from adgen.rules import LENGTH_TOLERANCE_S, look_errors, review_errors, storyboard_errors
 from adgen.run import Run
 from adgen.schemas import (
-    Approval, Audio, Brief, Check, Clips, Concept, Concepts, EditList, FixedClip, Insights,
+    EDGE_SILENCE_S, Approval, Audio, Brief, Check, Clips, Concept, Concepts, EditList, FixedClip, Insights,
     Keyframes, KeyframeTake, Look, QAReport, Refs, Render, Shot, Storyboard, StoryboardReview, Take, Word,
 )
 from adgen.statics import STATIC_SIZES, app_screen, static_ad, write_label
@@ -44,20 +44,29 @@ PLAYBOOKS = Path(__file__).parent.parent / "playbooks"
 ROUTE_MODEL = {"veo_talk": "veo3_lite", "veo_broll": "veo3_lite",
                "vo_only": "veo3_lite", "avatar_talk": "kling_avatar"}
 SCHEMA_TRIES = 2  # one try, plus one more with the errors sent back. Never a loop.
+VO_START_S = EDGE_SILENCE_S  # a narrator starts half a second into the shot
 STAGES = ("refs", "keyframes", "clips")  # a live run can stop after any of these for a look
 
 
+def word_problems(shot: Shot, words: list[Word]) -> tuple[float, list[str]]:
+    """(word error rate, problems) of a transcript against the shot's line."""
+    heard, voice_line = " ".join(w.word for w in words), AUDIO_TAG.sub(" ", shot.dialogue_tts)
+    rate = round(word_error_rate(shot.dialogue_caption, heard, voice_line), 2)
+    if rate > MAX_WORD_ERROR_RATE:
+        return rate, [f"words: heard {heard!r} ({rate:.0%} wrong)"]
+    if not last_word_heard(shot.dialogue_caption, heard, voice_line):
+        return rate, [f"words: the last word was cut off (heard {heard!r})"]
+    return rate, []
+
+
 def check_clip(provider, run: Run, shot: Shot, take: Take, keyframe: Path, other_sheets_: list[Path]) -> Take:
-    """Fill in a take's check results: the words (spoken shots) and the face (if one shows)."""
+    """Fill in a take's check results: the words Veo spoke (veo_talk) and the face (if one shows).
+    A vo_only take arrives with its narrator's words already set; they place the face check."""
     clip = run.dir / take.file
     if shot.route == "veo_talk":
         take.words = [Word(**word) for word in provider.transcribe(clip, shot.dialogue_caption, shot.duration_s)]
-        heard, voice_line = " ".join(w.word for w in take.words), AUDIO_TAG.sub(" ", shot.dialogue_tts)
-        take.word_error_rate = round(word_error_rate(shot.dialogue_caption, heard, voice_line), 2)
-        if take.word_error_rate > MAX_WORD_ERROR_RATE:
-            take.problems.append(f"words: heard {heard!r} ({take.word_error_rate:.0%} wrong)")
-        elif not last_word_heard(shot.dialogue_caption, heard, voice_line):
-            take.problems.append(f"words: the last word was cut off (heard {heard!r})")
+        take.word_error_rate, problems = word_problems(shot, take.words)
+        take.problems += problems
     if shot.character and shot.face_visible:
         # Check the face where it matters: across the spoken part, or across the middle of a silent shot.
         start, end = ((take.words[0].start_s, take.words[-1].end_s) if take.words
@@ -76,9 +85,11 @@ def check_clip(provider, run: Run, shot: Shot, take: Take, keyframe: Path, other
 
 
 def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_approve: bool,
-                 stop_after: str | None = None, isolate_voice: bool = False, trim_pad: float = TRIM_PAD_S) -> bool:
+                 stop_after: str | None = None, isolate_voice: bool = False, trim_pad: float = TRIM_PAD_S,
+                 stop_on_failure: bool = False) -> bool:
     """Runs every step that is not done yet. Returns False if it stopped early: for
-    storyboard approval, or after the stage named in `stop_after`."""
+    storyboard approval, after the stage named in `stop_after`, or (with `stop_on_failure`)
+    when a shot failed every retry."""
 
     def step(name: str, cls, make):
         """Run one step, or load its saved output. `make` returns (result, choice, reason)."""
@@ -263,8 +274,27 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         return (Keyframes(files=files, takes=takes), f"{len(files)} keyframes from {len(takes)} tries",
                 "; ".join(notes + labels))
     keyframes = step("keyframes.json", Keyframes, make_keyframes)
+    failed_frames = sorted({t.shot_id for t in keyframes.takes} - {t.shot_id for t in keyframes.takes if t.passed})
+    if stop_on_failure and failed_frames:
+        print(f"\nStopped: the face check failed on every try for {', '.join(failed_frames)}. "
+              "See keyframes.json; delete it to try again, or continue without --stop-on-failure.")
+        return False
     if stop_here("keyframes"):
         return False
+
+    def narrate(shot: Shot) -> tuple[str, list[Word], list[str]]:
+        """The narrator's line for a vo_only shot, made once: (file, words in clip time, problems)."""
+        voice = run.path(f"clips/voice/{shot.id}.mp3")
+        if not voice.exists():
+            voice_id, _ = provider.narrator_voice(next(m for m in look.cast if m.name == shot.speaker))
+            provider.speak(shot.dialogue_tts, voice, voice_id)
+        spoken = provider.transcribe(voice, shot.dialogue_caption, stream_seconds(voice, "a:0"))
+        words = [Word(word=w["word"], start_s=round(w["start_s"] + VO_START_S, 2),
+                      end_s=round(w["end_s"] + VO_START_S, 2)) for w in spoken]
+        _, problems = word_problems(shot, words)
+        if words and words[-1].end_s > shot.duration_s - 0.1:
+            problems.append(f"voiceover: the line ends at {words[-1].end_s:.1f} s, past the {shot.duration_s} s shot")
+        return run.rel(voice), words, problems
 
     # 9 Clips: every take is kept in clips/raw/ and never overwritten. Each take is checked
     #   (words, face); a failed take gets one more try, then the shot is flagged.
@@ -274,6 +304,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             if shot.route == "static":
                 continue
             keyframe = run.dir / keyframes.files[shot.id]
+            voice_file, voice_words, voice_problems = narrate(shot) if shot.route == "vo_only" else ("", [], [])
             for number in range(1, CLIP_TRIES + 1):
                 out = run.path(f"clips/raw/{shot.id}_take{number}.mp4")
                 task_id = "made in an earlier run"
@@ -281,15 +312,24 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                     task_id = provider.video(motion_prompt(shot, look, brief), keyframe, out,
                                              ROUTE_MODEL[shot.route], shot.duration_s)
                 take = Take(shot_id=shot.id, take=number, file=run.rel(out), task_id=task_id,
-                            model=ROUTE_MODEL[shot.route])
+                            model=ROUTE_MODEL[shot.route], voice_file=voice_file, words=voice_words)
                 takes.append(check_clip(provider, run, shot, take, keyframe, sheets_of_others(shot)))
-                if take.passed:
+                take.problems = voice_problems + take.problems
+                # A new clip fixes what Veo did; it cannot fix the narrator's line (TTS), so in a
+                # vo_only shot only picture problems get a retake.
+                left = [p for p in take.problems if not p.startswith(("words:", "voiceover:"))]                     if shot.route == "vo_only" else take.problems
+                if not left:
                     break
         clips = Clips(takes=takes)
         flagged = [f"{t.shot_id}: {'; '.join(t.problems)}" for t in clips.chosen().values() if not t.passed]
         return (clips, f"{len(clips.chosen())} clips from {len(takes)} takes",
                 "flagged: " + " | ".join(flagged) if flagged else "every clip passed its checks")
     clips = step("clips.json", Clips, make_clips)
+    failed_clips = [f"{t.shot_id} ({'; '.join(t.problems)})" for t in clips.chosen().values() if not t.passed]
+    if stop_on_failure and failed_clips:
+        print(f"\nStopped: every take failed its checks for {' | '.join(failed_clips)}. "
+              "See clips.json; continue without --stop-on-failure to render anyway.")
+        return False
     if stop_here("clips"):
         return False
 
@@ -299,8 +339,16 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         fixed, removed = [], []
         for take in clips.chosen().values():
             source, out = run.dir / take.file, run.path(f"clips/fixed/{take.shot_id}.mp4")
-            clicks = []
-            if isolate_voice and take.words:
+            clicks, route = [], shots[take.shot_id].route
+            if route == "vo_only":  # the narrator over the clip's own quiet sound
+                mixed = run.path(f"clips/fixed/{take.shot_id}_mixed.mp4")
+                lay_voiceover(source, run.dir / take.voice_file, mixed, VO_START_S)
+                if clicks := find_clicks(mixed, take.words):
+                    duck_clicks(mixed, out, clicks)
+                else:
+                    shutil.copyfile(mixed, out)
+                mixed.unlink()
+            elif isolate_voice and take.words:
                 voice = run.path(f"clips/fixed/{take.shot_id}_voice.mp3")
                 if not voice.exists():
                     provider.isolate(source, voice, shots[take.shot_id].duration_s)

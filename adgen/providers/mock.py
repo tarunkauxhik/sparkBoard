@@ -79,6 +79,18 @@ class MockProvider:
 
     # --- audio (ElevenLabs in the live provider) ---
 
+    def narrator_voice(self, member) -> tuple[str, str]:
+        return "mock-voice", "Mock Narrator"
+
+    def speak(self, text: str, out: Path, voice_id: str) -> None:
+        """Placeholder TTS: a 300 Hz tone, 0.4 s per word plus half a second at each end."""
+        if out.exists():
+            raise FileExistsError(f"refusing to overwrite {out}")
+        self.ledger.charge("elevenlabs", f"tts:{out.stem}", PRICES["tts_per_char"] * len(text), mock=True)
+        seconds = 0.4 * len(text.split()) + 1.0
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi",
+                        "-i", f"sine=frequency=300:sample_rate=48000:duration={seconds}", str(out)], check=True)
+
     def isolate(self, media: Path, out: Path, duration_s: float) -> None:
         """Placeholder for the voice isolator: the clip's own audio, unchanged."""
         self.ledger.charge("elevenlabs", f"isolate:{out.stem}", PRICES["isolate_per_s"] * duration_s, mock=True)

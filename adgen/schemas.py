@@ -365,7 +365,8 @@ class Take(BaseModel):
     file: str
     task_id: str
     model: str
-    words: list[Word] = []                # transcript word timings (spoken shots)
+    words: list[Word] = []                # transcript word timings (spoken shots), in clip time
+    voice_file: str = ""                  # vo_only: the narrator's TTS line, laid over the clip
     word_error_rate: float | None = None
     face: float | None = None             # lowest similarity to the keyframe over the checked frames
     problems: list[str] = []              # why this take failed its checks; empty = passed

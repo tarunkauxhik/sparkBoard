@@ -92,6 +92,21 @@ class ElevenLabs:
                     files={"audio": (audio.name, file)})
         out.write_bytes(self._paid(f"voice_change:{out.stem}", seconds * VOICE_CHANGER_CREDITS_PER_S, send).content)
 
+    def pick_voice(self, accent: str, description: str) -> tuple[str, str]:
+        """(voice id, name) of the account voice whose labels best match a persona. A free call.
+        Accent counts most, then narration use, then words of the voice description."""
+        voices = self.client.get(f"{API}/voices", headers=self.headers).json()["voices"]
+
+        def score(voice: dict) -> int:
+            labels = " ".join(str(v) for v in (voice.get("labels") or {}).values()).lower()
+            text = f"{labels} {voice.get('description') or ''}".lower()
+            accent_hit = any(word in labels for word in accent.lower().replace(",", " ").split() if len(word) > 3)
+            words = {w.strip(",.") for w in description.lower().split() if len(w) > 3}
+            return 4 * accent_hit + 2 * ("narrat" in text) + sum(word in text for word in words)
+
+        best = max(voices, key=score)
+        return best["voice_id"], best.get("name", "")
+
     def isolate(self, audio: Path, out: Path, seconds: float) -> None:
         """Voice Isolator: keep the voice, remove room sound and background noise."""
         if out.exists():

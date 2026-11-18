@@ -15,6 +15,10 @@ from adgen.schemas import ON_CAMERA, Brief, CastMember, Look, Refs, Shot
 UGC_LOOK = ("smartphone front camera, handheld, natural window light, visible pores and "
             "skin texture, slight noise, unretouched")
 CLEAN_FRAME = "The frame is clean, without captions, on-screen text or graphics"
+# Image models fill shelves with real-looking brands (a sample keyframe showed a tube close to a
+# real toothpaste brand). Everything that is not the advertised product gets a blank label.
+BLANK_PRODUCTS = ("Every other bottle, tube, box or pack in the scene is unbranded, with a plain blank "
+                  "label and no readable words, logos or brand names")
 AUDIO_TAG = re.compile(r"\s*\[[^\]]*\]\s*")  # ElevenLabs tags like [sighs]; Veo must not read them aloud
 
 
@@ -68,7 +72,8 @@ def packshot_prompt(brief: Brief) -> str:
 def location_prompt(look: Look, brief: Brief) -> str:
     return (
         f"Create a photo of an empty location with nobody in it: {look.setting.value.rstrip('.')}. "
-        f"Light: {look.light.value.rstrip('.')}. Eye-level view, natural perspective. Vertical 9:16. {CLEAN_FRAME}."
+        f"Light: {look.light.value.rstrip('.')}. Eye-level view, natural perspective. Vertical 9:16. "
+        f"{BLANK_PRODUCTS}. {CLEAN_FRAME}."
     )
 
 
@@ -103,6 +108,7 @@ def keyframe_request(shot: Shot, look: Look, brief: Brief, refs: Refs) -> tuple[
         f"Setting: {shot.setting.rstrip('.')}.",
         f"Lens: {shot.lens.rstrip('.')}. Light: {shot.lighting.rstrip('.')}.",
         f"Look: {_style(look, brief, shot)}.",
+        f"{BLANK_PRODUCTS}.",
         CLEAN_FRAME + ((", apart from the app screen on the phone." if brief.app_screen else
                         ", apart from the product's own label.") if shot.product_visible else "."),
     ]

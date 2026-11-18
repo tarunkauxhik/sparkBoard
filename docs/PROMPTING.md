@@ -166,6 +166,9 @@ that breaks it; "prompt" means the writer and critic are told, but code cannot c
 | A new on-screen persona must differ from personas used for other brands: another name and at most 30% of the same look words. This is a first filter only; two different descriptions still produced near-identical faces. Character sheets of different personas must score under 0.45 against each other on the face check | Code (`adgen/casting.py`, `PERSONA_FACE_MAX` in `adgen/qa.py`); the sheet check is wired in at phase 5 |
 | Critic notes are at most two plain sentences per field; any word count they state must equal the real one | Code |
 | Every cast member is seen or heard in at least one shot | Code |
+| Every other product in a keyframe or location plate is unbranded, with a plain blank label (a keyframe showed a tube close to a real toothpaste brand) | Prompt |
+| A voiceover (vo_only) line is spoken by an ElevenLabs v4 narrator voice, chosen once per run from the account's voices by accent, then laid over the clip from 0.5 s with Veo's sound as a low bed. A bad narrator line is flagged; it does not trigger a new clip | Code |
+| `--stop-on-failure` stops a run when a keyframe or clip fails every retry, instead of flagging it and rendering | Code |
 | No fast hand-on-object impacts (banging, slamming, hitting) in any beat | Code |
 | At most one object-in-hand action per shot | Prompt, critic |
 | For app products the screen is drawn in code from the brief (`app_screen`) and used as the product reference, described as a screen and not as a label | Code |

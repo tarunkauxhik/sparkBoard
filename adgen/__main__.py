@@ -33,6 +33,7 @@ def run(
     stop_after: str = typer.Option(None, help=f"Stop for a look after one of: {', '.join(STAGES)}."),
     isolate_voice: bool = typer.Option(False, help="Clean each spoken clip with the ElevenLabs voice isolator."),
     trim_pad: float = typer.Option(TRIM_PAD_S, help="Seconds kept before the first and after the last word of a clip."),
+    stop_on_failure: bool = typer.Option(False, help="Stop when a shot fails every retry, instead of flagging it."),
     run_id: str = typer.Option(None, help="Resume this run instead of starting a new one."),
 ):
     """Run the pipeline. Steps that already have output are skipped."""
@@ -53,7 +54,8 @@ def run(
         ledger = Ledger(current.path("ledger.jsonl"))
         provider = MockProvider(ledger)
     try:
-        finished = run_pipeline(brief, current, provider, ledger, auto_approve, stop_after, isolate_voice, trim_pad)
+        finished = run_pipeline(brief, current, provider, ledger, auto_approve, stop_after, isolate_voice, trim_pad,
+                                stop_on_failure)
         typer.echo(f"\n{'Finished' if finished else 'Stopped early'}: {current.dir}")
     finally:  # always say what was spent, also when a step failed
         typer.echo(f"{'Spent' if live else 'Projected cost of a live run'}: ${ledger.total():.3f} ("
@@ -122,9 +124,8 @@ def fetch_face_model():
 
 @app.command()
 def save_sample(run_id: str, name: str):
-    """Copy a reviewed run's JSON and markdown files into samples/<name>/, ready to commit.
-
-    Media and LLM call logs stay in runs/ (gitignored).
+    """Copy a reviewed run's JSON and markdown files, final video and static ads into
+    samples/<name>/, ready to commit. Raw takes and LLM call logs stay in runs/ (gitignored).
     """
     source, target = RUNS_DIR / run_id, Path("samples") / name
     if not source.is_dir():
@@ -132,6 +133,7 @@ def save_sample(run_id: str, name: str):
         raise typer.Exit(1)
     target.mkdir(parents=True, exist_ok=True)
     files = [f for f in source.iterdir() if f.suffix in (".json", ".jsonl", ".md")]
+    files += [f for f in (source / "final").glob("ad_*.mp4")] + sorted((source / "statics").glob("*.png"))
     for file in files:
         shutil.copyfile(file, target / file.name)
     typer.echo(f"Copied {len(files)} files to {target}")

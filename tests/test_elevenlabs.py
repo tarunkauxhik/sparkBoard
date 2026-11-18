@@ -75,3 +75,15 @@ def test_the_cap_is_checked_before_sending(tmp_path):
     with pytest.raises(BudgetExceeded):
         voice.voice_change(audio, tmp_path / "out.mp3", "voice_1", seconds=60)
     assert requests == [] and ledger.total() == 0
+
+
+def test_pick_voice_prefers_the_accent_then_narration(tmp_path):
+    voices = {"voices": [
+        {"voice_id": "v1", "name": "Priya", "labels": {"accent": "indian", "use_case": "conversational"}},
+        {"voice_id": "v2", "name": "Brian", "labels": {"accent": "american", "use_case": "narration"},
+         "description": "deep, calm and resonant"},
+        {"voice_id": "v3", "name": "Jess", "labels": {"accent": "american", "use_case": "social media"}}]}
+    voice, ledger, requests, _ = make(tmp_path, lambda r: httpx.Response(200, json=voices))
+    assert voice.pick_voice("neutral General American", "calm, low and smooth") == ("v2", "Brian")
+    assert voice.pick_voice("Urban Indian English", "warm") == ("v1", "Priya")
+    assert ledger.total() == 0  # reading the voice list is free

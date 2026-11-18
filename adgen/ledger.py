@@ -16,6 +16,7 @@ PRICES = {
     "kling_avatar_per_s": 0.05,
     "scribe_per_s": 0.0001,
     "isolate_per_s": 0.002,      # approx $0.12 per minute
+    "tts_per_char": 0.00012,     # Eleven v4, measured about one credit per character
 }
 
 

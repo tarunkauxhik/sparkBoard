@@ -214,13 +214,13 @@ def test_clean_keeps_runs_that_cost_real_money(tmp_path, monkeypatch):
     assert list((tmp_path / "runs").iterdir()) == []
 
 
-def test_save_sample_copies_json_and_markdown_only(done, tmp_path, monkeypatch):
+def test_save_sample_copies_json_markdown_and_the_final_video(done, tmp_path, monkeypatch):
     shutil.copytree(done[0].dir, tmp_path / "runs" / "r1")
     monkeypatch.chdir(tmp_path)
     save_sample("r1", "skincare")
     saved = {f.name for f in (tmp_path / "samples/skincare").iterdir()}
-    assert {"storyboard.json", "storyboard.md", "decision_log.jsonl", "ledger.jsonl"} <= saved
-    assert not any(name.endswith((".mp4", ".png")) for name in saved)
+    assert {"storyboard.json", "storyboard.md", "decision_log.jsonl", "ledger.jsonl", "ad_9x16.mp4"} <= saved
+    assert not any("take" in name for name in saved)  # raw takes and keyframes stay in runs/
 
 
 def test_hands_only_shot_drops_the_character_sheet(done, story):
@@ -433,3 +433,53 @@ def test_label_area_box_rejects_nonsense():
     assert LabelArea(found=True, left=300, top=400, right=700, bottom=460).box() == (0.3, 0.4, 0.7, 0.46)
     assert LabelArea(found=True, left=700, top=400, right=300, bottom=460).box() is None
     assert LabelArea(found=False, left=0, top=0, right=0, bottom=0).box() is None
+
+
+# ---------------- narrator voice, stop on failure, blank products ----------------
+
+def test_voiceover_shots_get_a_narrator_line_laid_over_the_clip(tmp_path):
+    from conftest import dry_run as run_brief
+    import adgen.pipeline as pipeline_module
+    run = Run("vo", root=tmp_path)
+    ledger = Ledger(run.path("ledger.jsonl"))
+    coffee = BRIEF.parent / "coffee.json"
+    assert run_pipeline(coffee, run, MockProvider(ledger), ledger, True)
+    takes = {t["shot_id"]: t for t in json.loads(run.path("clips.json").read_text("utf-8"))["takes"]}
+    narrated = [t for t in takes.values() if t["voice_file"]]
+    assert narrated and all(t["words"][0]["start_s"] >= pipeline_module.VO_START_S for t in narrated)
+    assert any("tts:" in entry["item"] for entry in ledger.entries)
+    fixed = run.dir / "clips/fixed" / f"{narrated[0]['shot_id']}.mp4"
+    assert stream_seconds(fixed, "a:0") == pytest.approx(stream_seconds(fixed, "v:0"), abs=0.05)
+
+
+def test_a_bad_narrator_line_does_not_cause_a_new_clip(tmp_path):
+    class GarbledNarrator(MockProvider):
+        def transcribe(self, path, expected, duration_s):
+            words = super().transcribe(path, expected, duration_s)
+            return words[:1] if path.parent.name == "voice" else words  # the TTS line comes back short
+
+    run = Run("vo", root=tmp_path)
+    ledger = Ledger(run.path("ledger.jsonl"))
+    assert run_pipeline(BRIEF.parent / "coffee.json", run, GarbledNarrator(ledger), ledger, True)
+    narrated = [t for t in json.loads(run.path("clips.json").read_text("utf-8"))["takes"] if t["voice_file"]]
+    assert all(t["take"] == 1 for t in narrated)               # no retake: a new clip cannot fix the voice
+    assert all(t["problems"][0].startswith("words:") for t in narrated)
+
+
+def test_stop_on_failure_stops_after_clips_when_a_shot_fails_every_take(tmp_path):
+    class NeverSaysTheLastWord(MockProvider):
+        def transcribe(self, path, expected, duration_s):
+            words = super().transcribe(path, expected, duration_s)
+            return words[:-1] if path.stem.startswith("s01") else words
+
+    run = Run("stop", root=tmp_path)
+    ledger = Ledger(run.path("ledger.jsonl"))
+    assert not run_pipeline(BRIEF, run, NeverSaysTheLastWord(ledger), ledger, True, stop_on_failure=True)
+    assert run.has("clips.json") and not run.has("audio.json")
+
+
+def test_every_keyframe_asks_for_blank_labels_on_other_products(done, story):
+    board, look, brief = story
+    refs = done[0].load("refs.json", Refs)
+    for shot in board.shots:
+        assert "plain blank label and no readable words, logos or brand names" in keyframe_request(shot, look, brief, refs)[0]

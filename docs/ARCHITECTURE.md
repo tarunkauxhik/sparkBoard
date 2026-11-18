@@ -26,7 +26,7 @@ What it cannot do yet is in [LIMITATIONS.md](LIMITATIONS.md).
 | 5 | References | `refs/` | Nano Banana: a character sheet per person, packshot, location plate; app screens are drawn in code | sheets of different people must score under 0.45 on the face check |
 | 8 | Keyframes | `keyframes/` | Nano Banana, with the references; label text (a date) written in by code, where Gemini finds the blank label | face against the sheet; up to 3 tries |
 | 9 | Clips | `clips/raw/` | Veo 3.1 Lite, starting from the keyframe | words (Scribe transcript) and face against the keyframe; up to 2 takes, then flagged |
-| 10 | Audio | `clips/fixed/` | ElevenLabs voice isolator (optional) | stray clicks between words are found and muted |
+| 10 | Audio | `clips/fixed/` | ElevenLabs voice isolator (optional) for on-camera lines; an ElevenLabs v4 narrator for voiceover lines | stray clicks between words are found and muted; the narrator line is transcribed and checked |
 | 11 | Edit list | `edit_list.json` | code | each spoken clip trimmed to its words plus `--trim-pad` |
 | 12 | Render | `final/ad_9x16.mp4`, `statics/` | ffmpeg and Pillow | edit list validated first |
 | 13 | Final QA | `qa_report.json` | code, plus a Gemini review as hints | lengths, loudness, black or silent gaps, clicks, voice pitch, every flagged shot |
