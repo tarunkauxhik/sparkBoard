@@ -131,13 +131,16 @@ class ElevenLabs:
         padded.unlink()
         cleaned.unlink()
 
-    def speak(self, text: str, out: Path, voice_id: str, model_id: str = TTS_MODEL) -> None:
-        """Text to speech. The text may hold audio tags like [sighs] and mixed-script Hinglish."""
+    def speak(self, text: str, out: Path, voice_id: str, model_id: str = TTS_MODEL, speed: float = 1.0) -> None:
+        """Text to speech. The text may hold audio tags like [sighs] and mixed-script Hinglish.
+        `speed` runs from 0.7 to 1.2 (ElevenLabs' range); above 1 the line is spoken faster."""
         if out.exists():
             raise FileExistsError(f"refusing to overwrite {out}")
+        body = {"text": text, "model_id": model_id, "seed": SEED}
+        if speed != 1.0:
+            body["voice_settings"] = {"speed": speed}
 
         def send():
             return self.client.post(f"{API}/text-to-speech/{voice_id}", headers=self.headers,
-                                    params={"output_format": "mp3_44100_128"},
-                                    json={"text": text, "model_id": model_id, "seed": SEED})
+                                    params={"output_format": "mp3_44100_128"}, json=body)
         out.write_bytes(self._paid(f"tts:{out.stem}", len(text) * TTS_CREDITS_PER_CHAR, send).content)

@@ -74,8 +74,8 @@ class LiveProvider:
             self.voices[member.name] = self.voice.pick_voice(member.accent, member.voice)
         return self.voices[member.name]
 
-    def speak(self, text: str, out: Path, voice_id: str) -> None:
-        self.voice.speak(text, out, voice_id)
+    def speak(self, text: str, out: Path, voice_id: str, speed: float = 1.0) -> None:
+        self.voice.speak(text, out, voice_id, speed=speed)
 
     def find_label_area(self, image: Path) -> tuple[float, float, float, float] | None:
         """Ask Gemini where the blank label area on the product is (a box, not a judgement)."""

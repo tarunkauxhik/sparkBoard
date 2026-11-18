@@ -494,3 +494,29 @@ def test_captions_show_the_roman_line_on_the_transcript_timing():
     assert [w.word for w in same_count] == ["Kal", "de", "dunga,", "pakka."] and same_count[3].start_s == 1.1
     different = caption_words(heard, "Kal de dunga pakka yaar")  # five words over the same span
     assert [w.word for w in different][-1] == "yaar" and different[0].start_s == 0.3 and different[-1].end_s == 1.6
+
+
+def narrated_takes(tmp_path, extra_words: str) -> tuple[Run, list[dict]]:
+    class LongLines(MockProvider):
+        def speak(self, text, out, voice_id, speed=1.0):
+            super().speak(text + extra_words, out, voice_id, speed)  # the mock's lines, made longer
+
+    run = Run("vo", root=tmp_path)
+    ledger = Ledger(run.path("ledger.jsonl"))
+    run_pipeline(BRIEF.parent / "coffee.json", run, LongLines(ledger), ledger, True)
+    takes = [t for t in json.loads(run.path("clips.json").read_text("utf-8"))["takes"] if t["voice_file"]]
+    return run, [t for t in takes if t["shot_id"] in ("s01", "s04")]  # the two 4 s narrated shots
+
+
+def test_a_narrator_line_that_fits_when_started_early_is_not_sped_up(tmp_path):
+    run, takes = narrated_takes(tmp_path, " and more")         # 3.4 s: too long from 0.5 s, fine from 0.15 s
+    assert all(not t["voice_file"].endswith("_faster.mp3") and t["voice_start_s"] < 0.5 for t in takes)
+    assert all(not t["problems"] for t in takes)
+
+
+def test_a_long_narrator_line_is_spoken_faster(tmp_path):
+    run, takes = narrated_takes(tmp_path, " and a bit more")  # 4.2 s: needs about 1.16x
+    assert all(t["voice_file"].endswith("_faster.mp3") for t in takes)
+    for take in takes:  # the line now ends inside the shot
+        assert take["voice_start_s"] + stream_seconds(run.dir / take["voice_file"], "a:0") <= 3.9
+        assert not take["problems"]

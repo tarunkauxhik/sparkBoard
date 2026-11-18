@@ -44,7 +44,10 @@ PLAYBOOKS = Path(__file__).parent.parent / "playbooks"
 ROUTE_MODEL = {"veo_talk": "veo3_lite", "veo_broll": "veo3_lite",
                "vo_only": "veo3_lite", "avatar_talk": "kling_avatar"}
 SCHEMA_TRIES = 2  # one try, plus one more with the errors sent back. Never a loop.
-VO_START_S = EDGE_SILENCE_S  # a narrator starts half a second into the shot
+VO_START_S = EDGE_SILENCE_S  # a narrator starts half a second into the shot...
+VO_EARLIEST_S = 0.15         # ...or as early as this when the line is long
+VO_END_GAP_S = 0.15          # and ends this long before the shot's length
+VO_MAX_SPEED = 1.2           # the fastest ElevenLabs will speak
 STAGES = ("refs", "keyframes", "clips")  # a live run can stop after any of these for a look
 
 
@@ -72,7 +75,8 @@ def check_clip(provider, run: Run, shot: Shot, take: Take, keyframe: Path, other
         start, end = ((take.words[0].start_s, take.words[-1].end_s) if take.words
                       else (shot.duration_s * 0.25, shot.duration_s * 0.75))
         scores = []
-        for second in (start, (start + end) / 2, end):
+        last = stream_seconds(clip, "v:0") - 0.05  # never ask for a frame past the end of the clip
+        for second in (min(start, last), min((start + end) / 2, last), min(end, last)):
             frame = grab_frame(clip, second, run.path(f"clips/frames/{clip.stem}_{second:.1f}s.png"))
             own = provider.faces.similarity(keyframe, frame)
             others = [provider.faces.similarity(sheet, frame) or 0.0 for sheet in other_sheets_]
@@ -282,19 +286,31 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     if stop_here("keyframes"):
         return False
 
-    def narrate(shot: Shot) -> tuple[str, list[Word], list[str]]:
-        """The narrator's line for a vo_only shot, made once: (file, words in clip time, problems)."""
+    def narrate(shot: Shot) -> tuple[str, float, list[Word], list[str]]:
+        """The narrator's line for a vo_only shot, made once: (file, where it starts in the clip,
+        words in clip time, problems). A line too long for its shot is voiced again faster (up
+        to 1.2x) only if starting it early (from VO_EARLIEST_S) is not enough to end before the cut."""
+        speaker = next(m for m in look.cast if m.name == shot.speaker)
         voice = run.path(f"clips/voice/{shot.id}.mp3")
         if not voice.exists():
-            voice_id, _ = provider.narrator_voice(next(m for m in look.cast if m.name == shot.speaker))
-            provider.speak(shot.dialogue_tts, voice, voice_id)
-        spoken = provider.transcribe(voice, shot.dialogue_caption, stream_seconds(voice, "a:0"))
-        words = [Word(word=w["word"], start_s=round(w["start_s"] + VO_START_S, 2),
-                      end_s=round(w["end_s"] + VO_START_S, 2)) for w in spoken]
+            provider.speak(shot.dialogue_tts, voice, provider.narrator_voice(speaker)[0])
+        latest_end = shot.duration_s - VO_END_GAP_S  # Veo clips run a little short of their length
+        length = stream_seconds(voice, "a:0")
+        if VO_EARLIEST_S + length > latest_end:
+            faster = run.path(f"clips/voice/{shot.id}_faster.mp3")
+            if not faster.exists():
+                speed = min(VO_MAX_SPEED, round(length / (latest_end - VO_EARLIEST_S) + 0.02, 2))
+                provider.speak(shot.dialogue_tts, faster, provider.narrator_voice(speaker)[0], speed)
+            voice, length = faster, stream_seconds(faster, "a:0")
+        start = round(max(VO_EARLIEST_S, min(VO_START_S, latest_end - length)), 2)
+        spoken = provider.transcribe(voice, shot.dialogue_caption, length)
+        words = [Word(word=w["word"], start_s=round(w["start_s"] + start, 2), end_s=round(w["end_s"] + start, 2))
+                 for w in spoken]
         _, problems = word_problems(shot, words)
-        if words and words[-1].end_s > shot.duration_s - 0.1:
-            problems.append(f"voiceover: the line ends at {words[-1].end_s:.1f} s, past the {shot.duration_s} s shot")
-        return run.rel(voice), words, problems
+        if start + length > latest_end + 0.05:
+            problems.append(f"voiceover: the line ends at {start + length:.1f} s even at {VO_MAX_SPEED}x, "
+                            f"past the {shot.duration_s} s shot; shorten it")
+        return run.rel(voice), start, words, problems
 
     # 9 Clips: every take is kept in clips/raw/ and never overwritten. Each take is checked
     #   (words, face); a failed take gets one more try, then the shot is flagged.
@@ -304,7 +320,8 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             if shot.route == "static":
                 continue
             keyframe = run.dir / keyframes.files[shot.id]
-            voice_file, voice_words, voice_problems = narrate(shot) if shot.route == "vo_only" else ("", [], [])
+            voice_file, voice_start, voice_words, voice_problems = (
+                narrate(shot) if shot.route == "vo_only" else ("", 0.0, [], []))
             for number in range(1, CLIP_TRIES + 1):
                 out = run.path(f"clips/raw/{shot.id}_take{number}.mp4")
                 task_id = "made in an earlier run"
@@ -312,7 +329,8 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                     task_id = provider.video(motion_prompt(shot, look, brief), keyframe, out,
                                              ROUTE_MODEL[shot.route], shot.duration_s)
                 take = Take(shot_id=shot.id, take=number, file=run.rel(out), task_id=task_id,
-                            model=ROUTE_MODEL[shot.route], voice_file=voice_file, words=voice_words)
+                            model=ROUTE_MODEL[shot.route], voice_file=voice_file, voice_start_s=voice_start,
+                            words=voice_words)
                 takes.append(check_clip(provider, run, shot, take, keyframe, sheets_of_others(shot)))
                 take.problems = voice_problems + take.problems
                 # A new clip fixes what Veo did; it cannot fix the narrator's line (TTS), so in a
@@ -342,7 +360,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             clicks, route = [], shots[take.shot_id].route
             if route == "vo_only":  # the narrator over the clip's own quiet sound
                 mixed = run.path(f"clips/fixed/{take.shot_id}_mixed.mp4")
-                lay_voiceover(source, run.dir / take.voice_file, mixed, VO_START_S)
+                lay_voiceover(source, run.dir / take.voice_file, mixed, take.voice_start_s)
                 if clicks := find_clicks(mixed, take.words):
                     duck_clicks(mixed, out, clicks)
                 else:
