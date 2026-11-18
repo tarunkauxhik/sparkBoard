@@ -87,3 +87,27 @@ def test_pick_voice_prefers_the_accent_then_narration(tmp_path):
     assert voice.pick_voice("neutral General American", "calm, low and smooth") == ("v2", "Brian")
     assert voice.pick_voice("Urban Indian English", "warm") == ("v1", "Priya")
     assert ledger.total() == 0  # reading the voice list is free
+
+
+def test_short_audio_is_padded_for_the_isolator_and_cut_back(tmp_path):
+    import subprocess
+    sent_seconds = []
+
+    def isolator(request):
+        upload = tmp_path / "sent.wav"
+        body = request.content
+        upload.write_bytes(body[body.find(b"RIFF"):])  # the padded wav inside the multipart body
+        out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
+                              str(upload)], capture_output=True, text=True).stdout
+        sent_seconds.append(float(out))
+        return httpx.Response(200, content=upload.read_bytes())  # "cleaned" audio: the same padded file
+
+    voice, ledger, requests, _ = make(tmp_path, isolator)
+    clip = tmp_path / "short.wav"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=200:duration=3.9", str(clip)],
+                   check=True)
+    out = tmp_path / "voice.wav"
+    voice.isolate(clip, out, seconds=3.9)
+    length = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(out)],
+                            capture_output=True, text=True).stdout
+    assert sent_seconds[0] >= 4.6 and abs(float(length) - 3.9) < 0.05

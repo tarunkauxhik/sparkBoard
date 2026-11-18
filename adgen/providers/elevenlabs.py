@@ -8,6 +8,7 @@ usage counter cannot be split per call. The ledger therefore records an estimate
 known credit rates below; smoke step E compares the total with the account's usage counter.
 """
 import json
+import subprocess
 import time
 from pathlib import Path
 
@@ -25,6 +26,7 @@ VOICE_CHANGER_MODEL = "eleven_multilingual_sts_v2"
 SCRIBE_MODEL = "scribe_v3"
 TTS_MODEL = "eleven_v4"  # the default since the smoke test: no word errors, and v3 sounded bad on a library voice
 ISOLATOR_CREDITS_PER_S = 1000 / 60         # assumed the same rate as the voice changer
+ISOLATOR_MIN_S = 5.0                       # the isolator refuses audio under 4.6 s (measured live)
 VOICE_SETTINGS = {"stability": 0.5, "similarity_boost": 0.85, "style": 0.0, "use_speaker_boost": True}
 SEED = 42
 
@@ -108,15 +110,26 @@ class ElevenLabs:
         return best["voice_id"], best.get("name", "")
 
     def isolate(self, audio: Path, out: Path, seconds: float) -> None:
-        """Voice Isolator: keep the voice, remove room sound and background noise."""
+        """Voice Isolator: keep the voice, remove room sound and background noise.
+        The isolator refuses audio under 4.6 s, so shorter audio is padded with silence before
+        it is sent, and the cleaned voice is cut back to the original length."""
         if out.exists():
             raise FileExistsError(f"refusing to overwrite {out}")
+        padded = out.with_name(f"{out.stem}_padded.wav")
+        sent = max(seconds, ISOLATOR_MIN_S)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(audio), "-vn", "-ac", "1",
+                        "-af", f"apad=whole_dur={sent}", str(padded)], check=True)
 
         def send():
-            with audio.open("rb") as file:
+            with padded.open("rb") as file:
                 return self.client.post(f"{API}/audio-isolation", headers=self.headers,
-                                        files={"audio": (audio.name, file)})
-        out.write_bytes(self._paid(f"isolate:{out.stem}", seconds * ISOLATOR_CREDITS_PER_S, send).content)
+                                        files={"audio": (padded.name, file)})
+        cleaned = out.with_name(f"{out.stem}_cleaned{out.suffix}")
+        cleaned.write_bytes(self._paid(f"isolate:{out.stem}", sent * ISOLATOR_CREDITS_PER_S, send).content)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(cleaned), "-t", f"{seconds:.3f}", str(out)],
+                       check=True)
+        padded.unlink()
+        cleaned.unlink()
 
     def speak(self, text: str, out: Path, voice_id: str, model_id: str = TTS_MODEL) -> None:
         """Text to speech. The text may hold audio tags like [sighs] and mixed-script Hinglish."""
