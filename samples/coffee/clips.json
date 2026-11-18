@@ -1,0 +1,275 @@
+{
+  "takes": [
+    {
+      "shot_id": "s01",
+      "take": 1,
+      "file": "clips/raw/s01_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "It's",
+          "start_s": 0.0,
+          "end_s": 0.14
+        },
+        {
+          "word": "probably",
+          "start_s": 0.34,
+          "end_s": 0.74
+        },
+        {
+          "word": "on",
+          "start_s": 0.8,
+          "end_s": 0.94
+        },
+        {
+          "word": "the...",
+          "start_s": 1.0,
+          "end_s": 1.18
+        },
+        {
+          "word": "Nope.",
+          "start_s": 2.42,
+          "end_s": 2.66
+        }
+      ],
+      "voice_file": "",
+      "voice_start_s": 0.0,
+      "word_error_rate": 0.0,
+      "face": 0.258,
+      "problems": [
+        "face: 0.38 at 1.3 s (needs 0.5 and closer than any other persona)",
+        "face: 0.26 at 2.7 s (needs 0.5 and closer than any other persona)"
+      ]
+    },
+    {
+      "shot_id": "s01",
+      "take": 2,
+      "file": "clips/raw/s01_take2.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "It's",
+          "start_s": 0.0,
+          "end_s": 0.32
+        },
+        {
+          "word": "probably",
+          "start_s": 0.36,
+          "end_s": 0.78
+        },
+        {
+          "word": "on",
+          "start_s": 0.84,
+          "end_s": 0.98
+        },
+        {
+          "word": "the...",
+          "start_s": 1.02,
+          "end_s": 1.18
+        },
+        {
+          "word": "Nope.",
+          "start_s": 2.74,
+          "end_s": 3.0
+        }
+      ],
+      "voice_file": "",
+      "voice_start_s": 0.0,
+      "word_error_rate": 0.0,
+      "face": 0.307,
+      "problems": [
+        "face: 0.31 at 3.0 s (needs 0.5 and closer than any other persona)"
+      ]
+    },
+    {
+      "shot_id": "s02",
+      "take": 1,
+      "file": "clips/raw/s02_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Some",
+          "start_s": 1.62,
+          "end_s": 1.8
+        },
+        {
+          "word": "bags",
+          "start_s": 1.88,
+          "end_s": 2.2
+        },
+        {
+          "word": "just",
+          "start_s": 2.3,
+          "end_s": 2.48
+        },
+        {
+          "word": "tell",
+          "start_s": 2.62,
+          "end_s": 2.82
+        },
+        {
+          "word": "you.",
+          "start_s": 2.96,
+          "end_s": 3.1
+        }
+      ],
+      "voice_file": "clips/voice/s02.mp3",
+      "voice_start_s": 0.5,
+      "word_error_rate": null,
+      "face": null,
+      "problems": [
+        "generation failed: clips_raw_s02_take1 failed: 500: Internal Error, Please try again later."
+      ]
+    },
+    {
+      "shot_id": "s02",
+      "take": 2,
+      "file": "clips/raw/s02_take2.mp4",
+      "task_id": "3fd35c3abe4886f129a511464dacccc0",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Some",
+          "start_s": 1.62,
+          "end_s": 1.8
+        },
+        {
+          "word": "bags",
+          "start_s": 1.88,
+          "end_s": 2.2
+        },
+        {
+          "word": "just",
+          "start_s": 2.3,
+          "end_s": 2.48
+        },
+        {
+          "word": "tell",
+          "start_s": 2.62,
+          "end_s": 2.82
+        },
+        {
+          "word": "you.",
+          "start_s": 2.96,
+          "end_s": 3.1
+        }
+      ],
+      "voice_file": "clips/voice/s02.mp3",
+      "voice_start_s": 0.5,
+      "word_error_rate": null,
+      "face": null,
+      "problems": []
+    },
+    {
+      "shot_id": "s03",
+      "take": 1,
+      "file": "clips/raw/s03_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Whole",
+          "start_s": 0.58,
+          "end_s": 0.74
+        },
+        {
+          "word": "beans.",
+          "start_s": 0.84,
+          "end_s": 1.26
+        },
+        {
+          "word": "Roast",
+          "start_s": 1.74,
+          "end_s": 1.96
+        },
+        {
+          "word": "date",
+          "start_s": 2.04,
+          "end_s": 2.28
+        },
+        {
+          "word": "on",
+          "start_s": 2.34,
+          "end_s": 2.54
+        },
+        {
+          "word": "every",
+          "start_s": 2.6,
+          "end_s": 2.8
+        },
+        {
+          "word": "bag.",
+          "start_s": 2.88,
+          "end_s": 3.2
+        }
+      ],
+      "voice_file": "clips/voice/s03.mp3",
+      "voice_start_s": 0.5,
+      "word_error_rate": null,
+      "face": null,
+      "problems": []
+    },
+    {
+      "shot_id": "s04",
+      "take": 1,
+      "file": "clips/raw/s04_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Monthly",
+          "start_s": 0.6,
+          "end_s": 0.84
+        },
+        {
+          "word": "box",
+          "start_s": 0.92,
+          "end_s": 1.16
+        },
+        {
+          "word": "is",
+          "start_s": 1.22,
+          "end_s": 1.32
+        },
+        {
+          "word": "linked",
+          "start_s": 1.36,
+          "end_s": 1.58
+        },
+        {
+          "word": "below",
+          "start_s": 1.6,
+          "end_s": 1.9
+        },
+        {
+          "word": "if",
+          "start_s": 2.2,
+          "end_s": 2.28
+        },
+        {
+          "word": "you",
+          "start_s": 2.32,
+          "end_s": 2.38
+        },
+        {
+          "word": "want",
+          "start_s": 2.42,
+          "end_s": 2.56
+        },
+        {
+          "word": "it.",
+          "start_s": 2.62,
+          "end_s": 2.76
+        }
+      ],
+      "voice_file": "clips/voice/s04.mp3",
+      "voice_start_s": 0.5,
+      "word_error_rate": null,
+      "face": null,
+      "problems": []
+    }
+  ]
+}

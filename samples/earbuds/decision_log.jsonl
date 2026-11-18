@@ -7,7 +7,7 @@
 {"step": "refs", "choice": "generated references", "reason": "marcus vs meera: 0.11; marcus vs kabir: 0.21; marcus vs rohan: 0.13", "cost": 0.09}
 {"step": "keyframes", "choice": "4 keyframes from 4 tries", "reason": "every keyframe passed", "cost": 0.0}
 {"step": "clips", "choice": "3 clips from 3 takes", "reason": "every clip passed its checks", "cost": 0.0012}
-{"step": "audio", "choice": "isolated voice over a room-tone bed", "reason": "clicks removed: s01 at 0.49 s, s01 at 1.01 s, s01 at 2.55 s, s02 at 2.19 s, s02 at 2.66 s, s02 at 2.77 s, s03 at 0.41 s, s03 at 3.76 s; word timings drive the trims and captions", "cost": 0.01}
+{"step": "audio", "choice": "isolated voice over a room-tone bed", "reason": "clicks removed: s01 at 0.49 s, s01 at 1.01 s, s01 at 2.55 s, s02 at 2.19 s, s02 at 2.66 s, s02 at 2.77 s, s03 at 0.41 s, s03 at 3.76 s; word timings drive the trims and captions", "cost": 0.0}
 {"step": "edit_list", "choice": "3 cuts + end card", "reason": "s01: trimmed to the spoken words plus 0.4 s at each end; s02: trimmed to the spoken words plus 0.4 s at each end; s03: trimmed to the spoken words plus 0.4 s at each end", "cost": 0.0}
 {"step": "render", "choice": "4 file(s)", "reason": "edit list passed validation", "cost": 0.0}
-{"step": "qa_report", "choice": "fail", "reason": "no clicks or taps between the words in s01; no clicks or taps between the words in s03", "cost": 0.0005}
+{"step": "qa_report", "choice": "fail", "reason": "no clicks or taps between the words in s01", "cost": 0.0004}

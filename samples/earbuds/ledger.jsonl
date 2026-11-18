@@ -27,3 +27,4 @@
 {"key": "elevenlabs", "item": "isolate:s02_voice", "cost": 0.010000000000000002, "mock": false}
 {"key": "openrouter", "item": "gemini-3.1-flash-lite:final_cut", "cost": 0.00042625, "mock": false}
 {"key": "openrouter", "item": "gemini-3.1-flash-lite:final_cut", "cost": 0.00049975, "mock": false}
+{"key": "openrouter", "item": "gemini-3.1-flash-lite:final_cut", "cost": 0.00044425, "mock": false}

@@ -38,8 +38,8 @@
     },
     {
       "name": "no clicks or taps between the words in s03",
-      "passed": false,
-      "detail": "left at 0.41 s"
+      "passed": true,
+      "detail": "removed 2"
     },
     {
       "name": "marcus's voice has the same pitch in every clip",
@@ -49,7 +49,7 @@
     {
       "name": "Gemini review (hints only, never a fail)",
       "passed": true,
-      "detail": "0:01: The man's left hand morphs into the earbud case as he brings it to his ear. 0:02: The earbud case disappears from his hand as he touches his ear. 0:03: The man's face changes significantly in structure and skin tone compared to the previous shot. 0:04: The lip-sync is slightly off when he says 'better'. 0:05: The earbud case on the desk has a strange, non-physical glow and the lid appears to be floating or disconnected from the base."
+      "detail": "At 0:01, the man's hand morphs into the earbud case as he picks it up. At 0:02, the earbud case he is holding disappears instantly as he brings his hand to his ear. At 0:03, the man's face changes significantly when he speaks. At 0:04, the lip-sync is off as the man speaks."
     }
   ]
 }

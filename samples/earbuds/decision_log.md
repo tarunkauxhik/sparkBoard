@@ -11,7 +11,7 @@
 | refs | generated references | marcus vs meera: 0.11; marcus vs kabir: 0.21; marcus vs rohan: 0.13 | $0.090 |
 | keyframes | 4 keyframes from 4 tries | every keyframe passed | $0.000 |
 | clips | 3 clips from 3 takes | every clip passed its checks | $0.001 |
-| audio | isolated voice over a room-tone bed | clicks removed: s01 at 0.49 s, s01 at 1.01 s, s01 at 2.55 s, s02 at 2.19 s, s02 at 2.66 s, s02 at 2.77 s, s03 at 0.41 s, s03 at 3.76 s; word timings drive the trims and captions | $0.010 |
+| audio | isolated voice over a room-tone bed | clicks removed: s01 at 0.49 s, s01 at 1.01 s, s01 at 2.55 s, s02 at 2.19 s, s02 at 2.66 s, s02 at 2.77 s, s03 at 0.41 s, s03 at 3.76 s; word timings drive the trims and captions | $0.000 |
 | edit_list | 3 cuts + end card | s01: trimmed to the spoken words plus 0.4 s at each end; s02: trimmed to the spoken words plus 0.4 s at each end; s03: trimmed to the spoken words plus 0.4 s at each end | $0.000 |
 | render | 4 file(s) | edit list passed validation | $0.000 |
-| qa_report | fail | no clicks or taps between the words in s01; no clicks or taps between the words in s03 | $0.001 |
+| qa_report | fail | no clicks or taps between the words in s01 | $0.000 |
