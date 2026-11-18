@@ -436,9 +436,9 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                 checks.append(Check(name=f"no clicks or taps between the words in {clip.shot_id}", passed=not left,
                                     detail=(f"left at {', '.join(f'{s:.2f} s' for s, _ in left)}" if left else
                                             f"removed {len(clip.clicks_removed)}")))
-        pitches = {}  # speaker -> the pitch of each of their clips
-        for clip in audio.clips:
-            if clip.words:
+        pitches = {}  # speaker -> the pitch of each of their clips. Only Veo's on-camera voices:
+        for clip in audio.clips:  # a narrator is one ElevenLabs voice by construction, and its mix
+            if clip.words and shots[clip.shot_id].route == "veo_talk":  # holds the clip's own sound
                 pitch = median_pitch_hz(run.dir / clip.file, clip.words[0].start_s, clip.words[-1].end_s)
                 if pitch:
                     pitches.setdefault(shots[clip.shot_id].speaker, {})[clip.shot_id] = round(pitch)
