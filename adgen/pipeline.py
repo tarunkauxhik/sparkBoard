@@ -14,8 +14,10 @@ from pydantic import ValidationError
 
 from adgen.brain import TASKS
 from adgen.casting import casting_errors, other_sheets, used_personas
+from adgen.clicks import find_clicks
 from adgen.editor import (
-    build_edit_list, clean_voice, final_checks, grab_frame, render_video, stream_seconds, validate_edit_list,
+    TRIM_PAD_S, build_edit_list, clean_voice, duck_clicks, final_checks, grab_frame, render_video, stream_seconds,
+    validate_edit_list,
 )
 from adgen.ledger import Ledger
 from adgen.prompts import (
@@ -32,7 +34,7 @@ from adgen.schemas import (
     Approval, Audio, Brief, Check, Clips, Concept, Concepts, EditList, FixedClip, Insights,
     Keyframes, KeyframeTake, Look, QAReport, Refs, Render, Shot, Storyboard, StoryboardReview, Take, Word,
 )
-from adgen.statics import STATIC_SIZES, app_screen, static_ad
+from adgen.statics import STATIC_SIZES, app_screen, static_ad, write_label
 from adgen.voice import median_pitch_hz
 
 PLAYBOOKS = Path(__file__).parent.parent / "playbooks"
@@ -74,7 +76,7 @@ def check_clip(provider, run: Run, shot: Shot, take: Take, keyframe: Path, other
 
 
 def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_approve: bool,
-                 stop_after: str | None = None, isolate_voice: bool = False) -> bool:
+                 stop_after: str | None = None, isolate_voice: bool = False, trim_pad: float = TRIM_PAD_S) -> bool:
     """Runs every step that is not done yet. Returns False if it stopped early: for
     storyboard approval, or after the stage named in `stop_after`."""
 
@@ -226,7 +228,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
     # 8 Keyframes: one still per shot from the same references. A shot that shows a face is
     #   checked against the character sheet and re-made up to KEYFRAME_TRIES times.
     def make_keyframes():
-        files, takes = {}, []
+        files, takes, labels = {}, [], []
         for shot in board.shots:
             prompt, shot_refs = keyframe_request(shot, look, brief, refs)
             shows_face = bool(shot.character and shot.face_visible)
@@ -247,9 +249,19 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
                 if take.passed:
                     break
             files[shot.id] = best.file
+            if shot.blank_label_text:  # write the exact label text into the blank area, before Veo
+                box = provider.find_label_area(run.dir / best.file)
+                if box:
+                    labelled = run.path(f"keyframes/{shot.id}_labelled.png")
+                    write_label(run.dir / best.file, shot.blank_label_text, box, labelled)
+                    files[shot.id] = run.rel(labelled)
+                    labels.append(f"{shot.id}: wrote {shot.blank_label_text!r}")
+                else:
+                    labels.append(f"{shot.id}: no blank label area found, text not written")
         failed = sorted({t.shot_id for t in takes} - {t.shot_id for t in takes if t.passed})
+        notes = [f"face check failed on every try for: {', '.join(failed)}" if failed else "every keyframe passed"]
         return (Keyframes(files=files, takes=takes), f"{len(files)} keyframes from {len(takes)} tries",
-                f"face check failed on every try for: {', '.join(failed)}" if failed else "every keyframe passed")
+                "; ".join(notes + labels))
     keyframes = step("keyframes.json", Keyframes, make_keyframes)
     if stop_here("keyframes"):
         return False
@@ -282,26 +294,32 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         return False
 
     # 10 Audio: Veo's own voice is kept. Optionally the voice isolator removes room echo first.
+    #   Stray clicks and taps between the words are muted (isolated voice) or ducked (Veo audio).
     def make_audio():
-        fixed = []
+        fixed, removed = [], []
         for take in clips.chosen().values():
             source, out = run.dir / take.file, run.path(f"clips/fixed/{take.shot_id}.mp4")
+            clicks = []
             if isolate_voice and take.words:
                 voice = run.path(f"clips/fixed/{take.shot_id}_voice.mp3")
                 if not voice.exists():
                     provider.isolate(source, voice, shots[take.shot_id].duration_s)
-                clean_voice(source, voice, out)
+                clicks = find_clicks(voice, take.words)
+                clean_voice(source, voice, out, clicks)
+            elif take.words and (clicks := find_clicks(source, take.words)):
+                duck_clicks(source, out, clicks)
             else:
                 shutil.copyfile(source, out)
-            fixed.append(FixedClip(shot_id=take.shot_id, file=run.rel(out), words=take.words))
+            removed += [f"{take.shot_id} at {start:.2f} s" for start, _ in clicks]
+            fixed.append(FixedClip(shot_id=take.shot_id, file=run.rel(out), words=take.words, clicks_removed=clicks))
         return (Audio(clips=fixed), "isolated voice over a room-tone bed" if isolate_voice else "Veo's own audio",
-                "word timings from the clip checks drive the trims and captions")
+                f"clicks removed: {', '.join(removed) or 'none'}; word timings drive the trims and captions")
     audio = step("audio.json", Audio, make_audio)
 
     # 11 Edit list: built by code. Straight cuts, spoken clips trimmed to their words.
     def make_edit_list():
         durations = {clip.shot_id: stream_seconds(run.dir / clip.file, "v:0") for clip in audio.clips}
-        edit = build_edit_list(audio, durations, board.end_card_line)
+        edit = build_edit_list(audio, durations, board.end_card_line, trim_pad)
         return edit, f"{len(edit.cuts)} cuts + end card", "; ".join(f"{c.shot_id}: {c.reason}" for c in edit.cuts)
     edit = step("edit_list.json", EditList, make_edit_list)
 
@@ -310,7 +328,7 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         errors = validate_edit_list(edit, audio, run)
         if errors:
             raise ValueError("edit list is not valid:\n" + "\n".join(errors))
-        files = [render_video(run, edit, audio, brief.brand)]
+        files = [render_video(run, edit, audio, brief.brand, run.dir / refs.product[0] if refs.product else None)]
         for shot in board.shots:
             if shot.route == "static":
                 for name, size in STATIC_SIZES.items():
@@ -332,6 +350,12 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             if not take.passed:
                 checks.append(Check(name=f"clip {take.shot_id} passed its checks", passed=False,
                                     detail="; ".join(take.problems)))
+        for clip in audio.clips:  # after removal, no click may be left between the words
+            if clip.words:
+                left = find_clicks(run.dir / clip.file, clip.words)
+                checks.append(Check(name=f"no clicks or taps between the words in {clip.shot_id}", passed=not left,
+                                    detail=(f"left at {', '.join(f'{s:.2f} s' for s, _ in left)}" if left else
+                                            f"removed {len(clip.clicks_removed)}")))
         pitches = {}  # speaker -> the pitch of each of their clips
         for clip in audio.clips:
             if clip.words:

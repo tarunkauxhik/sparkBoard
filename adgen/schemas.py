@@ -392,6 +392,7 @@ class FixedClip(BaseModel):
     shot_id: str
     file: str
     words: list[Word] = []  # transcript word timings, used for trims and captions
+    clicks_removed: list[tuple[float, float]] = []  # stray clicks or taps muted between words (seconds)
 
 
 class Audio(BaseModel):

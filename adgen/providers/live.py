@@ -18,6 +18,7 @@ from adgen.providers.kie import (
     ASSUMED_IMAGE_USD, ASSUMED_VEO_CLIP_USD, Kie, nano_banana_payload, veo_payload,
 )
 from adgen.providers.openrouter import GEMINI, OpenRouter
+from adgen.qa import LabelArea
 from adgen.run import Run
 
 
@@ -65,6 +66,14 @@ class LiveProvider:
 
     def isolate(self, media: Path, out: Path, duration_s: float) -> None:
         self.voice.isolate(media, out, duration_s)
+
+    def find_label_area(self, image: Path) -> tuple[float, float, float, float] | None:
+        """Ask Gemini where the blank label area on the product is (a box, not a judgement)."""
+        question = ("This image shows a product with one blank, plain label area meant for printed text "
+                    "(for example a date). Give the tightest box around that blank area, in thousandths of the "
+                    "image width (left, right) and height (top, bottom). If there is no blank label area, "
+                    "set found to false.")
+        return self.eyes.look_at(f"label_{image.stem}", question, LabelArea, images=[image]).box()
 
     def review(self, small_video: Path, seconds: float) -> str:
         question = ("This is a finished short social video ad made with AI video models. Watch it as a strict "

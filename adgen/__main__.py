@@ -9,6 +9,7 @@ import typer
 from dotenv import load_dotenv
 
 from adgen.ledger import CAPS, Ledger, has_real_spend
+from adgen.editor import TRIM_PAD_S
 from adgen.pipeline import STAGES, run_pipeline
 from adgen.providers.elevenlabs import ElevenLabs
 from adgen.providers.kie import Kie
@@ -31,6 +32,7 @@ def run(
     auto_approve: bool = typer.Option(False, help="Skip the storyboard approval stop."),
     stop_after: str = typer.Option(None, help=f"Stop for a look after one of: {', '.join(STAGES)}."),
     isolate_voice: bool = typer.Option(False, help="Clean each spoken clip with the ElevenLabs voice isolator."),
+    trim_pad: float = typer.Option(TRIM_PAD_S, help="Seconds kept before the first and after the last word of a clip."),
     run_id: str = typer.Option(None, help="Resume this run instead of starting a new one."),
 ):
     """Run the pipeline. Steps that already have output are skipped."""
@@ -51,7 +53,7 @@ def run(
         ledger = Ledger(current.path("ledger.jsonl"))
         provider = MockProvider(ledger)
     try:
-        finished = run_pipeline(brief, current, provider, ledger, auto_approve, stop_after, isolate_voice)
+        finished = run_pipeline(brief, current, provider, ledger, auto_approve, stop_after, isolate_voice, trim_pad)
         typer.echo(f"\n{'Finished' if finished else 'Stopped early'}: {current.dir}")
     finally:  # always say what was spent, also when a step failed
         typer.echo(f"{'Spent' if live else 'Projected cost of a live run'}: ${ledger.total():.3f} ("

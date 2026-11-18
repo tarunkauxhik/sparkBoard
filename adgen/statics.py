@@ -29,15 +29,41 @@ def _wrap(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> str:
     return "\n".join(lines)
 
 
-def end_card(brand: str, line: str, out: Path) -> None:
-    """Full-screen end card: brand name with one line under it, centered."""
+def end_card(brand: str, line: str, out: Path, product: Path | None = None) -> None:
+    """Full-screen end card: the product (packshot or app screen) on a light card, then the
+    brand name and one line under it. Without a product image, the name sits in the centre."""
     img = Image.new("RGB", STATIC_SIZES["9x16"], "#141414")
     draw = ImageDraw.Draw(img)
     width, height = img.size
-    draw.text((width / 2, height / 2 - 60), brand, fill="white", font=_font(120), anchor="mm")
+    text_top = height / 2 - 60
+    if product and product.exists():
+        picture = Image.open(product).convert("RGB")
+        picture.thumbnail((width - 4 * MARGIN, int(height * 0.42)))
+        left, top = (width - picture.width) // 2, int(height * 0.14)
+        draw.rounded_rectangle((left - 30, top - 30, left + picture.width + 30, top + picture.height + 30),
+                               radius=40, fill="#f4f1ec")
+        img.paste(picture, (left, top))
+        text_top = top + picture.height + 160
+    draw.text((width / 2, text_top), brand, fill="white", font=_font(120), anchor="mm")
     small = _font(56, "Regular")
-    draw.multiline_text((width / 2, height / 2 + 80), _wrap(draw, line, small, width - 2 * MARGIN),
+    draw.multiline_text((width / 2, text_top + 140), _wrap(draw, line, small, width - 2 * MARGIN),
                         fill="#d0d0d0", font=small, anchor="ma", align="center")
+    img.save(out)
+
+
+def write_label(image: Path, text: str, box: tuple[float, float, float, float], out: Path) -> None:
+    """Write `text` into a blank label area of a keyframe. `box` is (left, top, right, bottom)
+    as shares of the image size. The image model leaves the area blank because it garbles
+    small print; code writes the exact words, and Veo then animates the frame with them."""
+    img = Image.open(image).convert("RGB")
+    draw = ImageDraw.Draw(img)
+    left, top, right, bottom = (box[0] * img.width, box[1] * img.height, box[2] * img.width, box[3] * img.height)
+    size = int(bottom - top)
+    font = _font(size, "Bold")
+    while size > 8 and draw.textlength(text, font=font) > (right - left) * 0.9:  # shrink until it fits
+        size -= 2
+        font = _font(size, "Bold")
+    draw.text(((left + right) / 2, (top + bottom) / 2), text, fill="#2a2522", font=font, anchor="mm")
     img.save(out)
 
 

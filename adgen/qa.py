@@ -61,6 +61,21 @@ def face_passes(own: float | None, others: list[float], minimum: float) -> bool:
     return own is not None and own >= minimum and all(own > other for other in others)
 
 
+class LabelArea(BaseModel):
+    """Where the blank label area is in a keyframe, in thousandths of the image width and height."""
+    found: bool
+    left: int = Field(ge=0, le=1000)
+    top: int = Field(ge=0, le=1000)
+    right: int = Field(ge=0, le=1000)
+    bottom: int = Field(ge=0, le=1000)
+
+    def box(self) -> tuple[float, float, float, float] | None:
+        """The area as shares of the image size, or None if it was not found or makes no sense."""
+        if not self.found or self.right <= self.left or self.bottom <= self.top:
+            return None
+        return self.left / 1000, self.top / 1000, self.right / 1000, self.bottom / 1000
+
+
 class FaceCheck(BaseModel):
     """Gemini's answer to: is the person in this frame the person on the character sheet?"""
     same_person: bool

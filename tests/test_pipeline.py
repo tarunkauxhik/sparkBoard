@@ -59,10 +59,10 @@ def test_dry_run_creates_every_file_within_the_caps(done):
 def test_final_video_has_the_right_length(done):
     run = done[0]
     final = run.dir / "final/ad_9x16.mp4"
-    # Spoken shots are trimmed to their words plus 0.15 s each side: 3.3 + 5.3 + 4 (silent) + 3.3 s,
+    # Spoken shots are trimmed to their words plus 0.4 s each side: 3.8 + 5.8 + 4 (silent) + 3.8 s,
     # rounded to whole frames, plus a 2 s end card.
-    assert stream_seconds(final, "v:0") == pytest.approx(17.875, abs=0.05)
-    assert stream_seconds(final, "a:0") == pytest.approx(17.875, abs=0.03)
+    assert stream_seconds(final, "v:0") == pytest.approx(19.375, abs=0.05)
+    assert stream_seconds(final, "a:0") == pytest.approx(19.375, abs=0.03)
     assert not run.has("work")  # temp folder is removed after the render
 
 
@@ -189,9 +189,9 @@ def test_captions_are_short_and_follow_the_timeline(done):
     events = caption_events(run.load("edit_list.json", EditList), run.load("audio.json", Audio))
     assert all(len(text.split()) <= 4 for _, _, text in events)
     assert [start for start, _, _ in events] == sorted(start for start, _, _ in events)
-    # shot 3 is silent b-roll at about 8.6-12.6 s; shot 4's first word comes 0.15 s into its cut
-    assert not any(8.6 < start < 12.58 for start, _, _ in events)
-    assert any(start == pytest.approx(12.733, abs=0.01) for start, _, _ in events)
+    # shot 3 is silent b-roll at about 9.58-13.58 s; shot 4's first word comes 0.4 s into its cut
+    assert not any(9.59 < start < 13.58 for start, _, _ in events)
+    assert any(start == pytest.approx(13.983, abs=0.01) for start, _, _ in events)
 
 
 def test_static_ads_come_out_in_every_size(done, tmp_path):
@@ -342,7 +342,7 @@ def test_the_voice_isolator_is_only_used_when_asked(tmp_path):
 def test_edit_list_trims_spoken_clips_to_their_words(done):
     run = done[0]
     cuts = {cut.shot_id: cut for cut in run.load("edit_list.json", EditList).cuts}
-    assert (cuts["s01"].in_s, cuts["s01"].out_s) == (0.35, 3.65)   # words run 0.5 to 3.5 s
+    assert (cuts["s01"].in_s, cuts["s01"].out_s) == (0.1, 3.9)     # words run 0.5 to 3.5 s; 0.4 s pad
     assert (cuts["s03"].in_s, cuts["s03"].out_s) == (0.0, 4.0)     # silent: the full take
     assert run.load("edit_list.json", EditList).end_card.line == run.load("storyboard.json", Storyboard).end_card_line
 
@@ -375,3 +375,61 @@ def test_live_provider_uploads_each_reference_once(tmp_path):
     assert provider.kie.uploads == ["maya_sheet.png"]
     assert [name for name, _ in provider.kie.tasks] == ["keyframes_s01_take1", "keyframes_s02_take1"]
     assert provider.kie.tasks[0][1] == ["https://files.example/maya_sheet.png"]
+
+
+def test_trim_pad_is_a_setting(done):
+    from adgen.editor import build_edit_list
+    run = done[0]
+    audio = run.load("audio.json", Audio)
+    durations = {clip.shot_id: 4.0 if clip.shot_id != "s02" else 6.0 for clip in audio.clips}
+    tight = {c.shot_id: (c.in_s, c.out_s) for c in build_edit_list(audio, durations, "Try it", pad=0.15).cuts}
+    assert tight["s01"] == (0.35, 3.65)
+    wide = {c.shot_id: (c.in_s, c.out_s) for c in build_edit_list(audio, durations, "Try it", pad=1.0).cuts}
+    assert wide["s01"] == (0.0, 4.0)  # never past the ends of the clip
+
+
+def test_final_qa_checks_for_clicks_between_words(done):
+    report = json.loads(done[0].path("qa_report.json").read_text("utf-8"))
+    clicks = [c for c in report["checks"] if c["name"].startswith("no clicks or taps between the words")]
+    assert len(clicks) == 3 and all(c["passed"] for c in clicks)  # three spoken shots, mock audio is a clean tone
+
+
+def test_end_card_shows_the_product_above_the_brand(done, tmp_path):
+    from adgen.statics import end_card
+    plain, with_product = tmp_path / "plain.png", tmp_path / "product.png"
+    end_card("Dewline", "Made for sensitive skin.", plain)
+    end_card("Dewline", "Made for sensitive skin.", with_product, done[0].dir / "refs/product.png")
+    with Image.open(plain) as a, Image.open(with_product) as b:
+        assert a.getpixel((540, 500)) == (20, 20, 20)       # plain: the top is the dark background
+        assert b.getpixel((540, 500)) != (20, 20, 20)       # with product: the product card is there
+
+
+def test_label_text_is_written_into_the_blank_area(done, tmp_path):
+    from adgen.statics import write_label
+    keyframe, out = done[0].dir / "keyframes/s01_take1.png", tmp_path / "labelled.png"
+    write_label(keyframe, "ROASTED 12 NOV", (0.30, 0.40, 0.70, 0.46), out)
+    with Image.open(keyframe) as before, Image.open(out) as after:
+        box = (330, 780, 750, 880)
+        assert before.crop(box).tobytes() != after.crop(box).tobytes()          # text was drawn there
+        assert before.crop((0, 0, 200, 200)).tobytes() == after.crop((0, 0, 200, 200)).tobytes()  # rest untouched
+
+
+def test_a_shot_with_label_text_gets_a_labelled_keyframe(tmp_path):
+    class LabelledShot(MockProvider):
+        def chat_json(self, task, ctx, feedback=""):
+            reply = super().chat_json(task, ctx, feedback)
+            if task == "storyboard":
+                reply["shots"][2]["blank_label_text"] = "ROASTED 12 NOV"  # the silent product shot
+            return reply
+
+    run, _, finished = dry_run(tmp_path, provider_cls=LabelledShot)
+    keyframes = json.loads(run.path("keyframes.json").read_text("utf-8"))
+    assert finished and keyframes["files"]["s03"] == "keyframes/s03_labelled.png"
+    assert "wrote 'ROASTED 12 NOV'" in run.path("decision_log.md").read_text("utf-8")
+
+
+def test_label_area_box_rejects_nonsense():
+    from adgen.qa import LabelArea
+    assert LabelArea(found=True, left=300, top=400, right=700, bottom=460).box() == (0.3, 0.4, 0.7, 0.46)
+    assert LabelArea(found=True, left=700, top=400, right=300, bottom=460).box() is None
+    assert LabelArea(found=False, left=0, top=0, right=0, bottom=0).box() is None

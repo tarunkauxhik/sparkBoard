@@ -11,13 +11,15 @@ import subprocess
 from pathlib import Path
 
 from adgen.run import Run
+from adgen.clicks import turn_down
 from adgen.schemas import Audio, Check, Cut, EditList, EndCard
 from adgen.statics import FONT, end_card
 
 WIDTH, HEIGHT, FPS, SAMPLE_RATE = 1080, 1920, 24, 48000
 MAX_AD_SECONDS = 60
-TRIM_PAD_S = 0.15  # kept before the first word and after the last
+TRIM_PAD_S = 0.4   # default time kept before the first word and after the last (--trim-pad)
 END_CARD_S = 2.0
+DUCK_LEVEL = 0.15  # a ducked click keeps 15% of its level (about -16 dB)
 CAPTION_WORDS = 4      # max words per caption chunk
 CAPTION_BOTTOM = 0.72  # captions end at 72% of the height, clear of faces and app buttons
 NORMALIZE = (f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase:flags=lanczos,"
@@ -75,16 +77,17 @@ def grab_frame(clip: Path, second: float, out: Path) -> Path:
     return out
 
 
-def build_edit_list(audio: Audio, durations: dict[str, float], end_card_line: str) -> EditList:
-    """Straight cuts in storyboard order. A spoken clip is trimmed to its words plus a short
-    pad, which also removes the warped or drifting frames Veo often ends a clip on."""
+def build_edit_list(audio: Audio, durations: dict[str, float], end_card_line: str,
+                    pad: float = TRIM_PAD_S) -> EditList:
+    """Straight cuts in storyboard order. A spoken clip is trimmed to its words plus `pad`
+    seconds, which also removes the warped or drifting frames Veo often ends a clip on."""
     cuts = []
     for clip in audio.clips:
         length = durations[clip.shot_id]
         if clip.words:
-            start = max(0.0, clip.words[0].start_s - TRIM_PAD_S)
-            end = min(length, clip.words[-1].end_s + TRIM_PAD_S)
-            reason = f"trimmed to the spoken words plus {TRIM_PAD_S} s at each end"
+            start = max(0.0, clip.words[0].start_s - pad)
+            end = min(length, clip.words[-1].end_s + pad)
+            reason = f"trimmed to the spoken words plus {pad:g} s at each end"
         else:
             start, end, reason = 0.0, length, "silent shot, full take"
         cuts.append(Cut(shot_id=clip.shot_id, file=clip.file, in_s=round(start, 2), out_s=round(end, 2),
@@ -92,15 +95,28 @@ def build_edit_list(audio: Audio, durations: dict[str, float], end_card_line: st
     return EditList(cuts=cuts, end_card=EndCard(line=end_card_line, duration_s=END_CARD_S))
 
 
-def clean_voice(video: Path, voice: Path, out: Path) -> None:
-    """Put an isolated voice back on its clip, over a very quiet room-tone bed (the isolator
-    leaves dead silence between words, which sounds unnatural)."""
+def clean_voice(video: Path, voice: Path, out: Path, clicks: list[tuple[float, float]] = ()) -> None:
+    """Put an isolated voice back on its clip, with its stray clicks muted, over a very quiet
+    room-tone bed (the isolator leaves dead silence between words, which sounds unnatural)."""
+    muted = out.with_name(f"{out.stem}_voice_muted.wav")
+    turn_down(voice, list(clicks), 0.0, muted)
     subprocess.run(
-        ["ffmpeg", "-v", "error", "-y", "-i", str(video), "-i", str(voice),
+        ["ffmpeg", "-v", "error", "-y", "-i", str(video), "-i", str(muted),
          "-f", "lavfi", "-i", f"anoisesrc=color=pink:amplitude=0.002:sample_rate={SAMPLE_RATE}",
          "-filter_complex", "[1:a][2:a]amix=inputs=2:duration=first:normalize=0[a]",
          "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-ar", str(SAMPLE_RATE), str(out)],
         check=True)
+    muted.unlink()
+
+
+def duck_clicks(video: Path, out: Path, clicks: list[tuple[float, float]]) -> None:
+    """Turn stray clicks down in a clip that keeps Veo's own audio. They are ducked, not muted,
+    so the room tone does not drop out to silence."""
+    ducked = out.with_name(f"{out.stem}_ducked.wav")
+    turn_down(video, clicks, DUCK_LEVEL, ducked)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(video), "-i", str(ducked), "-map", "0:v", "-map", "1:a",
+                    "-c:v", "copy", "-c:a", "aac", "-ar", str(SAMPLE_RATE), str(out)], check=True)
+    ducked.unlink()
 
 
 def final_checks(final: Path, end_card_s: float) -> list[Check]:
@@ -165,7 +181,7 @@ def _ass_time(seconds: float) -> str:
     return f"0:{int(minutes):02d}:{secs:05.2f}"
 
 
-def render_video(run: Run, edit: EditList, audio: Audio, brand: str) -> str:
+def render_video(run: Run, edit: EditList, audio: Audio, brand: str, product: Path | None = None) -> str:
     """Render the edit list to final/ad_9x16.mp4 and return that path (relative to the run)."""
     run.path("work/x")  # creates work/, a temp folder deleted at the end
     speaking = {clip.shot_id for clip in audio.clips if clip.words}
@@ -188,7 +204,7 @@ def render_video(run: Run, edit: EditList, audio: Audio, brand: str) -> str:
         sounds.append(f"a{i:02d}.wav")
 
     # 2. End card, drawn in code. It has no sound piece: the master track is padded over it.
-    end_card(brand, edit.end_card.line, run.path("work/end_card.png"))
+    end_card(brand, edit.end_card.line, run.path("work/end_card.png"), product)
     card_frames = round(edit.end_card.duration_s * FPS)
     _ffmpeg(run, "-loop", 1, "-i", "work/end_card.png", "-frames:v", card_frames,
             "-vf", NORMALIZE, "-an", *ENCODE, "work/end_card.mp4")

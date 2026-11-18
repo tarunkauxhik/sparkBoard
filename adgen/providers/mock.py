@@ -44,6 +44,10 @@ class MockProvider:
         self.ledger.charge("openrouter", f"sonnet:{task}", PRICES["sonnet_call"], mock=True)
         return getattr(self, f"_{task}")(ctx)
 
+    def find_label_area(self, image: Path) -> tuple[float, float, float, float]:
+        self.ledger.charge("openrouter", f"gemini:label_{image.stem}", PRICES["gemini_review"], mock=True)
+        return 0.35, 0.45, 0.65, 0.52  # a fixed box in the middle of the placeholder image
+
     def review(self, small_video: Path, seconds: float) -> str:
         self.ledger.charge("openrouter", "gemini:final_cut", PRICES["gemini_review"], mock=True)
         return "mock review, nothing was really checked"

@@ -178,7 +178,8 @@ that breaks it; "prompt" means the writer and critic are told, but code cannot c
 | Check | Rule | Status |
 | --- | --- | --- |
 | Words | Scribe transcript against the script: word error rate above 10% fails, and so does a missing last word. A failed clip gets one more take, then the shot is flagged | Built (`check_clip` in `adgen/pipeline.py`) |
-| Trims | A spoken clip is cut to its words plus 0.15 s at each end, by code | Built (`build_edit_list` in `adgen/editor.py`) |
+| Trims | A spoken clip is cut to its words plus 0.4 s at each end by default (`--trim-pad`), by code | Built (`build_edit_list` in `adgen/editor.py`) |
+| Clicks | A short, bright sound between words (most energy above 2 kHz, 12 dB over the quiet around it, under 0.12 s) is muted in an isolated voice or ducked in Veo's audio; any click left fails the final check. Pauses under 0.25 s inside a line are left alone | Built (`adgen/clicks.py`). Found a lip click Veo put before a line; the isolator made it audible by removing the room tone that hid it |
 | Voice match | A speaker's clips may differ in median pitch by at most 10% | Built (`adgen/voice.py`); a warning only, there is no automatic fix |
 | Final video | Picture and sound the same length, -14 LUFS give or take 1, no black or silent gaps before the end card | Built (`final_checks` in `adgen/editor.py`) |
 | Clip rubric | Gemini scores 1 to 5 for hands, label, lip sync, "AI look" and hook strength; any score below 3 is re-rolled | Built (`look_at` in `adgen/providers/openrouter.py`); first results were not reliable enough to act on alone |
