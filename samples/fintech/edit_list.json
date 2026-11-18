@@ -1,0 +1,43 @@
+{
+  "cuts": [
+    {
+      "shot_id": "s01",
+      "file": "clips/fixed/s01.mp4",
+      "in_s": 0.0,
+      "out_s": 3.22,
+      "reason": "trimmed to the spoken words plus 0.4 s at each end"
+    },
+    {
+      "shot_id": "s02",
+      "file": "clips/fixed/s02.mp4",
+      "in_s": 0.0,
+      "out_s": 2.02,
+      "reason": "trimmed to the spoken words plus 0.4 s at each end"
+    },
+    {
+      "shot_id": "s03",
+      "file": "clips/fixed/s03.mp4",
+      "in_s": 0.0,
+      "out_s": 3.9,
+      "reason": "trimmed to the spoken words plus 0.4 s at each end"
+    },
+    {
+      "shot_id": "s04",
+      "file": "clips/fixed/s04.mp4",
+      "in_s": 0.0,
+      "out_s": 3.92,
+      "reason": "silent shot, full take"
+    },
+    {
+      "shot_id": "s05",
+      "file": "clips/fixed/s05.mp4",
+      "in_s": 0.0,
+      "out_s": 2.84,
+      "reason": "trimmed to the spoken words plus 0.4 s at each end"
+    }
+  ],
+  "end_card": {
+    "line": "Free to download.",
+    "duration_s": 2.0
+  }
+}

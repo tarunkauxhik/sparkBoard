@@ -1,0 +1,36 @@
+{
+  "cuts": [
+    {
+      "shot_id": "s01",
+      "file": "clips/fixed/s01.mp4",
+      "in_s": 0.18,
+      "out_s": 3.16,
+      "reason": "trimmed to the spoken words plus 0.4 s at each end"
+    },
+    {
+      "shot_id": "s02",
+      "file": "clips/fixed/s02.mp4",
+      "in_s": 0.0,
+      "out_s": 3.92,
+      "reason": "silent shot, full take"
+    },
+    {
+      "shot_id": "s03",
+      "file": "clips/fixed/s03.mp4",
+      "in_s": 0.0,
+      "out_s": 3.7,
+      "reason": "trimmed to the spoken words plus 0.4 s at each end"
+    },
+    {
+      "shot_id": "s04",
+      "file": "clips/fixed/s04.mp4",
+      "in_s": 0.0,
+      "out_s": 2.92,
+      "reason": "trimmed to the spoken words plus 0.4 s at each end"
+    }
+  ],
+  "end_card": {
+    "line": "Made for sensitive skin.",
+    "duration_s": 2.0
+  }
+}

@@ -1,0 +1,258 @@
+{
+  "takes": [
+    {
+      "shot_id": "s01",
+      "take": 1,
+      "file": "clips/raw/s01_take1.mp4",
+      "task_id": "348494a3f459e8e23b1cc3026e5d9734",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Order,",
+          "start_s": 0.18,
+          "end_s": 0.42
+        },
+        {
+          "word": "order.",
+          "start_s": 0.48,
+          "end_s": 0.74
+        },
+        {
+          "word": "रोहन,",
+          "start_s": 1.4,
+          "end_s": 1.7
+        },
+        {
+          "word": "800",
+          "start_s": 2.12,
+          "end_s": 2.28
+        },
+        {
+          "word": "रुपये",
+          "start_s": 2.3,
+          "end_s": 2.44
+        },
+        {
+          "word": "pending.",
+          "start_s": 2.52,
+          "end_s": 2.82
+        }
+      ],
+      "voice_file": "",
+      "word_error_rate": 0.0,
+      "face": 0.703,
+      "problems": []
+    },
+    {
+      "shot_id": "s02",
+      "take": 1,
+      "file": "clips/raw/s02_take1.mp4",
+      "task_id": "118c06c21e63726abb85cad4dba183f1",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "कल",
+          "start_s": 0.04,
+          "end_s": 0.26
+        },
+        {
+          "word": "दे",
+          "start_s": 0.32,
+          "end_s": 0.4
+        },
+        {
+          "word": "दूँगा,",
+          "start_s": 0.46,
+          "end_s": 0.76
+        },
+        {
+          "word": "पक्का।",
+          "start_s": 1.1,
+          "end_s": 1.62
+        }
+      ],
+      "voice_file": "",
+      "word_error_rate": 0.0,
+      "face": 0.657,
+      "problems": []
+    },
+    {
+      "shot_id": "s03",
+      "take": 1,
+      "file": "clips/raw/s03_take1.mp4",
+      "task_id": "c86dff046b98619a7854bccf93980824",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "अरे",
+          "start_s": 0.1,
+          "end_s": 0.3
+        },
+        {
+          "word": "भाई,",
+          "start_s": 0.36,
+          "end_s": 0.74
+        },
+        {
+          "word": "group",
+          "start_s": 0.88,
+          "end_s": 1.1
+        },
+        {
+          "word": "में",
+          "start_s": 1.12,
+          "end_s": 1.22
+        },
+        {
+          "word": "सबको",
+          "start_s": 1.26,
+          "end_s": 1.5
+        },
+        {
+          "word": "दिखता",
+          "start_s": 1.52,
+          "end_s": 1.78
+        },
+        {
+          "word": "है,",
+          "start_s": 1.8,
+          "end_s": 1.88
+        },
+        {
+          "word": "किसको",
+          "start_s": 2.14,
+          "end_s": 2.36
+        },
+        {
+          "word": "कितना",
+          "start_s": 2.4,
+          "end_s": 2.62
+        },
+        {
+          "word": "देना।",
+          "start_s": 2.66,
+          "end_s": 2.94
+        }
+      ],
+      "voice_file": "",
+      "word_error_rate": 0.0,
+      "face": 0.423,
+      "problems": [
+        "face: 0.42 at 1.5 s (needs 0.5 and closer than any other persona)"
+      ]
+    },
+    {
+      "shot_id": "s03",
+      "take": 2,
+      "file": "clips/raw/s03_take2.mp4",
+      "task_id": "4ee8447f4793330fc79162ab1b28fa0f",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "अरे",
+          "start_s": 0.06,
+          "end_s": 0.3
+        },
+        {
+          "word": "भाई,",
+          "start_s": 0.36,
+          "end_s": 0.8
+        },
+        {
+          "word": "group",
+          "start_s": 0.98,
+          "end_s": 1.24
+        },
+        {
+          "word": "में",
+          "start_s": 1.26,
+          "end_s": 1.36
+        },
+        {
+          "word": "सबको",
+          "start_s": 1.4,
+          "end_s": 1.7
+        },
+        {
+          "word": "दिखता",
+          "start_s": 1.74,
+          "end_s": 2.02
+        },
+        {
+          "word": "है",
+          "start_s": 2.06,
+          "end_s": 2.48
+        },
+        {
+          "word": "किसको",
+          "start_s": 2.54,
+          "end_s": 2.8
+        },
+        {
+          "word": "कितना",
+          "start_s": 2.84,
+          "end_s": 3.12
+        },
+        {
+          "word": "देना।",
+          "start_s": 3.16,
+          "end_s": 3.5
+        }
+      ],
+      "voice_file": "",
+      "word_error_rate": 0.0,
+      "face": 0.57,
+      "problems": []
+    },
+    {
+      "shot_id": "s04",
+      "take": 1,
+      "file": "clips/raw/s04_take1.mp4",
+      "task_id": "c33fd8ad2cfb0a18750b8cc0752c145a",
+      "model": "veo3_lite",
+      "words": [],
+      "voice_file": "",
+      "word_error_rate": null,
+      "face": null,
+      "problems": []
+    },
+    {
+      "shot_id": "s05",
+      "take": 1,
+      "file": "clips/raw/s05_take1.mp4",
+      "task_id": "606c89da44097b496658a3104cb7d425",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Case",
+          "start_s": 0.08,
+          "end_s": 0.3
+        },
+        {
+          "word": "dismissed.",
+          "start_s": 0.36,
+          "end_s": 0.82
+        },
+        {
+          "word": "Link",
+          "start_s": 1.72,
+          "end_s": 1.9
+        },
+        {
+          "word": "नीचे",
+          "start_s": 1.96,
+          "end_s": 2.24
+        },
+        {
+          "word": "है।",
+          "start_s": 2.24,
+          "end_s": 2.44
+        }
+      ],
+      "voice_file": "",
+      "word_error_rate": 0.0,
+      "face": 0.582,
+      "problems": []
+    }
+  ]
+}

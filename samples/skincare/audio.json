@@ -1,0 +1,145 @@
+{
+  "clips": [
+    {
+      "shot_id": "s01",
+      "file": "clips/fixed/s01.mp4",
+      "words": [
+        {
+          "word": "Waiting",
+          "start_s": 0.58,
+          "end_s": 0.9
+        },
+        {
+          "word": "for",
+          "start_s": 0.94,
+          "end_s": 1.04
+        },
+        {
+          "word": "the",
+          "start_s": 1.08,
+          "end_s": 1.16
+        },
+        {
+          "word": "sting",
+          "start_s": 1.24,
+          "end_s": 1.52
+        },
+        {
+          "word": "any",
+          "start_s": 1.92,
+          "end_s": 2.14
+        },
+        {
+          "word": "second",
+          "start_s": 2.2,
+          "end_s": 2.5
+        },
+        {
+          "word": "now.",
+          "start_s": 2.56,
+          "end_s": 2.76
+        }
+      ],
+      "clicks_removed": [
+        [
+          0.31,
+          0.52
+        ],
+        [
+          3.985,
+          4.175
+        ]
+      ]
+    },
+    {
+      "shot_id": "s02",
+      "file": "clips/fixed/s02.mp4",
+      "words": [],
+      "clicks_removed": []
+    },
+    {
+      "shot_id": "s03",
+      "file": "clips/fixed/s03.mp4",
+      "words": [
+        {
+          "word": "Nothing",
+          "start_s": 0.02,
+          "end_s": 0.32
+        },
+        {
+          "word": "yet,",
+          "start_s": 0.44,
+          "end_s": 0.74
+        },
+        {
+          "word": "and",
+          "start_s": 1.06,
+          "end_s": 1.26
+        },
+        {
+          "word": "it's",
+          "start_s": 1.32,
+          "end_s": 1.56
+        },
+        {
+          "word": "fragrance-free,",
+          "start_s": 1.6,
+          "end_s": 2.38
+        },
+        {
+          "word": "so",
+          "start_s": 2.48,
+          "end_s": 2.58
+        },
+        {
+          "word": "that",
+          "start_s": 2.64,
+          "end_s": 2.82
+        },
+        {
+          "word": "helps.",
+          "start_s": 2.86,
+          "end_s": 3.3
+        }
+      ],
+      "clicks_removed": []
+    },
+    {
+      "shot_id": "s04",
+      "file": "clips/fixed/s04.mp4",
+      "words": [
+        {
+          "word": "patch,",
+          "start_s": 0.08,
+          "end_s": 0.4
+        },
+        {
+          "word": "test",
+          "start_s": 0.54,
+          "end_s": 0.76
+        },
+        {
+          "word": "it",
+          "start_s": 0.8,
+          "end_s": 0.9
+        },
+        {
+          "word": "yourself.",
+          "start_s": 0.96,
+          "end_s": 1.5
+        },
+        {
+          "word": "Links",
+          "start_s": 1.88,
+          "end_s": 2.12
+        },
+        {
+          "word": "below.",
+          "start_s": 2.22,
+          "end_s": 2.52
+        }
+      ],
+      "clicks_removed": []
+    }
+  ]
+}

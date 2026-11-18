@@ -1,0 +1,205 @@
+{
+  "takes": [
+    {
+      "shot_id": "s01",
+      "take": 1,
+      "file": "clips/raw/s01_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Waiting",
+          "start_s": 0.58,
+          "end_s": 0.9
+        },
+        {
+          "word": "for",
+          "start_s": 0.94,
+          "end_s": 1.04
+        },
+        {
+          "word": "the",
+          "start_s": 1.08,
+          "end_s": 1.16
+        },
+        {
+          "word": "sting",
+          "start_s": 1.24,
+          "end_s": 1.52
+        },
+        {
+          "word": "any",
+          "start_s": 1.92,
+          "end_s": 2.14
+        },
+        {
+          "word": "second",
+          "start_s": 2.2,
+          "end_s": 2.5
+        },
+        {
+          "word": "now.",
+          "start_s": 2.56,
+          "end_s": 2.76
+        }
+      ],
+      "voice_file": "",
+      "word_error_rate": 0.0,
+      "face": 0.728,
+      "problems": []
+    },
+    {
+      "shot_id": "s02",
+      "take": 1,
+      "file": "clips/raw/s02_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [],
+      "voice_file": "",
+      "word_error_rate": null,
+      "face": null,
+      "problems": []
+    },
+    {
+      "shot_id": "s03",
+      "take": 1,
+      "file": "clips/raw/s03_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Nothing",
+          "start_s": 0.02,
+          "end_s": 0.32
+        },
+        {
+          "word": "yet,",
+          "start_s": 0.44,
+          "end_s": 0.74
+        },
+        {
+          "word": "and",
+          "start_s": 1.06,
+          "end_s": 1.26
+        },
+        {
+          "word": "it's",
+          "start_s": 1.32,
+          "end_s": 1.56
+        },
+        {
+          "word": "fragrance-free,",
+          "start_s": 1.6,
+          "end_s": 2.38
+        },
+        {
+          "word": "so",
+          "start_s": 2.48,
+          "end_s": 2.58
+        },
+        {
+          "word": "that",
+          "start_s": 2.64,
+          "end_s": 2.82
+        },
+        {
+          "word": "helps.",
+          "start_s": 2.86,
+          "end_s": 3.3
+        }
+      ],
+      "voice_file": "",
+      "word_error_rate": 0.0,
+      "face": 0.659,
+      "problems": []
+    },
+    {
+      "shot_id": "s04",
+      "take": 1,
+      "file": "clips/raw/s04_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Patch",
+          "start_s": 0.06,
+          "end_s": 0.36
+        },
+        {
+          "word": "test",
+          "start_s": 0.46,
+          "end_s": 0.72
+        },
+        {
+          "word": "it",
+          "start_s": 0.76,
+          "end_s": 0.88
+        },
+        {
+          "word": "yourself.",
+          "start_s": 0.92,
+          "end_s": 1.54
+        },
+        {
+          "word": "Links",
+          "start_s": 2.0,
+          "end_s": 2.24
+        },
+        {
+          "word": "below.",
+          "start_s": 2.36,
+          "end_s": 2.64
+        }
+      ],
+      "voice_file": "",
+      "word_error_rate": 0.0,
+      "face": 0.436,
+      "problems": [
+        "face: 0.44 at 2.6 s (needs 0.5 and closer than any other persona)"
+      ]
+    },
+    {
+      "shot_id": "s04",
+      "take": 2,
+      "file": "clips/raw/s04_take2.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "patch,",
+          "start_s": 0.08,
+          "end_s": 0.4
+        },
+        {
+          "word": "test",
+          "start_s": 0.54,
+          "end_s": 0.76
+        },
+        {
+          "word": "it",
+          "start_s": 0.8,
+          "end_s": 0.9
+        },
+        {
+          "word": "yourself.",
+          "start_s": 0.96,
+          "end_s": 1.5
+        },
+        {
+          "word": "Links",
+          "start_s": 1.88,
+          "end_s": 2.12
+        },
+        {
+          "word": "below.",
+          "start_s": 2.22,
+          "end_s": 2.52
+        }
+      ],
+      "voice_file": "",
+      "word_error_rate": 0.0,
+      "face": 0.528,
+      "problems": []
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "characters": {
+    "kabir": "refs/kabir_sheet.png",
+    "rohan": "refs/rohan_sheet.png"
+  },
+  "product": [
+    "refs/product.png"
+  ],
+  "location": "refs/location.png"
+}

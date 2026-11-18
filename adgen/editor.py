@@ -128,11 +128,11 @@ def lay_voiceover(video: Path, voice: Path, out: Path, start_s: float) -> None:
          "-ar", str(SAMPLE_RATE), str(out)], check=True)
 
 
-def duck_clicks(video: Path, out: Path, clicks: list[tuple[float, float]]) -> None:
-    """Turn stray clicks down in a clip that keeps Veo's own audio. They are ducked, not muted,
-    so the room tone does not drop out to silence."""
+def duck_clicks(video: Path, out: Path, clicks: list[tuple[float, float]], level: float = None) -> None:
+    """Turn stray clicks down in a clip. By default they are ducked, not muted, so Veo's room
+    tone does not drop out to silence; under a narrator (a quiet bed) they are muted (level 0)."""
     ducked = out.with_name(f"{out.stem}_ducked.wav")
-    turn_down(video, clicks, DUCK_LEVEL, ducked)
+    turn_down(video, clicks, DUCK_LEVEL if level is None else level, ducked)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(video), "-i", str(ducked), "-map", "0:v", "-map", "1:a",
                     "-c:v", "copy", "-c:a", "aac", "-ar", str(SAMPLE_RATE), str(out)], check=True)
     ducked.unlink()

@@ -1,0 +1,38 @@
+{
+  "files": {
+    "s01": "keyframes/s01_take1.png",
+    "s02": "keyframes/s02_take1.png",
+    "s03": "keyframes/s03_take1.png",
+    "s04": "keyframes/s04_take1.png"
+  },
+  "takes": [
+    {
+      "shot_id": "s01",
+      "take": 1,
+      "file": "keyframes/s01_take1.png",
+      "face": 0.499,
+      "passed": true
+    },
+    {
+      "shot_id": "s02",
+      "take": 1,
+      "file": "keyframes/s02_take1.png",
+      "face": 0.496,
+      "passed": true
+    },
+    {
+      "shot_id": "s03",
+      "take": 1,
+      "file": "keyframes/s03_take1.png",
+      "face": null,
+      "passed": true
+    },
+    {
+      "shot_id": "s04",
+      "take": 1,
+      "file": "keyframes/s04_take1.png",
+      "face": null,
+      "passed": true
+    }
+  ]
+}

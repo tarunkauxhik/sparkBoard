@@ -123,23 +123,23 @@
       "purpose": "cta",
       "duration_s": 4,
       "shot_type": "medium close-up",
-      "angle": "eye-level selfie angle, phone held at arm's length",
-      "framing": "her face and shoulders with the sage-green bottle held beside her chin",
+      "angle": "eye level, slightly side-on, phone held at arm's length",
+      "framing": "her face and shoulders side-on at the sink, two fingertips on her jaw, the open sage-green bottle standing on the sink edge in frame",
       "character": "meera",
       "speaker": "meera",
       "face_visible": true,
-      "first_frame": "Meera stands at the bathroom mirror holding the phone at arm's length and the sage-green Dewline bottle beside her chin. Her free hand rests on the sink edge.",
+      "first_frame": "Meera stands side-on at the sink holding the phone at arm's length, two fingertips resting on her jaw where she is smoothing in a drop of serum. The open sage-green Dewline bottle stands on the sink edge beside her.",
       "beats": [
         {
           "start_s": 0.5,
-          "end_s": 2.5,
-          "action": "She lifts the bottle slightly toward the lens and holds it there",
+          "end_s": 2.0,
+          "action": "She smooths the serum along her jaw with two fingertips",
           "eye_line": "looks into the lens"
         },
         {
-          "start_s": 2.5,
+          "start_s": 2.0,
           "end_s": 3.5,
-          "action": "She lowers the bottle a little and gives a small nod",
+          "action": "She lowers her hand to the sink edge and gives a small nod",
           "eye_line": "looks into the lens"
         }
       ],

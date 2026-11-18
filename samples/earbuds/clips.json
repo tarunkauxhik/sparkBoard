@@ -1,0 +1,111 @@
+{
+  "takes": [
+    {
+      "shot_id": "s01",
+      "take": 1,
+      "file": "clips/raw/s01_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Drilling",
+          "start_s": 1.26,
+          "end_s": 1.66
+        },
+        {
+          "word": "again,",
+          "start_s": 1.73,
+          "end_s": 2.19
+        },
+        {
+          "word": "through",
+          "start_s": 2.93,
+          "end_s": 3.18
+        },
+        {
+          "word": "the",
+          "start_s": 3.22,
+          "end_s": 3.3
+        },
+        {
+          "word": "wall.",
+          "start_s": 3.47,
+          "end_s": 3.85
+        }
+      ],
+      "voice_file": "clips/voice/s01_x1.05.mp3",
+      "voice_start_s": 0.23,
+      "word_error_rate": null,
+      "face": 0.645,
+      "problems": []
+    },
+    {
+      "shot_id": "s02",
+      "take": 1,
+      "file": "clips/raw/s02_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Huh,",
+          "start_s": 0.26,
+          "end_s": 0.42
+        },
+        {
+          "word": "that's",
+          "start_s": 0.92,
+          "end_s": 1.14
+        },
+        {
+          "word": "better.",
+          "start_s": 1.18,
+          "end_s": 1.42
+        }
+      ],
+      "voice_file": "",
+      "voice_start_s": 0.0,
+      "word_error_rate": 0.0,
+      "face": 0.689,
+      "problems": []
+    },
+    {
+      "shot_id": "s03",
+      "take": 1,
+      "file": "clips/raw/s03_take1.mp4",
+      "task_id": "made in an earlier run",
+      "model": "veo3_lite",
+      "words": [
+        {
+          "word": "Linked",
+          "start_s": 0.62,
+          "end_s": 0.8
+        },
+        {
+          "word": "below",
+          "start_s": 0.88,
+          "end_s": 1.22
+        },
+        {
+          "word": "if",
+          "start_s": 1.48,
+          "end_s": 1.56
+        },
+        {
+          "word": "you're",
+          "start_s": 1.58,
+          "end_s": 1.7
+        },
+        {
+          "word": "curious.",
+          "start_s": 1.74,
+          "end_s": 2.24
+        }
+      ],
+      "voice_file": "clips/voice/s03.mp3",
+      "voice_start_s": 0.5,
+      "word_error_rate": null,
+      "face": null,
+      "problems": []
+    }
+  ]
+}

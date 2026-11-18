@@ -1,4 +1,29 @@
-{"key": "openrouter", "item": "sonnet:look", "cost": 0.0198, "mock": false}
-{"key": "openrouter", "item": "sonnet:storyboard", "cost": 0.03494, "mock": false}
-{"key": "openrouter", "item": "sonnet:storyboard", "cost": 0.039248, "mock": false}
-{"key": "openrouter", "item": "sonnet:storyboard_critic", "cost": 0.061658, "mock": false}
+{"key": "kie", "item": "refs_marcus_sheet", "cost": 0.03, "mock": false}
+{"key": "kie", "item": "refs_product", "cost": 0.03, "mock": false}
+{"key": "kie", "item": "refs_location", "cost": 0.03, "mock": false}
+{"key": "kie", "item": "keyframes_s01_take1", "cost": 0.03, "mock": false}
+{"key": "kie", "item": "keyframes_s01_take2", "cost": 0.03, "mock": false}
+{"key": "kie", "item": "keyframes_s01_take3", "cost": 0.03, "mock": false}
+{"key": "kie", "item": "keyframes_s02_take1", "cost": 0.03, "mock": false}
+{"key": "kie", "item": "keyframes_s02_take2", "cost": 0.21, "mock": false}
+{"key": "kie", "item": "keyframes_s02_take3", "cost": 0.03, "mock": false}
+{"key": "kie", "item": "keyframes_s03_take1", "cost": 0.03, "mock": false}
+{"key": "kie", "item": "keyframes_s04_take1", "cost": 0.18, "mock": false}
+{"key": "kie", "item": "correction: keyframes_s02_take2 cost 6.0 credits by Kie's figure (the balance also moved for other users of the shared account)", "cost": -0.18, "mock": false}
+{"key": "kie", "item": "correction: keyframes_s04_take1 cost 6.0 credits by Kie's figure (the balance also moved for other users of the shared account)", "cost": -0.15, "mock": false}
+{"key": "elevenlabs", "item": "tts:s01", "cost": 0.0051600000000000005, "mock": false}
+{"key": "elevenlabs", "item": "scribe:s01", "cost": 0.0004896, "mock": false}
+{"key": "kie", "item": "clips_raw_s01_take1", "cost": 0.15, "mock": false}
+{"key": "elevenlabs", "item": "tts:s01_faster", "cost": 0.0051600000000000005, "mock": false}
+{"key": "elevenlabs", "item": "scribe:s01_faster", "cost": 0.0004896, "mock": false}
+{"key": "kie", "item": "clips_raw_s02_take1", "cost": 0.15, "mock": false}
+{"key": "elevenlabs", "item": "scribe:s02_take1", "cost": 0.00048, "mock": false}
+{"key": "elevenlabs", "item": "tts:s03", "cost": 0.00384, "mock": false}
+{"key": "elevenlabs", "item": "scribe:s03", "cost": 0.0002304, "mock": false}
+{"key": "kie", "item": "clips_raw_s03_take1", "cost": 0.15, "mock": false}
+{"key": "elevenlabs", "item": "scribe:s01", "cost": 0.0004896, "mock": false}
+{"key": "elevenlabs", "item": "scribe:s02_take1", "cost": 0.00048, "mock": false}
+{"key": "elevenlabs", "item": "scribe:s03", "cost": 0.0002304, "mock": false}
+{"key": "elevenlabs", "item": "isolate:s02_voice", "cost": 0.010000000000000002, "mock": false}
+{"key": "openrouter", "item": "gemini-3.1-flash-lite:final_cut", "cost": 0.00042625, "mock": false}
+{"key": "openrouter", "item": "gemini-3.1-flash-lite:final_cut", "cost": 0.00049975, "mock": false}

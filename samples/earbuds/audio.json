@@ -1,0 +1,125 @@
+{
+  "clips": [
+    {
+      "shot_id": "s01",
+      "file": "clips/fixed/s01.mp4",
+      "words": [
+        {
+          "word": "Drilling",
+          "start_s": 1.26,
+          "end_s": 1.66
+        },
+        {
+          "word": "again,",
+          "start_s": 1.73,
+          "end_s": 2.19
+        },
+        {
+          "word": "through",
+          "start_s": 2.93,
+          "end_s": 3.18
+        },
+        {
+          "word": "the",
+          "start_s": 3.22,
+          "end_s": 3.3
+        },
+        {
+          "word": "wall.",
+          "start_s": 3.47,
+          "end_s": 3.85
+        }
+      ],
+      "clicks_removed": [
+        [
+          0.49,
+          0.63
+        ],
+        [
+          1.015,
+          1.115
+        ],
+        [
+          2.55,
+          2.645
+        ]
+      ]
+    },
+    {
+      "shot_id": "s02",
+      "file": "clips/fixed/s02.mp4",
+      "words": [
+        {
+          "word": "Huh,",
+          "start_s": 0.26,
+          "end_s": 0.42
+        },
+        {
+          "word": "that's",
+          "start_s": 0.92,
+          "end_s": 1.14
+        },
+        {
+          "word": "better.",
+          "start_s": 1.18,
+          "end_s": 1.42
+        }
+      ],
+      "clicks_removed": [
+        [
+          2.19,
+          2.285
+        ],
+        [
+          2.66,
+          2.8
+        ],
+        [
+          2.775,
+          2.87
+        ]
+      ]
+    },
+    {
+      "shot_id": "s03",
+      "file": "clips/fixed/s03.mp4",
+      "words": [
+        {
+          "word": "Linked",
+          "start_s": 0.62,
+          "end_s": 0.8
+        },
+        {
+          "word": "below",
+          "start_s": 0.88,
+          "end_s": 1.22
+        },
+        {
+          "word": "if",
+          "start_s": 1.48,
+          "end_s": 1.56
+        },
+        {
+          "word": "you're",
+          "start_s": 1.58,
+          "end_s": 1.7
+        },
+        {
+          "word": "curious.",
+          "start_s": 1.74,
+          "end_s": 2.24
+        }
+      ],
+      "clicks_removed": [
+        [
+          0.405,
+          0.535
+        ],
+        [
+          3.76,
+          3.875
+        ]
+      ]
+    }
+  ]
+}

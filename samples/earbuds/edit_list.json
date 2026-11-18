@@ -1,0 +1,29 @@
+{
+  "cuts": [
+    {
+      "shot_id": "s01",
+      "file": "clips/fixed/s01.mp4",
+      "in_s": 0.86,
+      "out_s": 3.92,
+      "reason": "trimmed to the spoken words plus 0.4 s at each end"
+    },
+    {
+      "shot_id": "s02",
+      "file": "clips/fixed/s02.mp4",
+      "in_s": 0.0,
+      "out_s": 1.82,
+      "reason": "trimmed to the spoken words plus 0.4 s at each end"
+    },
+    {
+      "shot_id": "s03",
+      "file": "clips/fixed/s03.mp4",
+      "in_s": 0.22,
+      "out_s": 2.64,
+      "reason": "trimmed to the spoken words plus 0.4 s at each end"
+    }
+  ],
+  "end_card": {
+    "line": "Comes with a pocket charging case",
+    "duration_s": 2.0
+  }
+}

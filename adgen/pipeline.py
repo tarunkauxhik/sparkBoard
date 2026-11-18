@@ -374,8 +374,8 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
             if route == "vo_only":  # the narrator over the clip's own quiet sound
                 mixed = run.path(f"clips/fixed/{take.shot_id}_mixed.mp4")
                 lay_voiceover(source, run.dir / take.voice_file, mixed, take.voice_start_s)
-                if clicks := find_clicks(mixed, take.words):
-                    duck_clicks(mixed, out, clicks)
+                if clicks := find_clicks(mixed, take.words):  # the narrator is silent there: mute
+                    duck_clicks(mixed, out, clicks, level=0.0)
                 else:
                     shutil.copyfile(mixed, out)
                 mixed.unlink()

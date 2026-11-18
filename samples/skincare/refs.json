@@ -1,0 +1,9 @@
+{
+  "characters": {
+    "meera": "refs/meera_sheet.png"
+  },
+  "product": [
+    "refs/product.png"
+  ],
+  "location": "refs/location.png"
+}

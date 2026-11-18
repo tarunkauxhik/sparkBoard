@@ -1,0 +1,9 @@
+{
+  "characters": {
+    "marcus": "refs/marcus_sheet.png"
+  },
+  "product": [
+    "refs/product.png"
+  ],
+  "location": "refs/location.png"
+}
