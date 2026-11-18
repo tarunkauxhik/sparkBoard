@@ -131,14 +131,13 @@ class ElevenLabs:
         padded.unlink()
         cleaned.unlink()
 
-    def speak(self, text: str, out: Path, voice_id: str, model_id: str = TTS_MODEL, speed: float = 1.0) -> None:
+    def speak(self, text: str, out: Path, voice_id: str, model_id: str = TTS_MODEL) -> None:
         """Text to speech. The text may hold audio tags like [sighs] and mixed-script Hinglish.
-        `speed` runs from 0.7 to 1.2 (ElevenLabs' range); above 1 the line is spoken faster."""
+        (Its `speed` setting made no difference with eleven_v4 in testing; lines that are too
+        long are time-stretched in code instead, see editor.time_stretch.)"""
         if out.exists():
             raise FileExistsError(f"refusing to overwrite {out}")
         body = {"text": text, "model_id": model_id, "seed": SEED}
-        if speed != 1.0:
-            body["voice_settings"] = {"speed": speed}
 
         def send():
             return self.client.post(f"{API}/text-to-speech/{voice_id}", headers=self.headers,

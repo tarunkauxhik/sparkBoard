@@ -498,8 +498,8 @@ def test_captions_show_the_roman_line_on_the_transcript_timing():
 
 def narrated_takes(tmp_path, extra_words: str) -> tuple[Run, list[dict]]:
     class LongLines(MockProvider):
-        def speak(self, text, out, voice_id, speed=1.0):
-            super().speak(text + extra_words, out, voice_id, speed)  # the mock's lines, made longer
+        def speak(self, text, out, voice_id):
+            super().speak(text + extra_words, out, voice_id)  # the mock's lines, made longer
 
     run = Run("vo", root=tmp_path)
     ledger = Ledger(run.path("ledger.jsonl"))
@@ -509,14 +509,14 @@ def narrated_takes(tmp_path, extra_words: str) -> tuple[Run, list[dict]]:
 
 
 def test_a_narrator_line_that_fits_when_started_early_is_not_sped_up(tmp_path):
-    run, takes = narrated_takes(tmp_path, " and more")         # 3.4 s: too long from 0.5 s, fine from 0.15 s
-    assert all(not t["voice_file"].endswith("_faster.mp3") and t["voice_start_s"] < 0.5 for t in takes)
+    run, takes = narrated_takes(tmp_path, " and a bit more")  # last word at 3.7 s: fits from 0.15 s
+    assert all(t["voice_file"].endswith(f"{t['shot_id']}.mp3") and t["voice_start_s"] < 0.5 for t in takes)
     assert all(not t["problems"] for t in takes)
 
 
 def test_a_long_narrator_line_is_spoken_faster(tmp_path):
-    run, takes = narrated_takes(tmp_path, " and a bit more")  # 4.2 s: needs about 1.16x
-    assert all(t["voice_file"].endswith("_faster.mp3") for t in takes)
-    for take in takes:  # the line now ends inside the shot
-        assert take["voice_start_s"] + stream_seconds(run.dir / take["voice_file"], "a:0") <= 3.9
-        assert not take["problems"]
+    run, takes = narrated_takes(tmp_path, " and a bit more here")  # last word at 4.1 s: needs about 1.13x
+    assert all("_x1." in t["voice_file"] for t in takes)
+    for take in takes:  # the last word now lands inside the shot
+        assert take["words"][-1]["end_s"] <= 3.9 and not take["problems"]
+        assert stream_seconds(run.dir / take["voice_file"], "a:0") < 4.5  # really shorter than the 4.6 s line

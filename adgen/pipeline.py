@@ -17,7 +17,7 @@ from adgen.casting import casting_errors, other_sheets, used_personas
 from adgen.clicks import find_clicks
 from adgen.editor import (
     TRIM_PAD_S, build_edit_list, clean_voice, duck_clicks, final_checks, grab_frame, lay_voiceover, render_video,
-    stream_seconds, validate_edit_list,
+    stream_seconds, time_stretch, validate_edit_list,
 )
 from adgen.ledger import Ledger
 from adgen.prompts import (
@@ -47,7 +47,7 @@ SCHEMA_TRIES = 2  # one try, plus one more with the errors sent back. Never a lo
 VO_START_S = EDGE_SILENCE_S  # a narrator starts half a second into the shot...
 VO_EARLIEST_S = 0.15         # ...or as early as this when the line is long
 VO_END_GAP_S = 0.15          # and ends this long before the shot's length
-VO_MAX_SPEED = 1.2           # the fastest ElevenLabs will speak
+VO_MAX_SPEED = 1.2           # the most a line is sped up before it counts as too long
 STAGES = ("refs", "keyframes", "clips")  # a live run can stop after any of these for a look
 
 
@@ -287,29 +287,33 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         return False
 
     def narrate(shot: Shot) -> tuple[str, float, list[Word], list[str]]:
-        """The narrator's line for a vo_only shot, made once: (file, where it starts in the clip,
-        words in clip time, problems). A line too long for its shot is voiced again faster (up
-        to 1.2x) only if starting it early (from VO_EARLIEST_S) is not enough to end before the cut."""
-        speaker = next(m for m in look.cast if m.name == shot.speaker)
+        """The narrator's line for a vo_only shot, made once: (file, where the file starts in the
+        clip, words in clip time, problems). A line whose last word would land after the cut first
+        starts earlier (from VO_EARLIEST_S); if that is not enough it is time-stretched in code,
+        up to VO_MAX_SPEED, keeping its pitch."""
         voice = run.path(f"clips/voice/{shot.id}.mp3")
         if not voice.exists():
+            speaker = next(m for m in look.cast if m.name == shot.speaker)
             provider.speak(shot.dialogue_tts, voice, provider.narrator_voice(speaker)[0])
+        spoken = [Word(**w) for w in provider.transcribe(voice, shot.dialogue_caption, stream_seconds(voice, "a:0"))]
         latest_end = shot.duration_s - VO_END_GAP_S  # Veo clips run a little short of their length
-        length = stream_seconds(voice, "a:0")
-        if VO_EARLIEST_S + length > latest_end:
-            faster = run.path(f"clips/voice/{shot.id}_faster.mp3")
-            if not faster.exists():
-                speed = min(VO_MAX_SPEED, round(length / (latest_end - VO_EARLIEST_S) + 0.02, 2))
-                provider.speak(shot.dialogue_tts, faster, provider.narrator_voice(speaker)[0], speed)
-            voice, length = faster, stream_seconds(faster, "a:0")
-        start = round(max(VO_EARLIEST_S, min(VO_START_S, latest_end - length)), 2)
-        spoken = provider.transcribe(voice, shot.dialogue_caption, length)
-        words = [Word(word=w["word"], start_s=round(w["start_s"] + start, 2), end_s=round(w["end_s"] + start, 2))
+        last_word = spoken[-1].end_s if spoken else stream_seconds(voice, "a:0")
+        if VO_EARLIEST_S + last_word > latest_end:
+            factor = round(min(VO_MAX_SPEED, last_word / (latest_end - VO_EARLIEST_S) + 0.02), 2)
+            stretched = run.path(f"clips/voice/{shot.id}_x{factor}.mp3")
+            if not stretched.exists():
+                time_stretch(voice, stretched, factor)
+            voice = stretched
+            spoken = [Word(word=w.word, start_s=round(w.start_s / factor, 2), end_s=round(w.end_s / factor, 2))
+                      for w in spoken]
+            last_word = spoken[-1].end_s if spoken else stream_seconds(voice, "a:0")
+        start = round(max(VO_EARLIEST_S, min(VO_START_S, latest_end - last_word)), 2)
+        words = [Word(word=w.word, start_s=round(w.start_s + start, 2), end_s=round(w.end_s + start, 2))
                  for w in spoken]
         _, problems = word_problems(shot, words)
-        if start + length > latest_end + 0.05:
-            problems.append(f"voiceover: the line ends at {start + length:.1f} s even at {VO_MAX_SPEED}x, "
-                            f"past the {shot.duration_s} s shot; shorten it")
+        if start + last_word > latest_end + 0.05:
+            problems.append(f"voiceover: the last word lands at {start + last_word:.1f} s even at {VO_MAX_SPEED}x, "
+                            f"past the {shot.duration_s} s shot; shorten the line")
         return run.rel(voice), start, words, problems
 
     # 9 Clips: every take is kept in clips/raw/ and never overwritten. Each take is checked

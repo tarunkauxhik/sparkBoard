@@ -110,6 +110,11 @@ def clean_voice(video: Path, voice: Path, out: Path, clicks: list[tuple[float, f
     muted.unlink()
 
 
+def time_stretch(audio: Path, out: Path, factor: float) -> None:
+    """Speed speech up by `factor` (above 1 is faster) without changing its pitch."""
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(audio), "-af", f"atempo={factor}", str(out)], check=True)
+
+
 def lay_voiceover(video: Path, voice: Path, out: Path, start_s: float) -> None:
     """Put a narrator's line over a silent b-roll clip: Veo's own sound stays as a low bed and
     the voice starts at `start_s`. The clip keeps its length."""

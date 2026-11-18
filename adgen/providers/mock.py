@@ -82,12 +82,12 @@ class MockProvider:
     def narrator_voice(self, member) -> tuple[str, str]:
         return "mock-voice", "Mock Narrator"
 
-    def speak(self, text: str, out: Path, voice_id: str, speed: float = 1.0) -> None:
+    def speak(self, text: str, out: Path, voice_id: str) -> None:
         """Placeholder TTS: a 300 Hz tone, 0.4 s per word plus half a second at each end."""
         if out.exists():
             raise FileExistsError(f"refusing to overwrite {out}")
         self.ledger.charge("elevenlabs", f"tts:{out.stem}", PRICES["tts_per_char"] * len(text), mock=True)
-        seconds = round((0.4 * len(text.split()) + 1.0) / speed, 2)
+        seconds = round(0.4 * len(text.split()) + 1.0, 2)
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi",
                         "-i", f"sine=frequency=300:sample_rate=48000:duration={seconds}", str(out)], check=True)
 
