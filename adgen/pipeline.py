@@ -383,7 +383,9 @@ def run_pipeline(brief_path: Path, run: Run, provider, ledger: Ledger, auto_appr
         errors = validate_edit_list(edit, audio, run)
         if errors:
             raise ValueError("edit list is not valid:\n" + "\n".join(errors))
-        files = [render_video(run, edit, audio, brief.brand, run.dir / refs.product[0] if refs.product else None)]
+        captions = {shot.id: shot.dialogue_caption for shot in board.shots if shot.dialogue_caption}
+        product = run.dir / refs.product[0] if refs.product else None
+        files = [render_video(run, edit, audio, brief.brand, product, captions)]
         for shot in board.shots:
             if shot.route == "static":
                 for name, size in STATIC_SIZES.items():

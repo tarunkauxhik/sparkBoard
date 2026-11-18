@@ -483,3 +483,14 @@ def test_every_keyframe_asks_for_blank_labels_on_other_products(done, story):
     refs = done[0].load("refs.json", Refs)
     for shot in board.shots:
         assert "plain blank label and no readable words, logos or brand names" in keyframe_request(shot, look, brief, refs)[0]
+
+
+def test_captions_show_the_roman_line_on_the_transcript_timing():
+    from adgen.editor import caption_words
+    from adgen.schemas import Word
+    heard = [Word(word="कल", start_s=0.3, end_s=0.5), Word(word="दे", start_s=0.5, end_s=0.6),
+             Word(word="दूँगा,", start_s=0.6, end_s=1.0), Word(word="पक्का।", start_s=1.1, end_s=1.6)]
+    same_count = caption_words(heard, "Kal de dunga, pakka.")
+    assert [w.word for w in same_count] == ["Kal", "de", "dunga,", "pakka."] and same_count[3].start_s == 1.1
+    different = caption_words(heard, "Kal de dunga pakka yaar")  # five words over the same span
+    assert [w.word for w in different][-1] == "yaar" and different[0].start_s == 0.3 and different[-1].end_s == 1.6

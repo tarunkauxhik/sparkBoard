@@ -12,7 +12,7 @@ from pathlib import Path
 
 from adgen.run import Run
 from adgen.clicks import turn_down
-from adgen.schemas import Audio, Check, Cut, EditList, EndCard
+from adgen.schemas import Audio, Check, Cut, EditList, EndCard, Word
 from adgen.statics import FONT, end_card
 
 WIDTH, HEIGHT, FPS, SAMPLE_RATE = 1080, 1920, 24, 48000
@@ -174,13 +174,29 @@ def validate_edit_list(edit: EditList, audio: Audio, run: Run) -> list[str]:
     return errors
 
 
-def caption_events(edit: EditList, audio: Audio) -> list[tuple[float, float, str]]:
-    """(start, end, text) on the final timeline: the spoken words in chunks of up to 4."""
+def caption_words(heard: list[Word], caption: str) -> list[Word]:
+    """The caption's own words (Roman script) on the transcript's timing. A transcript writes
+    Hindi in Devanagari, so its text is never shown. If the word counts match, each caption word
+    takes its transcript word's time; if not, the caption words share the spoken span evenly."""
+    texts = caption.split()
+    if not texts or not heard:
+        return heard
+    if len(texts) == len(heard):
+        return [Word(word=text, start_s=w.start_s, end_s=w.end_s) for text, w in zip(texts, heard)]
+    start, step = heard[0].start_s, (heard[-1].end_s - heard[0].start_s) / len(texts)
+    return [Word(word=text, start_s=round(start + i * step, 3), end_s=round(start + (i + 1) * step, 3))
+            for i, text in enumerate(texts)]
+
+
+def caption_events(edit: EditList, audio: Audio, captions: dict[str, str] | None = None) -> list[tuple[float, float, str]]:
+    """(start, end, text) on the final timeline: the spoken words in chunks of up to 4, in each
+    shot's caption text (`captions`: shot id -> Roman line) where one is given."""
     words = {clip.shot_id: clip.words for clip in audio.clips}
     events, cut_start = [], 0.0
     for cut in edit.cuts:
         heard = [w for w in words.get(cut.shot_id, [])
                  if w.start_s >= cut.in_s - 0.01 and w.end_s <= cut.out_s + 0.01]
+        heard = caption_words(heard, (captions or {}).get(cut.shot_id, ""))
         for i in range(0, len(heard), CAPTION_WORDS):
             chunk = heard[i:i + CAPTION_WORDS]
             events.append((cut_start + chunk[0].start_s - cut.in_s,
@@ -195,7 +211,8 @@ def _ass_time(seconds: float) -> str:
     return f"0:{int(minutes):02d}:{secs:05.2f}"
 
 
-def render_video(run: Run, edit: EditList, audio: Audio, brand: str, product: Path | None = None) -> str:
+def render_video(run: Run, edit: EditList, audio: Audio, brand: str, product: Path | None = None,
+                 captions: dict[str, str] | None = None) -> str:
     """Render the edit list to final/ad_9x16.mp4 and return that path (relative to the run)."""
     run.path("work/x")  # creates work/, a temp folder deleted at the end
     speaking = {clip.shot_id for clip in audio.clips if clip.words}
@@ -234,7 +251,7 @@ def render_video(run: Run, edit: EditList, audio: Audio, brand: str, product: Pa
 
     # 4. Burn in captions, add light grain, and mux picture and sound once.
     lines = [f"Dialogue: 0,{_ass_time(start)},{_ass_time(end)},Caption,,0,0,0,,{text}\n"
-             for start, end, text in caption_events(edit, audio)]
+             for start, end, text in caption_events(edit, audio, captions)]
     run.path("work/captions.ass").write_text(ASS_HEADER + "".join(lines), "utf-8")
     shutil.copyfile(FONT, run.path("work/Inter.ttf"))
     final = run.path("final/ad_9x16.mp4")
