@@ -20,7 +20,7 @@ MIN_BRIGHT_SHARE = 0.6    # share of a window's energy above 2 kHz
 MIN_RISE_DB = 12          # how far above the quiet between words a click must be
 MIN_LEVEL_DB = -55        # quieter than this is inaudible under any bed
 MAX_CLICK_S = 0.12        # longer bright sounds are not clicks (breaths, hiss)
-SPEECH_BEFORE_S, SPEECH_AFTER_S = 0.12, 0.20  # transcripts start words late and end them early
+SPEECH_BEFORE_S, SPEECH_AFTER_S = 0.12, 0.30  # transcripts start words late and end them early
                                               # (an "s" begins before; a word like "sting" rings on after)
 MIN_GAP_S = 0.25          # pauses shorter than this inside a line count as speech
 PAD_BEFORE_S, PAD_AFTER_S = 0.03, 0.06  # muted around each click: its quiet start and its ring-out

@@ -55,5 +55,5 @@ def test_a_tap_after_the_line_is_found(tmp_path):
 
 def test_the_ringing_end_of_a_word_is_not_a_click(tmp_path):
     # seen live: "sting" was marked as ending at 1.52 s but rang on to about 1.78 s
-    clip = speech_with(2.42, tmp_path)  # 0.12 s after "there" ends at 2.3 s: still the word's tail
+    clip = speech_with(2.55, tmp_path)  # 0.25 s after "there" ends at 2.3 s: still the word's tail
     assert find_clicks(clip, WORDS) == []
