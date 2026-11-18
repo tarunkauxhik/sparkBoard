@@ -121,3 +121,14 @@ def test_the_cost_is_kies_own_figure_when_someone_else_uses_the_shared_account(t
     log = kie.run_task("sheet", PAYLOAD, 0.10, tmp_path / "sheet.png")
     assert log["credits_used"] > 6 and log["credits_consumed"] == 6
     assert ledger.spent("kie") == pytest.approx(0.03)  # 6 credits, not the balance change
+
+
+def test_a_failed_task_is_submitted_afresh_when_the_step_runs_again(tmp_path):
+    fake = FakeKie(states=("fail",))
+    kie, ledger = make(tmp_path, fake)
+    with pytest.raises(KieError, match="safety filter"):
+        kie.run_task("clip", PAYLOAD, 0.50, tmp_path / "clip.mp4")
+    fake.states = ["success"]  # Kie works again
+    kie.run_task("clip", PAYLOAD, 0.50, tmp_path / "clip.mp4")
+    assert fake.created == 2 and (tmp_path / "clip.mp4").exists()
+    assert (tmp_path / "tasks/clip_failed1.json").exists()  # the failed task's log is kept

@@ -9,7 +9,8 @@ We leave out `watermark` (we want none) and `callBackUrl` (we poll; we have no p
 Cost safety:
 1. Before a task, an assumed high price is checked against the cap.
 2. The task ID is saved to disk before polling. A task with a saved ID is never submitted
-   again: running the step again just keeps waiting for it.
+   again: running the step again just keeps waiting for it. The one exception is a task Kie
+   has finished as failed (those cost nothing): running again submits a fresh one.
 3. The credit balance is read before and after every task. The ledger records Kie's own
    `creditsConsumed` for the task (the balance change is used only if Kie gives none), because
    the account is shared and its balance also moves for other people's tasks. Both go in the log.
@@ -120,6 +121,11 @@ class Kie:
         if out.exists():
             raise FileExistsError(f"refusing to overwrite {out}")
         log_path = self.task_dir / f"{name}.json"
+        if log_path.exists() and json.loads(log_path.read_text("utf-8")).get("state") == "fail":
+            # Kie finished it as failed (free): keep that log under a new name and submit afresh.
+            # Only a definite failure is resubmitted; a slow task is always waited for.
+            tries = len(list(self.task_dir.glob(f"{name}_failed*.json"))) + 1
+            log_path.rename(self.task_dir / f"{name}_failed{tries}.json")
         if log_path.exists():  # this task was already submitted: never submit it again
             log = json.loads(log_path.read_text("utf-8"))
         else:
